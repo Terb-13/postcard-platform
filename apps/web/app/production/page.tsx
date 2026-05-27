@@ -1,127 +1,125 @@
-import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
-import { trpc } from "@/lib/trpc/server"; // server caller if needed, or use client
+"use client";
 
-// For now we'll use client components for interactivity
-// This is a server page that can fetch initial data
+import { useState } from "react";
+import { trpc } from "@/lib/trpc/client";
 
-export default async function MyProductionPage() {
-  const user = await getCurrentUser();
+export default function MyProductionPage() {
+  const { data: campaigns, isLoading, refetch } = trpc.campaign.getMine.useQuery();
 
-  if (!user) {
-    redirect("/sign-in");
+  const sendToProduction = trpc.campaign.sendToProduction.useMutation({
+    onSuccess: () => {
+      alert("Campaign sent to production! Our team will begin processing it shortly.");
+      refetch();
+    },
+    onError: (err) => {
+      alert("Error: " + err.message);
+    },
+  });
+
+  if (isLoading) {
+    return <div className="max-w-5xl mx-auto px-6 py-8">Loading your campaigns...</div>;
   }
+
+  const campaignsInProduction = campaigns?.filter(
+    (c) => c.status === "IN_PRODUCTION" || (c.productionJobs && c.productionJobs.length > 0)
+  ) ?? [];
+
+  const readyCampaigns = campaigns?.filter(
+    (c) => c.status === "DRAFT" || c.status === "PAID"
+  ) ?? [];
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-semibold">My Production Jobs</h1>
         <p className="text-gray-600 mt-1">
-          Track the status of your postcards as they go through printing and delivery.
+          Track the status of your postcards as they go through printing and delivery. You can also send ready campaigns to production below.
         </p>
       </div>
 
-      <div className="bg-white rounded-xl border p-8">
-        <CustomerProductionList />
-      </div>
+      {/* Currently in Production */}
+      <section className="mb-10">
+        <h2 className="text-xl font-semibold mb-4">Currently in Production</h2>
 
-      <div className="mt-6 text-sm text-gray-500">
-        Need help? Contact our operations team or check your campaign details.
-      </div>
-    </div>
-  );
-}
+        {campaignsInProduction.length === 0 && (
+          <p className="text-gray-500">You have no campaigns currently in production.</p>
+        )}
 
-// Client component for the actual list (uses tRPC)
-'use client';
+        <div className="space-y-4">
+          {campaignsInProduction.map((campaign) => {
+            const job = campaign.productionJobs?.[0];
+            return (
+              <div key={campaign.id} className="border rounded-lg p-5 bg-white">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className="font-semibold text-lg">{campaign.name}</div>
+                    <div className="text-sm text-gray-500">
+                      {campaign.size} × {campaign.quantity}
+                    </div>
+                  </div>
 
-function CustomerProductionList() {
-  const { data: campaigns, isLoading } = trpc.campaign.getMine.useQuery();
-
-  if (isLoading) {
-    return <div className="text-gray-500">Loading your production jobs...</div>;
-  }
-
-  const productionCampaigns = campaigns?.filter(
-    (c) => c.status === "IN_PRODUCTION" || c.productionJobs?.length > 0
-  ) ?? [];
-
-  if (productionCampaigns.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-gray-600">You don’t have any campaigns currently in production.</p>
-        <p className="mt-2">
-          <a href="/campaigns" className="text-blue-600 hover:underline">
-            Go to My Campaigns
-          </a>
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      {productionCampaigns.map((campaign) => {
-        const latestJob = campaign.productionJobs?.[0];
-
-        return (
-          <div key={campaign.id} className="border rounded-lg p-5">
-            <div className="flex justify-between items-start">
-              <div>
-                <div className="font-semibold text-lg">{campaign.name}</div>
-                <div className="text-sm text-gray-500">
-                  {campaign.size} × {campaign.quantity} • Created {new Date(campaign.createdAt).toLocaleDateString()}
+                  {job && (
+                    <span className="text-xs px-3 py-1 rounded-full bg-blue-100 text-blue-700 self-start">
+                      {job.status}
+                    </span>
+                  )}
                 </div>
-              </div>
 
-              <div>
-                {latestJob ? (
-                  <span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium bg-blue-100 text-blue-800">
-                    {latestJob.status}
-                  </span>
-                ) : (
-                  <span className="text-xs text-gray-500">Pending assignment</span>
+                {job && (
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-500">Partner:</span><br />
+                      <span className="font-medium">{job.productionPartner?.name ?? "Being assigned by our team"}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Tracking:</span><br />
+                      <span className="font-mono">{job.trackingNumber || "Not yet shipped"}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Status:</span><br />
+                      <span className="font-medium">{job.status}</span>
+                    </div>
+                  </div>
                 )}
               </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Ready to Send to Production */}
+      <section>
+        <h2 className="text-xl font-semibold mb-4">Ready to Send to Production</h2>
+
+        {readyCampaigns.length === 0 && (
+          <p className="text-gray-500">No campaigns ready to send right now. Create a new campaign from the dashboard.</p>
+        )}
+
+        <div className="space-y-3">
+          {readyCampaigns.map((campaign) => (
+            <div key={campaign.id} className="flex items-center justify-between border rounded-lg p-4 bg-white">
+              <div>
+                <div className="font-medium">{campaign.name}</div>
+                <div className="text-sm text-gray-500">
+                  {campaign.size} × {campaign.quantity}
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  if (confirm(`Send "${campaign.name}" to production?`)) {
+                    sendToProduction.mutate({ campaignId: campaign.id });
+                  }
+                }}
+                disabled={sendToProduction.isPending}
+                className="px-5 py-2 bg-black text-white rounded text-sm hover:bg-gray-800 disabled:opacity-60 font-medium"
+              >
+                {sendToProduction.isPending ? "Sending to Production..." : "Send to Production"}
+              </button>
             </div>
-
-            {latestJob && (
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-500">Partner:</span><br />
-                  <span className="font-medium">
-                    {latestJob.productionPartner?.name ?? "Being assigned"}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-gray-500">Tracking:</span><br />
-                  <span className="font-mono">
-                    {latestJob.trackingNumber || "Not yet shipped"}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-gray-500">Status:</span><br />
-                  <span className="font-medium">{latestJob.status}</span>
-                </div>
-              </div>
-            )}
-
-            {!latestJob && campaign.status !== "IN_PRODUCTION" && (
-              <div className="mt-4">
-                <button
-                  onClick={() => {
-                    // TODO: Wire this to call sendToProduction
-                    alert("This will call sendToProduction in the next update");
-                  }}
-                  className="px-4 py-2 bg-black text-white rounded text-sm hover:bg-gray-800"
-                >
-                  Send to Production
-                </button>
-              </div>
-            )}
-          </div>
-        );
-      })}
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
