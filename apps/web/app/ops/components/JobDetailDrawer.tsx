@@ -25,7 +25,16 @@ export function JobDetailDrawer({
   onReassign,
   onRefresh,
 }: JobDetailDrawerProps) {
+  const [note, setNote] = useState("");
+  const [isAddingNote, setIsAddingNote] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+
+  const addNoteMutation = trpc.admin.productionJobs.addNote.useMutation({
+    onSuccess: () => {
+      setNote("");
+      onRefresh?.();
+    },
+  });
 
   const updateStatusMutation = trpc.admin.updateJobStatus.useMutation({
     onSuccess: () => {
@@ -39,32 +48,35 @@ export function JobDetailDrawer({
 
   const handleQuickStatus = async (newStatus: string) => {
     if (!confirm(`Change status to ${newStatus}?`)) return;
-
     setIsUpdating(true);
     try {
-      await updateStatusMutation.mutateAsync({
-        jobId: job.id,
-        status: newStatus as any,
-      });
+      await updateStatusMutation.mutateAsync({ jobId: job.id, status: newStatus as any });
     } finally {
       setIsUpdating(false);
     }
   };
 
+  const handleAddNote = async () => {
+    if (!note.trim()) return;
+    setIsAddingNote(true);
+    try {
+      await addNoteMutation.mutateAsync({ jobId: job.id, note: note.trim() });
+    } finally {
+      setIsAddingNote(false);
+    }
+  };
+
   return (
     <>
-      {/* Backdrop */}
       <div
         className={`fixed inset-0 z-40 bg-black/40 transition-opacity ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
         onClick={onClose}
       />
 
-      {/* Drawer */}
       <div
         className={`fixed top-0 right-0 z-50 h-full w-full max-w-2xl bg-white shadow-2xl transform transition-transform duration-300 ease-in-out ${isOpen ? "translate-x-0" : "translate-x-full"}`}
       >
         <div className="flex h-full flex-col">
-          {/* Header */}
           <div className="flex items-center justify-between border-b px-6 py-4">
             <div>
               <h2 className="text-xl font-semibold">Job Details</h2>
@@ -75,9 +87,9 @@ export function JobDetailDrawer({
             <button onClick={onClose} className="text-2xl leading-none">&times;</button>
           </div>
 
-          <div className="flex-1 overflow-auto p-6">
+          <div className="flex-1 overflow-auto p-6 space-y-8">
             {/* Basic Info */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <div className="text-sm text-gray-500">Status</div>
                 <div className="text-lg font-medium">{job.status}</div>
@@ -96,25 +108,20 @@ export function JobDetailDrawer({
               </div>
             </div>
 
-            {/* Proof Section */}
-            <div className="mb-6">
+            {/* Proof */}
+            <div>
               <div className="text-sm font-medium text-gray-700 mb-2">Proof</div>
               {job.proofUrl ? (
-                <a
-                  href={job.proofUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block rounded border border-blue-300 bg-blue-50 px-4 py-2 text-sm text-blue-700 hover:bg-blue-100"
-                >
-                  View Proof PDF
+                <a href={job.proofUrl} target="_blank" className="text-blue-600 hover:underline text-sm">
+                  View Proof PDF →
                 </a>
               ) : (
-                <div className="text-sm text-gray-500">No proof uploaded yet.</div>
+                <span className="text-sm text-gray-500">No proof yet</span>
               )}
             </div>
 
-            {/* Quick Status Buttons (New - direct actions in drawer) */}
-            <div className="mb-6">
+            {/* Quick Status Buttons */}
+            <div>
               <div className="text-sm font-medium text-gray-700 mb-2">Quick Status Update</div>
               <div className="flex flex-wrap gap-2">
                 {QUICK_STATUSES.map((status) => (
@@ -124,69 +131,97 @@ export function JobDetailDrawer({
                     disabled={isUpdating || job.status === status}
                     className="rounded border px-3 py-1.5 text-sm hover:bg-gray-100 disabled:opacity-50"
                   >
-                    Mark as {status.replace("_", " ")}
+                    {status.replace("_", " ")}
                   </button>
                 ))}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                (Tracking number can be added via full Status action)
-              </p>
             </div>
 
-            {/* Full Actions */}
-            <div className="mb-6">
-              <div className="text-sm font-medium text-gray-700 mb-2">Actions</div>
-              <div className="flex flex-wrap gap-2">
+            {/* Internal Notes Section (New) */}
+            <div>
+              <div className="text-sm font-medium text-gray-700 mb-2">Internal Notes</div>
+
+              <div className="space-y-3 mb-3 max-h-48 overflow-auto">
+                {events
+                  .filter((e) => e.metadata?.type === "INTERNAL_NOTE")
+                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                  .map((event) => (
+                    <div key={event.id} className="bg-yellow-50 border-l-2 border-yellow-400 p-3 rounded text-sm">
+                      <div>{event.message}</div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {new Date(event.createdAt).toLocaleString()} • {event.metadata?.addedBy}
+                      </div>
+                    </div>
+                  ))}
+                {events.filter((e) => e.metadata?.type === "INTERNAL_NOTE").length === 0 && (
+                  <div className="text-sm text-gray-400 italic">No internal notes yet.</div>
+                )}
+              </div>
+
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="Add internal note..."
+                  className="flex-1 rounded border px-3 py-2 text-sm"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && note.trim()) {
+                      handleAddNote();
+                    }
+                  }}
+                />
                 <button
-                  onClick={() => onUpdateStatus(job)}
-                  className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+                  onClick={handleAddNote}
+                  disabled={!note.trim() || isAddingNote}
+                  className="rounded bg-gray-800 px-4 py-2 text-sm text-white disabled:opacity-50"
                 >
-                  Full Status Update
-                </button>
-                <button
-                  onClick={() => onReassign(job)}
-                  className="rounded bg-amber-600 px-4 py-2 text-sm text-white hover:bg-amber-700"
-                >
-                  Reassign Partner
+                  Add Note
                 </button>
               </div>
             </div>
 
             {/* Full Event History */}
             <div>
-              <div className="text-sm font-medium text-gray-700 mb-3">Event History</div>
+              <div className="text-sm font-medium text-gray-700 mb-3">Full Event History</div>
               {events.length > 0 ? (
-                <div className="space-y-3 rounded-lg border bg-gray-50 p-4 max-h-[400px] overflow-auto">
+                <div className="space-y-3 rounded-lg border bg-gray-50 p-4 max-h-[320px] overflow-auto text-sm">
                   {events
                     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                     .map((event) => (
-                      <div key={event.id} className="border-l-2 border-gray-300 pl-3 text-sm">
+                      <div key={event.id} className="border-l-2 border-gray-300 pl-3">
                         <div className="font-medium">{event.status}</div>
                         <div className="text-gray-600">{event.message}</div>
                         <div className="text-xs text-gray-500 mt-0.5">
                           {new Date(event.createdAt).toLocaleString()}
                         </div>
-                        {event.metadata && (
-                          <pre className="mt-1 rounded bg-white p-2 text-xs overflow-auto">
-                            {JSON.stringify(event.metadata, null, 2)}
-                          </pre>
-                        )}
                       </div>
                     ))}
                 </div>
               ) : (
-                <div className="text-sm text-gray-500">No events yet.</div>
+                <div className="text-sm text-gray-500">No events recorded.</div>
               )}
             </div>
           </div>
 
-          <div className="border-t p-4 flex justify-end">
+          <div className="border-t p-4 flex justify-end gap-3">
             <button onClick={onClose} className="rounded border px-4 py-2 text-sm hover:bg-gray-50">
               Close
+            </button>
+            <button
+              onClick={() => onUpdateStatus(job)}
+              className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+            >
+              Full Status Update
             </button>
           </div>
         </div>
       </div>
     </>
   );
+
+  async function handleAddNote() {
+    if (!note.trim() || !job) return;
+    await addNoteMutation.mutateAsync({ jobId: job.id, note: note.trim() });
+  }
 }
