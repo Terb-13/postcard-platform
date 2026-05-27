@@ -5,33 +5,30 @@
 ## Key Features (Current)
 
 **Customer Experience**
-- Create campaigns + upload artwork
+- Create campaigns + upload artwork (PDF)
+- Artwork rejection feedback with notes from ops team
+- Re-upload capability after rejection
 - Pay via Stripe Checkout to send to production
-- Dedicated `/production` page to track status and tracking
-- Dedicated success page after payment
+- Track production status, tracking numbers, and artwork status
 
 **Operations Dashboard (`/ops`)**
-- Full visibility into all orders, partners, and statuses
-- Payment status clearly shown in tables and drawers
-- Internal notes, re-assignment, quick status updates
-- Artwork review & approval
-- Activity feed
+- Powerful internal tools for managing all orders
+- Artwork review & approval/rejection with notes
+- Payment status visibility
+- Internal notes on jobs
+- Job re-assignment, quick status updates, activity feed
 
-**Notifications**
-- Payment confirmation email sent automatically
-- Shipping notification email with tracking when job is marked SHIPPED
+**Automated Notifications**
+- Payment confirmation
+- Artwork rejection (with ops notes)
+- Shipping notification with tracking
 
-**Backend**
-- Full Stripe integration (Checkout + Webhooks)
-- Production Partner REST API
-- Auto job creation after payment
+## Current Status
+The core customer-to-ops-to-print flow is functional and connected, including payments and artwork review.
 
-## Tech Stack
-- Next.js 15 + tRPC
-- Prisma + PostgreSQL
-- Clerk
-- Stripe
-- UploadThing
-- Resend (emails)
-- xAI
+## Next Priorities
+- More accurate production timeline for customers
+- Design preview / thumbnail generation
+- Improved partner portal
+- Better analytics for operations
 
