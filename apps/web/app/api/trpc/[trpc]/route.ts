@@ -1,16 +1,19 @@
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
-import { appRouter } from "@packages/api/root"; // placeholder - will fix path
-
-import { createTRPCContext } from "@packages/api/trpc"; // placeholder
+import { appRouter } from "../../../../packages/api/root";
+import { createTRPCContext } from "../../../../packages/api/trpc";
+import { getCurrentUser } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
-const handler = (req: Request) =>
-  fetchRequestHandler({
+const handler = async (req: Request) => {
+  const user = await getCurrentUser();
+
+  return fetchRequestHandler({
     endpoint: "/api/trpc",
     req,
     router: appRouter,
-    createContext: () => createTRPCContext({ user: null }), // TODO: integrate real Clerk user
+    createContext: () => createTRPCContext({ user }),
   });
+};
 
 export { handler as GET, handler as POST };
