@@ -15,8 +15,9 @@ export async function sendEmail({ to, subject, html }: SendEmailOptions) {
   }
 
   try {
+    const fromAddress = process.env.RESEND_FROM_EMAIL || "Postcard Platform <notifications@yourdomain.com>";
     await resend.emails.send({
-      from: "Postcard Platform <notifications@yourdomain.com>",
+      from: fromAddress,
       to,
       subject,
       html,
