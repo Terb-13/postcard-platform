@@ -3,27 +3,51 @@ import { prisma } from "@/lib/db";
 
 /**
  * Production Partner API
- * This is called by print vendors to receive new jobs from the platform.
  * Auth: X-Production-Key header
  */
-export async function POST(req: NextRequest) {
+async function getAuthenticatedPartner(req: NextRequest) {
   const apiKey = req.headers.get("x-production-key");
+  if (!apiKey) return null;
 
-  if (!apiKey) {
-    return NextResponse.json({ error: "Missing API key" }, { status: 401 });
-  }
-
-  const partner = await prisma.productionPartner.findUnique({
+  return prisma.productionPartner.findUnique({
     where: { apiKey },
   });
+}
 
+export async function GET(req: NextRequest) {
+  const partner = await getAuthenticatedPartner(req);
+  if (!partner || !partner.isActive) {
+    return NextResponse.json({ error: "Invalid or inactive partner" }, { status: 403 });
+  }
+
+  const jobs = await prisma.productionJob.findMany({
+    where: { productionPartnerId: partner.id },
+    orderBy: { createdAt: "desc" },
+    include: {
+      campaign: {
+        select: { name: true, size: true, quantity: true },
+      },
+      events: {
+        orderBy: { createdAt: "desc" },
+        take: 3,
+      },
+    },
+  });
+
+  return NextResponse.json({ jobs });
+}
+
+/**
+ * (Optional) Platform can still POST new jobs to a partner if needed
+ */
+export async function POST(req: NextRequest) {
+  const partner = await getAuthenticatedPartner(req);
   if (!partner || !partner.isActive) {
     return NextResponse.json({ error: "Invalid or inactive partner" }, { status: 403 });
   }
 
   const body = await req.json();
 
-  // In real flow this would come from internal campaign creation
   const job = await prisma.productionJob.create({
     data: {
       campaignId: body.campaignId,
@@ -34,7 +58,6 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // Create initial event
   await prisma.jobEvent.create({
     data: {
       productionJobId: job.id,
