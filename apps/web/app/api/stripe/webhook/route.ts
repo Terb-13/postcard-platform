@@ -24,18 +24,62 @@ export async function POST(req: NextRequest) {
     const paymentIntentId = session.payment_intent as string;
 
     if (campaignId) {
-      await prisma.campaign.update({
+      const campaign = await prisma.campaign.findUnique({
         where: { id: campaignId },
-        data: {
-          status: "PAID",
-          stripePaymentIntentId: paymentIntentId,
-          paidAt: new Date(),
-          amountPaid: (session.amount_total || 0) / 100,
-        },
       });
 
-      // Optionally auto-trigger production here, or let customer do it from UI
-      console.log(`Campaign ${campaignId} has been paid.`);
+      if (campaign) {
+        // Mark as paid
+        await prisma.campaign.update({
+          where: { id: campaignId },
+          data: {
+            status: "PAID",
+            stripePaymentIntentId: paymentIntentId,
+            paidAt: new Date(),
+            amountPaid: (session.amount_total || 0) / 100,
+          },
+        });
+
+        // Auto-create ProductionJob after successful payment
+        const firstActivePartner = await prisma.productionPartner.findFirst({
+          where: { active: true },
+          orderBy: { createdAt: "asc" },
+        });
+
+        const productionJob = await prisma.productionJob.create({
+          data: {
+            campaignId: campaign.id,
+            productionPartnerId: firstActivePartner?.id || "",
+            status: "RECEIVED",
+            payload: {
+              campaignName: campaign.name,
+              size: campaign.size,
+              quantity: campaign.quantity,
+              dropDate: campaign.dropDate,
+            },
+          },
+        });
+
+        await prisma.campaign.update({
+          where: { id: campaign.id },
+          data: { status: "IN_PRODUCTION" },
+        });
+
+        // Log the creation
+        if (productionJob.id) {
+          await prisma.jobEvent.create({
+            data: {
+              productionJobId: productionJob.id,
+              status: "RECEIVED",
+              message: firstActivePartner
+                ? `Auto-created after payment - assigned to ${firstActivePartner.name}`
+                : "Auto-created after payment - awaiting partner assignment",
+            },
+          });
+        }
+
+        console.log(`Campaign ${campaignId} paid and production job created.`);
+      }
     }
   }
 
