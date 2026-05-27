@@ -48,7 +48,7 @@ model Campaign {
   organizationId String
   savedMapId     String?
   name           String
-  status         String   @default("DRAFT") // DRAFT, QUOTE, PAID, IN_PRODUCTION, COMPLETED
+  status         String   @default("DRAFT")
   size           String
   quantity       Int
   dropDate       DateTime?
@@ -89,7 +89,8 @@ model ProductionJob {
   campaignId          String
   productionPartnerId String
   externalId          String?
-  status              String   @default("RECEIVED")
+  status              String   @default("RECEIVED") // RECEIVED, SENT_TO_PROVIDER, SHIPPED, DELIVERED
+  trackingNumber      String?
   payload             Json
   proofUrl            String?
   createdAt           DateTime @default(now())
