@@ -5,6 +5,12 @@ import { trpc } from "@/lib/trpc/client";
 
 import { JobsTable } from "./JobsTable";
 import { ActivityFeed } from "./ActivityFeed";
+import { StatusUpdateModal } from "./StatusUpdateModal";
+import { ReassignModal } from "./ReassignModal";
+
+import type { RouterOutputs } from "@/lib/trpc/client";
+
+type Job = RouterOutputs["admin"]["productionJobs"]["list"]["items"][number];
 
 interface Filters {
   status?: string;
@@ -16,18 +22,19 @@ export function OpsDashboard() {
   const [filters, setFilters] = useState<Filters>({});
   const [cursor, setCursor] = useState<string | undefined>(undefined);
 
-  // Main jobs query
+  // Modal state
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showReassignModal, setShowReassignModal] = useState(false);
+
+  // Queries
   const jobsQuery = trpc.admin.productionJobs.list.useQuery(
-    {
-      ...filters,
-      cursor,
-      limit: 25,
-    },
+    { ...filters, cursor, limit: 25 },
     { keepPreviousData: true }
   );
-
-  // Recent activity
   const activityQuery = trpc.admin.activity.recent.useQuery({ limit: 15 });
+
+  const utils = trpc.useUtils();
 
   const jobs = jobsQuery.data?.items ?? [];
   const nextCursor = jobsQuery.data?.nextCursor;
@@ -37,21 +44,35 @@ export function OpsDashboard() {
     setCursor(undefined);
   };
 
+  const openStatusModal = (job: Job) => {
+    setSelectedJob(job);
+    setShowStatusModal(true);
+  };
+
+  const openReassignModal = (job: Job) => {
+    setSelectedJob(job);
+    setShowReassignModal(true);
+  };
+
+  const handleActionSuccess = () => {
+    utils.admin.productionJobs.list.invalidate();
+    utils.admin.activity.recent.invalidate();
+  };
+
   return (
     <div>
-      {/* Quick Stats Row */}
+      {/* Quick Stats */}
       <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
         <div className="rounded-lg border bg-white p-4">
-          <div className="text-sm text-gray-500">Total Jobs (shown)</div>
+          <div className="text-sm text-gray-500">Jobs Shown</div>
           <div className="text-2xl font-semibold text-gray-900">{jobs.length}</div>
         </div>
         <div className="rounded-lg border bg-white p-4">
-          <div className="text-sm text-gray-500">Filtered Status</div>
+          <div className="text-sm text-gray-500">Current Filter</div>
           <div className="text-2xl font-semibold text-gray-900">
-            {filters.status || "All"}
+            {filters.status || "All statuses"}
           </div>
         </div>
-        {/* Add more stat cards later using additional queries */}
       </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
@@ -83,9 +104,7 @@ export function OpsDashboard() {
             <select
               className="rounded border px-3 py-2 text-sm"
               value={filters.status || ""}
-              onChange={(e) =>
-                handleFilterChange({ status: e.target.value || undefined })
-              }
+              onChange={(e) => handleFilterChange({ status: e.target.value || undefined })}
             >
               <option value="">All Statuses</option>
               <option value="RECEIVED">Received</option>
@@ -102,6 +121,8 @@ export function OpsDashboard() {
               if (nextCursor) setCursor(nextCursor);
             }}
             hasMore={!!nextCursor}
+            onUpdateStatus={openStatusModal}
+            onReassign={openReassignModal}
           />
         </div>
 
@@ -114,6 +135,21 @@ export function OpsDashboard() {
           />
         </div>
       </div>
+
+      {/* Modals */}
+      <StatusUpdateModal
+        job={selectedJob}
+        isOpen={showStatusModal}
+        onClose={() => setShowStatusModal(false)}
+        onSuccess={handleActionSuccess}
+      />
+
+      <ReassignModal
+        job={selectedJob}
+        isOpen={showReassignModal}
+        onClose={() => setShowReassignModal(false)}
+        onSuccess={handleActionSuccess}
+      />
     </div>
   );
 }
