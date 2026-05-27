@@ -3,4 +3,4 @@ export * from "./JobsTable";
 export * from "./ActivityFeed";
 export * from "./StatusUpdateModal";
 export * from "./ReassignModal";
-export * from "./JobDetailModal";
+export * from "./JobDetailDrawer";
