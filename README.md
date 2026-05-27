@@ -2,40 +2,36 @@
 
 **Online postcards** — A modern platform for local businesses to design, target, and send postcards at scale.
 
-## Current Capabilities (as of latest push)
+## Key Features (Current)
 
-**Customer Flow**
-- Create campaigns
-- Upload artwork (PDF)
-- Send to production via **Stripe Checkout**
-- Track production status and tracking numbers on `/production`
+**Customer Experience**
+- Create campaigns + upload artwork
+- Pay via Stripe Checkout to send to production
+- Dedicated `/production` page to track status and tracking
+- Dedicated success page after payment
 
-**Operations / ERP**
-- Powerful internal dashboard at `/ops`
-- Full job tracking, status updates, re-assignment
+**Operations Dashboard (`/ops`)**
+- Full visibility into all orders, partners, and statuses
+- Payment status clearly shown in tables and drawers
+- Internal notes, re-assignment, quick status updates
 - Artwork review & approval
-- Internal notes on jobs
 - Activity feed
 
+**Notifications**
+- Payment confirmation email sent automatically
+- Shipping notification email with tracking when job is marked SHIPPED
+
 **Backend**
-- Full tRPC API
+- Full Stripe integration (Checkout + Webhooks)
 - Production Partner REST API
-- Stripe payment integration + webhooks
-- xAI for future AI features
+- Auto job creation after payment
 
 ## Tech Stack
 - Next.js 15 + tRPC
 - Prisma + PostgreSQL
-- Clerk (Auth + Roles)
+- Clerk
 - Stripe
-- UploadThing (artwork)
+- UploadThing
+- Resend (emails)
 - xAI
-
-## Environment Variables
-See `.env.example` for required keys (especially Stripe and UploadThing).
-
-## Next Priorities
-- Improve customer notifications (when artwork reviewed / job shipped)
-- Better design preview tools
-- Partner portal improvements
 
