@@ -16,6 +16,8 @@ model Organization {
   users     User[]
   maps      SavedMap[]
   campaigns Campaign[]
+
+  @@index([createdAt])
 }
 
 model User {
@@ -23,10 +25,12 @@ model User {
   clerkId        String   @unique
   email          String   @unique
   organizationId String
-  role           String   @default("MEMBER") // OWNER | ADMIN | MEMBER
+  role           String   @default("MEMBER")
   createdAt      DateTime @default(now())
 
   organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId, role])
 }
 
 model SavedMap {
@@ -60,6 +64,9 @@ model Campaign {
   savedMap       SavedMap?       @relation(fields: [savedMapId], references: [id])
   artwork        Artwork?
   productionJobs ProductionJob[]
+
+  @@index([organizationId, createdAt])
+  @@index([status])
 }
 
 model Artwork {
@@ -82,6 +89,8 @@ model ProductionPartner {
   createdAt  DateTime @default(now())
 
   jobs ProductionJob[]
+
+  @@index([active])
 }
 
 model ProductionJob {
@@ -99,6 +108,10 @@ model ProductionJob {
   campaign          Campaign          @relation(fields: [campaignId], references: [id])
   productionPartner ProductionPartner @relation(fields: [productionPartnerId], references: [id])
   events            JobEvent[]
+
+  @@index([productionPartnerId, status, createdAt])
+  @@index([status, createdAt])
+  @@index([campaignId])
 }
 
 model JobEvent {
@@ -110,4 +123,7 @@ model JobEvent {
   createdAt       DateTime @default(now())
 
   productionJob ProductionJob @relation(fields: [productionJobId], references: [id])
+
+  @@index([createdAt])
+  @@index([productionJobId, createdAt])
 }
