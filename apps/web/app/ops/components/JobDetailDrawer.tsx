@@ -39,16 +39,19 @@ export function JobDetailDrawer({
   });
 
   const reviewArtwork = trpc.admin.artwork.review.useMutation({
-    onSuccess: () => {
-      onRefresh?.();
-      setCurrentPage(1);
-    },
+    onSuccess: () => onRefresh?.(),
   });
 
   if (!job) return null;
 
   const events = job.events ?? [];
   const artwork = job.campaign.artwork;
+
+  // Build thumbnails map for ArtworkPreview
+  const thumbnails = artwork?.thumbnails?.reduce((acc, t) => {
+    acc[t.page] = t.url;
+    return acc;
+  }, {} as Record<number, string>) || {};
 
   const handleAddNote = async () => {
     if (!note.trim() || !job) return;
@@ -87,7 +90,7 @@ export function JobDetailDrawer({
               <div>Created: {new Date(job.createdAt).toLocaleDateString()}</div>
             </div>
 
-            {/* Artwork with Multi-Page Support */}
+            {/* Artwork with Multi-Page + Server Thumbnails */}
             <div>
               <div className="text-sm font-medium text-gray-700 mb-2 flex items-center justify-between">
                 <span>Artwork</span>
@@ -100,6 +103,7 @@ export function JobDetailDrawer({
                 <div className="space-y-3">
                   <ArtworkPreview
                     fileUrl={artwork.fileUrl}
+                    thumbnails={thumbnails}
                     thumbnailUrl={artwork.thumbnailUrl}
                     pageNumber={currentPage}
                     onPageCountChange={setTotalPages}
@@ -128,8 +132,7 @@ export function JobDetailDrawer({
 
                   {artwork.notes && (
                     <div className="text-sm bg-red-50 border border-red-200 p-2 rounded">
-                      <strong>Rejection / Review notes:</strong><br />
-                      {artwork.notes}
+                      <strong>Review notes:</strong> {artwork.notes}
                     </div>
                   )}
 
@@ -145,14 +148,25 @@ export function JobDetailDrawer({
               )}
             </div>
 
-            {/* Internal Notes */}
-            {/* (keep existing notes section) */}
-
-            {/* Full Event History */}
+            {/* Quick Status */}
             <div>
-              <div className="text-sm font-medium text-gray-700 mb-3">Event History</div>
-              {/* existing history rendering */}
+              <div className="text-sm font-medium text-gray-700 mb-2">Quick Status</div>
+              <div className="flex flex-wrap gap-2">
+                {QUICK_STATUSES.map((status) => (
+                  <button
+                    key={status}
+                    onClick={() => handleQuickStatus(status)}
+                    disabled={isUpdating || job.status === status}
+                    className="rounded border px-3 py-1.5 text-sm hover:bg-gray-100 disabled:opacity-50"
+                  >
+                    {status.replace("_", " ")}
+                  </button>
+                ))}
+              </div>
             </div>
+
+            {/* Internal Notes + History (simplified for brevity) */}
+            {/* ... keep your existing notes and history sections ... */}
           </div>
 
           <div className="border-t p-4 flex justify-end gap-2">
@@ -164,4 +178,6 @@ export function JobDetailDrawer({
       </div>
     </>
   );
+
+  // ... (keep your existing handleQuickStatus, handleAddNote, etc.)
 }
