@@ -1,6 +1,7 @@
 "use client";
 
 import { trpc } from "@/lib/trpc/client";
+import { ArtworkUpload } from "../ops/components/ArtworkUpload";
 
 export default function MyCampaignsPage() {
   const { data: campaigns, isLoading, refetch } = trpc.campaign.getMine.useQuery();
@@ -42,6 +43,7 @@ export default function MyCampaignsPage() {
         {campaigns?.map((campaign) => {
           const latestJob = campaign.productionJobs?.[0];
           const isInProduction = campaign.status === "IN_PRODUCTION" || !!latestJob;
+          const artwork = campaign.artwork;
 
           return (
             <div key={campaign.id} className="border rounded-xl p-5 bg-white flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -50,6 +52,17 @@ export default function MyCampaignsPage() {
                 <div className="text-sm text-gray-500">
                   {campaign.size} × {campaign.quantity} • Created {new Date(campaign.createdAt).toLocaleDateString()}
                 </div>
+
+                {/* Artwork Status */}
+                <div className="mt-1 text-sm">
+                  Artwork: {artwork ? (
+                    <span className={`font-medium ${artwork.status === "APPROVED" ? "text-green-600" : artwork.status === "REJECTED" ? "text-red-600" : "text-orange-600"}`}>
+                      {artwork.status}
+                    </span>
+                  ) : (
+                    <span className="text-gray-500">Not uploaded</span>
+                  )}
+                </div>
               </div>
 
               <div className="flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-6">
@@ -57,17 +70,24 @@ export default function MyCampaignsPage() {
                 <div className="text-sm">
                   {isInProduction ? (
                     <>
-                      <span className="font-medium">Production Status:</span> {latestJob?.status ?? "In Progress"}
-                      {latestJob?.trackingNumber && (
-                        <span className="ml-2 text-gray-500 font-mono">{latestJob.trackingNumber}</span>
-                      )}
+                      <span className="font-medium">Production:</span> {latestJob?.status ?? "In Progress"}
                     </>
                   ) : (
                     <span className="text-gray-500">Draft / Ready</span>
                   )}
                 </div>
 
-                {/* Action */}
+                {/* Artwork Upload */}
+                {!isInProduction && (
+                  <div>
+                    <ArtworkUpload
+                      campaignId={campaign.id}
+                      onUploadComplete={refetch}
+                    />
+                  </div>
+                )}
+
+                {/* Send to Production */}
                 {!isInProduction && (
                   <button
                     onClick={() => sendToProduction.mutate({ campaignId: campaign.id })}
@@ -79,10 +99,7 @@ export default function MyCampaignsPage() {
                 )}
 
                 {isInProduction && (
-                  <a
-                    href="/production"
-                    className="text-sm text-blue-600 hover:underline"
-                  >
+                  <a href="/production" className="text-sm text-blue-600 hover:underline">
                     View in Production →
                   </a>
                 )}
