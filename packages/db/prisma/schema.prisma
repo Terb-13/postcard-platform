@@ -1,23 +1,169 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Core auth / tenant
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users    User[]
+  campaigns Campaign[]
+}
+
+model User {
+  id             String   @id @default(cuid())
+  clerkId        String   @unique
+  email          String
+  firstName      String?
+  lastName       String?
+  role           String   @default("MEMBER") // OWNER | ADMIN | OPERATIONS | MEMBER
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([clerkId])
+  @@index([organizationId])
+}
+
+// Maps (future use for EDDM map tool)
+model SavedMap {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  geoJson        Json
+  metadata       Json?
+  createdAt      DateTime @default(now())
+}
+
+// Campaign (customer order)
+model Campaign {
+  id                    String   @id @default(cuid())
+  organizationId        String
+  organization          Organization @relation(fields: [organizationId], references: [id])
+
+  name                  String
+  size                  String   // e.g. "6x11", "4x6"
+  quantity              Int
+  dropDate              DateTime?
+  status                String   @default("DRAFT") // DRAFT | READY_FOR_PAYMENT | PAID | IN_PRODUCTION | COMPLETED
+
+  // Pricing snapshot
+  unitPriceCents        Int?
+  totalPriceCents       Int?
+
+  stripePaymentIntentId String?  @unique
+  stripeSessionId       String?
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  artwork          Artwork?
+  productionJobs   ProductionJob[]
+
+  @@index([organizationId, status])
+  @@index([status])
+}
+
+// Artwork uploads + review lifecycle
 model Artwork {
   id            String   @id @default(cuid())
   campaignId    String   @unique
-  status        String   @default("UPLOADED") // UPLOADED, UNDER_REVIEW, APPROVED, REJECTED
+  campaign      Campaign @relation(fields: [campaignId], references: [id])
+
+  status        String   @default("UPLOADED") // UPLOADED | UNDER_REVIEW | APPROVED | REJECTED
   fileUrl       String?
-  thumbnailUrl  String?  // First page preview / thumbnail (legacy)
-  pageCount     Int?     // Total pages detected on upload
+  thumbnailUrl  String?  // legacy first page
+  pageCount     Int?
   fileName      String?
   fileSize      Int?
-  prompt        String?  // if generated via xAI
-  versions      Json?    // history of versions
+  prompt        String?  // xAI generated prompt if used
+  versions      Json?    // version history
   finalPdf      String?
-  notes         String?  // ops review notes
+  notes         String?  // rejection / review notes from ops
+
   uploadedAt    DateTime @default(now())
   reviewedAt    DateTime?
-  reviewedBy    String?
+  reviewedBy    String?  // user id or "ops"
 
-  campaign Campaign @relation(fields: [campaignId], references: [id])
-  thumbnails ArtworkThumbnail[]
+  thumbnails    ArtworkThumbnail[]
 
   @@index([status])
   @@index([campaignId])
+}
+
+model ArtworkThumbnail {
+  id        String   @id @default(cuid())
+  artworkId String
+  artwork   Artwork  @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  page      Int
+  url       String
+  createdAt DateTime @default(now())
+
+  @@unique([artworkId, page])
+  @@index([artworkId])
+}
+
+// Production partners (print vendors)
+model ProductionPartner {
+  id        String   @id @default(cuid())
+  name      String
+  apiKey    String   @unique
+  isActive  Boolean  @default(true)
+  contactEmail String?
+  createdAt DateTime @default(now())
+
+  productionJobs ProductionJob[]
+}
+
+// The actual print job / order sent to partner
+model ProductionJob {
+  id                   String   @id @default(cuid())
+  campaignId           String   @unique
+  campaign             Campaign @relation(fields: [campaignId], references: [id])
+
+  productionPartnerId  String?
+  productionPartner    ProductionPartner? @relation(fields: [productionPartnerId], references: [id])
+
+  status               String   @default("RECEIVED") // RECEIVED | SENT_TO_PROVIDER | SHIPPED | DELIVERED
+
+  // Payload sent to partner (or what they return)
+  payload              Json?
+
+  trackingNumber       String?
+  shippedAt            DateTime?
+  deliveredAt          DateTime?
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  events               JobEvent[]
+}
+
+// Full audit log (ERP requirement)
+model JobEvent {
+  id              String   @id @default(cuid())
+  productionJobId String
+  productionJob   ProductionJob @relation(fields: [productionJobId], references: [id], onDelete: Cascade)
+
+  status          String   // e.g. RECEIVED, SENT_TO_PROVIDER, SHIPPED, DELIVERED, ARTWORK_REJECTED, NOTE_ADDED
+  note            String?
+  actor           String?  // "ops:xxx" or "system" or "partner"
+  metadata        Json?
+
+  createdAt       DateTime @default(now())
+
+  @@index([productionJobId, createdAt])
 }
