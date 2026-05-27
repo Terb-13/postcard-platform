@@ -3,7 +3,7 @@ model Artwork {
   campaignId    String   @unique
   status        String   @default("UPLOADED") // UPLOADED, UNDER_REVIEW, APPROVED, REJECTED
   fileUrl       String?
-  thumbnailUrl  String?  // First page preview / thumbnail
+  thumbnailUrl  String?  // First page preview / thumbnail (legacy)
   fileName      String?
   fileSize      Int?
   prompt        String?  // if generated via xAI
@@ -15,7 +15,23 @@ model Artwork {
   reviewedBy    String?
 
   campaign Campaign @relation(fields: [campaignId], references: [id])
+  thumbnails ArtworkThumbnail[]
 
   @@index([status])
   @@index([campaignId])
+}
+
+model ArtworkThumbnail {
+  id         String   @id @default(cuid())
+  artworkId  String
+  page       Int      // 1-based page number
+  url        String
+  width      Int?
+  height     Int?
+  createdAt  DateTime @default(now())
+
+  artwork Artwork @relation(fields: [artworkId], references: [id])
+
+  @@unique([artworkId, page])
+  @@index([artworkId])
 }
