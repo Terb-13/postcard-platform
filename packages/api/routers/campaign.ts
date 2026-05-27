@@ -37,24 +37,61 @@ export const campaignRouter = router({
       orderBy: { createdAt: "desc" },
       include: {
         savedMap: true,
+        artwork: true,
         productionJobs: {
-          include: {
-            productionPartner: true,
-          },
+          include: { productionPartner: true },
           orderBy: { createdAt: "desc" },
-          take: 3, // show recent jobs for this campaign
+          take: 1,
         },
       },
     });
   }),
 
-  // Customer-facing action: Send this campaign to production
+  // Upload or replace artwork for a campaign
+  uploadArtwork: protectedProcedure
+    .input(
+      z.object({
+        campaignId: z.string(),
+        fileUrl: z.string(),
+        fileName: z.string(),
+        fileSize: z.number().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const campaign = await ctx.prisma.campaign.findUnique({
+        where: { id: input.campaignId },
+      });
+
+      if (!campaign || campaign.organizationId !== ctx.user.organizationId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Campaign not found" });
+      }
+
+      const artwork = await ctx.prisma.artwork.upsert({
+        where: { campaignId: input.campaignId },
+        update: {
+          fileUrl: input.fileUrl,
+          fileName: input.fileName,
+          fileSize: input.fileSize,
+          status: "UPLOADED",
+          prompt: null,
+        },
+        create: {
+          campaignId: input.campaignId,
+          fileUrl: input.fileUrl,
+          fileName: input.fileName,
+          fileSize: input.fileSize,
+          status: "UPLOADED",
+        },
+      });
+
+      return artwork;
+    }),
+
   sendToProduction: protectedProcedure
     .input(z.object({ campaignId: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const campaign = await ctx.prisma.campaign.findUnique({
         where: { id: input.campaignId },
-        include: { organization: true },
       });
 
       if (!campaign || campaign.organizationId !== ctx.user.organizationId) {
@@ -62,10 +99,9 @@ export const campaignRouter = router({
       }
 
       if (campaign.status === "IN_PRODUCTION") {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Campaign is already in production" });
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Already in production" });
       }
 
-      // Find first active partner for auto-assignment
       const firstActivePartner = await ctx.prisma.productionPartner.findFirst({
         where: { active: true },
         orderBy: { createdAt: "asc" },
@@ -76,12 +112,7 @@ export const campaignRouter = router({
           campaignId: campaign.id,
           productionPartnerId: firstActivePartner?.id || "",
           status: "RECEIVED",
-          payload: {
-            campaignName: campaign.name,
-            size: campaign.size,
-            quantity: campaign.quantity,
-            dropDate: campaign.dropDate,
-          },
+          payload: {},
         },
       });
 
@@ -90,20 +121,6 @@ export const campaignRouter = router({
         data: { status: "IN_PRODUCTION" },
       });
 
-      if (productionJob.id) {
-        await ctx.prisma.jobEvent.create({
-          data: {
-            productionJobId: productionJob.id,
-            status: "RECEIVED",
-            message: firstActivePartner
-              ? `Sent to production - auto-assigned to ${firstActivePartner.name}`
-              : "Sent to production - awaiting partner assignment by our team",
-          },
-        });
-      }
-
-      return { campaign, productionJob, assignedPartner: firstActivePartner };
+      return { success: true, productionJob };
     }),
-
-  // @cursor: Add getById, update, payment webhook trigger, etc.
 });
