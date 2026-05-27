@@ -2,36 +2,51 @@
 
 **Online postcards** — A modern platform for local businesses to design, target, and send postcards at scale.
 
-## Current Status (as of latest push)
+## Current Status
 
-**Core foundation in place:**
-- Prisma schema + client
-- Clerk authentication + organization sync via webhooks
+**Strong foundation in place (May 2026):**
+
+**Core**
+- Full Prisma schema with production tracking models
+- Clerk auth + organization support
 - tRPC with protected procedures
-- Working routers for Campaigns and Saved Maps (EDDM targeting)
-- xAI client ready for all generative features
-- Production Partner data models ready
+- xAI integration ready
+
+**Production & Operations (ERP-like layer)**
+- Production Partner REST API (jobs, status updates with tracking, proof upload)
+- Powerful internal `admin` tRPC router for operations team
+- Cursor-based pagination, search, filtering by partner/status/org
+- Job re-assignment to different print partners
+- Recent activity feed across all jobs
+- Full event history + tracking number support
+
+## Key Internal Capabilities (for your team)
+
+- See every order across all customers
+- Real-time view of which partner each job is with and current status
+- Filter, search, and paginate production jobs
+- Manually update status and attach tracking numbers
+- Re-assign jobs between partners
+- Recent activity feed (great for monitoring)
 
 ## Tech Stack
-- Next.js 15 (App Router)
+- Next.js 15 + tRPC
 - Prisma + PostgreSQL
-- Clerk (Auth + Organizations)
-- tRPC
-- xAI (all AI features)
-- MapLibre GL JS (planned for interactive map)
+- Clerk (Auth + Roles)
+- xAI (all generative AI)
 
-## Getting Started (Local)
+## Getting Started
 
-1. Clone the repo
-2. `cp .env.example .env.local`
-3. Add your keys (Clerk, xAI, Database, etc.)
-4. `npm install`
-5. `npm run db:push`
-6. `npm run dev`
+```bash
+cp .env.example .env.local
+npm install
+npm run db:push
+npm run dev
+```
 
 ## Next Priorities
-- Production Partner REST API endpoints
-- Interactive EDDM map tool
-- AI-assisted design & copy (via xAI)
-- Job routing to print partners
+- Internal operations dashboard UI (`/ops`)
+- Connect campaign creation to actual job routing
+- AI design/copy features
+- Better partner onboarding
 
