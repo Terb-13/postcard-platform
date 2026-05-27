@@ -112,13 +112,51 @@ These endpoints need to be reachable from external services:
 - Rate limiting on public endpoints
 - Production Partner self-service portal
 
+## 8. Vercel Deployment (Recommended)
+
+This project is designed to deploy easily to Vercel.
+
+### Recommended Vercel Settings
+
+1. Connect the GitHub repo in Vercel.
+2. Use these settings:
+   - **Framework Preset**: Next.js
+   - **Root Directory**: `.` (the monorepo root)
+   - **Build Command**: `turbo run build --filter=web`
+   - **Install Command**: `npm install`
+
+   (We have a `vercel.json` at the root that helps with this.)
+
+3. **Important**: You must set **all** the environment variables from section 2 above in Vercel (under Project Settings → Environment Variables).
+
+### Database for Vercel
+
+You cannot use a local Postgres. Use one of these:
+- **Neon** (recommended – generous free tier + Vercel integration)
+- **Supabase**
+- **Railway**
+
+After creating the database, copy the connection string into `DATABASE_URL`.
+
+### After Deploy
+
+- You will need to configure the following webhooks with your production domain:
+  - Stripe Webhook → `https://yourdomain.com/api/stripe/webhook`
+  - Clerk Webhook → `https://yourdomain.com/api/webhooks/clerk`
+  - Inngest → `https://yourdomain.com/api/inngest`
+
+- Run database migrations: `npx prisma db push` (or use a migration script in CI).
+
+- For production, strongly consider setting up a custom domain and verifying it in Resend for emails.
+
 ---
 
 **Current Status (as of latest build)**
 
 - Customer artwork upload + multi-page preview + rejection flow: **Functional**
 - Payment → ProductionJob creation + email: **Functional**
-- Ops dashboard (Jobs list, drawer, actions): **In progress** (being built next)
-- Production Partner API: Basic routes exist, needs hardening + auth
+- Ops dashboard (Jobs list, drawer, actions): **Functional** with analytics
+- Production Partner self-service portal: **Functional** with real file uploads
+- xAI integration: Basic concept generation live in campaign creation
 
-Run `pnpm install` (or npm/yarn) after pulling, then `npx prisma generate`.
+Run `npm install` after pulling, then `npx prisma generate`.
