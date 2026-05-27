@@ -1,27 +1,21 @@
-model Campaign {
-  id                      String   @id @default(cuid())
-  organizationId          String
-  savedMapId              String?
-  name                    String
-  status                  String   @default("DRAFT") // DRAFT, READY_FOR_PAYMENT, PAID, IN_PRODUCTION, COMPLETED
-  size                    String
-  quantity                Int
-  dropDate                DateTime?
-  totalPrice              Decimal  @db.Decimal(10, 2)
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
+model Artwork {
+  id            String   @id @default(cuid())
+  campaignId    String   @unique
+  status        String   @default("UPLOADED") // UPLOADED, UNDER_REVIEW, APPROVED, REJECTED
+  fileUrl       String?
+  thumbnailUrl  String?  // First page preview / thumbnail
+  fileName      String?
+  fileSize      Int?
+  prompt        String?  // if generated via xAI
+  versions      Json?    // history of versions
+  finalPdf      String?
+  notes         String?  // ops review notes
+  uploadedAt    DateTime @default(now())
+  reviewedAt    DateTime?
+  reviewedBy    String?
 
-  // Payment fields
-  stripeCheckoutSessionId String?
-  stripePaymentIntentId   String?
-  paidAt                  DateTime?
-  amountPaid              Decimal? @db.Decimal(10, 2)
+  campaign Campaign @relation(fields: [campaignId], references: [id])
 
-  organization   Organization    @relation(fields: [organizationId], references: [id])
-  savedMap       SavedMap?       @relation(fields: [savedMapId], references: [id])
-  artwork        Artwork?
-  productionJobs ProductionJob[]
-
-  @@index([organizationId, createdAt])
   @@index([status])
+  @@index([campaignId])
 }
