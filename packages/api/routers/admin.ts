@@ -20,15 +20,37 @@ const adminProcedure = protectedProcedure.use(async ({ ctx, next }) => {
 });
 
 export const adminRouter = router({
-  // List production partners (for filters + reassign)
+  // Production partners management
   partners: router({
     list: adminProcedure.query(async () => {
       return prisma.productionPartner.findMany({
-        where: { isActive: true },
-        orderBy: { name: "asc" },
-        select: { id: true, name: true, isActive: true },
+        orderBy: { createdAt: "desc" },
+        select: { id: true, name: true, isActive: true, apiKey: true, contactEmail: true, createdAt: true },
       });
     }),
+
+    create: adminProcedure
+      .input(
+        z.object({
+          name: z.string().min(1),
+          contactEmail: z.string().email().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        // Generate a secure API key for the partner
+        const apiKey = `ppk_${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
+
+        const partner = await prisma.productionPartner.create({
+          data: {
+            name: input.name,
+            contactEmail: input.contactEmail,
+            apiKey,
+            isActive: true,
+          },
+        });
+
+        return partner;
+      }),
   }),
 
   // Production Jobs (main ERP view)
@@ -118,7 +140,6 @@ export const adminRouter = router({
           },
         });
 
-        // If shipped, you could trigger jobShipped email here in the future
         return job;
       }),
 
@@ -126,25 +147,34 @@ export const adminRouter = router({
       .input(
         z.object({
           jobId: z.string(),
-          productionPartnerId: z.string(),
+          productionPartnerId: z.string().optional(),
+          newPartnerId: z.string().optional(),
           note: z.string().optional(),
+          reason: z.string().optional(),
         })
       )
       .mutation(async ({ input }) => {
+        const partnerId = input.productionPartnerId || input.newPartnerId;
+        if (!partnerId) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "partnerId is required" });
+        }
+
         const job = await prisma.productionJob.update({
           where: { id: input.jobId },
-          data: { productionPartnerId: input.productionPartnerId },
+          data: { productionPartnerId: partnerId },
         });
 
         const partner = await prisma.productionPartner.findUnique({
-          where: { id: input.productionPartnerId },
+          where: { id: partnerId },
         });
+
+        const noteText = input.note || input.reason || `Reassigned to ${partner?.name || "new partner"}`;
 
         await prisma.jobEvent.create({
           data: {
             productionJobId: job.id,
             status: job.status,
-            note: input.note || `Reassigned to ${partner?.name || "new partner"}`,
+            note: noteText,
             actor: "ops",
           },
         });
@@ -172,7 +202,40 @@ export const adminRouter = router({
       }),
   }),
 
-  // Artwork review actions (used from JobDetailDrawer)
+  // Compatibility alias for existing UI (StatusUpdateModal calls this)
+  updateJobStatus: adminProcedure
+    .input(
+      z.object({
+        jobId: z.string(),
+        status: z.enum(["RECEIVED", "SENT_TO_PROVIDER", "SHIPPED", "DELIVERED"]),
+        trackingNumber: z.string().optional(),
+        message: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const job = await prisma.productionJob.update({
+        where: { id: input.jobId },
+        data: {
+          status: input.status,
+          trackingNumber: input.trackingNumber,
+          shippedAt: input.status === "SHIPPED" ? new Date() : undefined,
+          deliveredAt: input.status === "DELIVERED" ? new Date() : undefined,
+        },
+      });
+
+      await prisma.jobEvent.create({
+        data: {
+          productionJobId: job.id,
+          status: input.status,
+          note: input.message || `Status updated to ${input.status}`,
+          actor: "ops",
+        },
+      });
+
+      return job;
+    }),
+
+  // Artwork review actions
   artwork: router({
     review: adminProcedure
       .input(
@@ -193,7 +256,6 @@ export const adminRouter = router({
           },
         });
 
-        // Log event on the job if one exists
         const job = await prisma.productionJob.findUnique({
           where: { campaignId: input.campaignId },
         });
@@ -208,8 +270,6 @@ export const adminRouter = router({
             },
           });
         }
-
-        // TODO: Trigger Resend artworkRejected email when status === "REJECTED"
 
         return artwork;
       }),
@@ -246,7 +306,6 @@ export const adminRouter = router({
         })
       )
       .query(async ({ input }) => {
-        // Basic implementation - expand later
         return prisma.campaign.findMany({
           take: input.limit + 1,
           cursor: input.cursor ? { id: input.cursor } : undefined,
