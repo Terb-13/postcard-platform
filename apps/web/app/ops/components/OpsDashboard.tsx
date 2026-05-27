@@ -7,7 +7,7 @@ import { JobsTable } from "./JobsTable";
 import { ActivityFeed } from "./ActivityFeed";
 import { StatusUpdateModal } from "./StatusUpdateModal";
 import { ReassignModal } from "./ReassignModal";
-import { JobDetailModal } from "./JobDetailModal";
+import { JobDetailDrawer } from "./JobDetailDrawer";
 
 import type { RouterOutputs } from "@/lib/trpc/client";
 
@@ -23,13 +23,16 @@ export function OpsDashboard() {
   const [filters, setFilters] = useState<Filters>({});
   const [cursor, setCursor] = useState<string | undefined>(undefined);
 
-  // Modal state
+  // Modal/Drawer state
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showReassignModal, setShowReassignModal] = useState(false);
-  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showDetailDrawer, setShowDetailDrawer] = useState(false);
 
-  // Queries
+  // Data for filters
+  const partnersQuery = trpc.admin.partners.list.useQuery();
+
+  // Main queries
   const jobsQuery = trpc.admin.productionJobs.list.useQuery(
     { ...filters, cursor, limit: 25 },
     { keepPreviousData: true }
@@ -49,18 +52,18 @@ export function OpsDashboard() {
   const openStatusModal = (job: Job) => {
     setSelectedJob(job);
     setShowStatusModal(true);
-    setShowDetailModal(false); // close detail if open
+    setShowDetailDrawer(false);
   };
 
   const openReassignModal = (job: Job) => {
     setSelectedJob(job);
     setShowReassignModal(true);
-    setShowDetailModal(false);
+    setShowDetailDrawer(false);
   };
 
   const openDetail = (job: Job) => {
     setSelectedJob(job);
-    setShowDetailModal(true);
+    setShowDetailDrawer(true);
   };
 
   const handleActionSuccess = () => {
@@ -68,18 +71,30 @@ export function OpsDashboard() {
     utils.admin.activity.recent.invalidate();
   };
 
+  // Simple stats calculation (client-side for now)
+  const shippedCount = jobs.filter((j) => j.status === "SHIPPED").length;
+  const deliveredCount = jobs.filter((j) => j.status === "DELIVERED").length;
+
   return (
     <div>
-      {/* Quick Stats */}
+      {/* Improved Stats Row */}
       <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
         <div className="rounded-lg border bg-white p-4">
           <div className="text-sm text-gray-500">Jobs Shown</div>
           <div className="text-2xl font-semibold text-gray-900">{jobs.length}</div>
         </div>
         <div className="rounded-lg border bg-white p-4">
-          <div className="text-sm text-gray-500">Current Filter</div>
+          <div className="text-sm text-gray-500">Shipped</div>
+          <div className="text-2xl font-semibold text-gray-900">{shippedCount}</div>
+        </div>
+        <div className="rounded-lg border bg-white p-4">
+          <div className="text-sm text-gray-500">Delivered</div>
+          <div className="text-2xl font-semibold text-gray-900">{deliveredCount}</div>
+        </div>
+        <div className="rounded-lg border bg-white p-4">
+          <div className="text-sm text-gray-500">Active Partners</div>
           <div className="text-2xl font-semibold text-gray-900">
-            {filters.status || "All statuses"}
+            {partnersQuery.data?.filter((p) => p.active).length ?? "..."}
           </div>
         </div>
       </div>
@@ -100,7 +115,7 @@ export function OpsDashboard() {
             </button>
           </div>
 
-          {/* Filters */}
+          {/* Filters - now includes Partner dropdown */}
           <div className="mb-4 flex flex-wrap gap-3">
             <input
               type="text"
@@ -121,6 +136,21 @@ export function OpsDashboard() {
               <option value="SHIPPED">Shipped</option>
               <option value="DELIVERED">Delivered</option>
             </select>
+
+            {/* New: Partner Filter */}
+            <select
+              className="rounded border px-3 py-2 text-sm min-w-[160px]"
+              value={filters.partnerId || ""}
+              onChange={(e) => handleFilterChange({ partnerId: e.target.value || undefined })}
+              disabled={partnersQuery.isLoading}
+            >
+              <option value="">All Partners</option>
+              {partnersQuery.data?.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           <JobsTable
@@ -132,7 +162,7 @@ export function OpsDashboard() {
             hasMore={!!nextCursor}
             onUpdateStatus={openStatusModal}
             onReassign={openReassignModal}
-            onRowClick={openDetail} // New: clicking row opens detail
+            onRowClick={openDetail}
           />
         </div>
 
@@ -161,10 +191,11 @@ export function OpsDashboard() {
         onSuccess={handleActionSuccess}
       />
 
-      <JobDetailModal
+      {/* New: Job Detail Drawer instead of modal */}
+      <JobDetailDrawer
         job={selectedJob}
-        isOpen={showDetailModal}
-        onClose={() => setShowDetailModal(false)}
+        isOpen={showDetailDrawer}
+        onClose={() => setShowDetailDrawer(false)}
         onUpdateStatus={openStatusModal}
         onReassign={openReassignModal}
       />
