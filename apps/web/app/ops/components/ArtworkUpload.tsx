@@ -15,20 +15,39 @@ export function ArtworkUpload({ campaignId, onUploadComplete }: ArtworkUploadPro
     },
   });
 
+  const handleUploadComplete = async (res: any[]) => {
+    if (!res?.[0]) return;
+
+    const file = res[0];
+    let pageCount: number | undefined;
+
+    // Try to detect page count client-side for immediate feedback
+    try {
+      const pdfjsLib = await import("pdfjs-dist");
+      // @ts-ignore
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+
+      const loadingTask = pdfjsLib.getDocument(file.url);
+      const pdf = await loadingTask.promise;
+      pageCount = pdf.numPages;
+    } catch (e) {
+      console.warn("Could not detect PDF page count client-side", e);
+    }
+
+    uploadArtwork.mutate({
+      campaignId,
+      fileUrl: file.url,
+      fileName: file.name,
+      fileSize: file.size,
+      pageCount,
+    });
+  };
+
   return (
     <div>
       <UploadButton
         endpoint="artworkUploader"
-        onClientUploadComplete={(res) => {
-          if (res?.[0]) {
-            uploadArtwork.mutate({
-              campaignId,
-              fileUrl: res[0].url,
-              fileName: res[0].name,
-              fileSize: res[0].size,
-            });
-          }
-        }}
+        onClientUploadComplete={handleUploadComplete}
         onUploadError={(error: Error) => {
           alert(`Upload failed: ${error.message}`);
         }}
