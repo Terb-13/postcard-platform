@@ -55,4 +55,20 @@ export const emailTemplates = {
       </div>
     `,
   }),
+
+  artworkRejected: (campaignName: string, notes?: string) => ({
+    subject: `Action needed: Artwork for ${campaignName} needs revision`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Artwork Needs Revision</h2>
+        <p>Our team reviewed the artwork for <strong>${campaignName}</strong> and found it needs some changes before we can proceed to print.</p>
+        ${notes ? `<p><strong>Notes from our team:</strong><br>${notes}</p>` : ''}
+        <p>Please log into your Postcard Platform account, update your artwork, and resubmit.</p>
+        <p style="margin-top: 24px; color: #666; font-size: 14px;">
+          Thanks,<br>
+          The Postcard Platform Team
+        </p>
+      </div>
+    `,
+  }),
 };
