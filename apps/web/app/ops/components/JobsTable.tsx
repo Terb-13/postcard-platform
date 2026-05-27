@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import type { RouterOutputs } from "@/lib/trpc/client";
 
 type JobWithDetails = RouterOutputs["admin"]["productionJobs"]["list"]["items"][number];
@@ -12,6 +11,7 @@ interface JobsTableProps {
   hasMore: boolean;
   onUpdateStatus: (job: JobWithDetails) => void;
   onReassign: (job: JobWithDetails) => void;
+  onRowClick?: (job: JobWithDetails) => void; // New: for opening detail view
 }
 
 export function JobsTable({
@@ -21,6 +21,7 @@ export function JobsTable({
   hasMore,
   onUpdateStatus,
   onReassign,
+  onRowClick,
 }: JobsTableProps) {
   if (isLoading && jobs.length === 0) {
     return <div className="py-8 text-center text-gray-500">Loading jobs...</div>;
@@ -45,7 +46,11 @@ export function JobsTable({
         </thead>
         <tbody className="divide-y divide-gray-200">
           {jobs.map((job) => (
-            <tr key={job.id} className="hover:bg-gray-50">
+            <tr
+              key={job.id}
+              className="hover:bg-gray-50 cursor-pointer"
+              onClick={() => onRowClick?.(job)} // Click row for detail
+            >
               <td className="px-4 py-3 text-sm">
                 <div className="font-medium text-gray-900">
                   {job.campaign.name}
@@ -68,7 +73,7 @@ export function JobsTable({
               <td className="px-4 py-3 text-sm text-gray-500">
                 {new Date(job.createdAt).toLocaleDateString()}
               </td>
-              <td className="px-4 py-3 text-right">
+              <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}> {/* Prevent row click on actions */}
                 <div className="flex justify-end gap-2">
                   <button
                     onClick={() => onUpdateStatus(job)}
