@@ -94,7 +94,7 @@ export function OpsDashboard() {
         <div className="rounded-lg border bg-white p-4">
           <div className="text-sm text-gray-500">Active Partners</div>
           <div className="text-2xl font-semibold text-gray-900">
-            {partnersQuery.data?.filter((p) => p.active).length ?? "..."}
+            {partnersQuery.data?.filter((p) => p.isActive).length ?? "..."}
           </div>
         </div>
       </div>
