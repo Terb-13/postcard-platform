@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { trpc } from "@/lib/trpc/client";
 import type { RouterOutputs } from "@/lib/trpc/client";
 
 type Job = RouterOutputs["admin"]["productionJobs"]["list"]["items"][number];
@@ -10,7 +12,10 @@ interface JobDetailDrawerProps {
   onClose: () => void;
   onUpdateStatus: (job: Job) => void;
   onReassign: (job: Job) => void;
+  onRefresh?: () => void;
 }
+
+const QUICK_STATUSES = ["SENT_TO_PROVIDER", "SHIPPED", "DELIVERED"] as const;
 
 export function JobDetailDrawer({
   job,
@@ -18,10 +23,33 @@ export function JobDetailDrawer({
   onClose,
   onUpdateStatus,
   onReassign,
+  onRefresh,
 }: JobDetailDrawerProps) {
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const updateStatusMutation = trpc.admin.updateJobStatus.useMutation({
+    onSuccess: () => {
+      onRefresh?.();
+    },
+  });
+
   if (!job) return null;
 
   const events = job.events ?? [];
+
+  const handleQuickStatus = async (newStatus: string) => {
+    if (!confirm(`Change status to ${newStatus}?`)) return;
+
+    setIsUpdating(true);
+    try {
+      await updateStatusMutation.mutateAsync({
+        jobId: job.id,
+        status: newStatus as any,
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   return (
     <>
@@ -68,7 +96,7 @@ export function JobDetailDrawer({
               </div>
             </div>
 
-            {/* Proof Section - New */}
+            {/* Proof Section */}
             <div className="mb-6">
               <div className="text-sm font-medium text-gray-700 mb-2">Proof</div>
               {job.proofUrl ? (
@@ -85,7 +113,27 @@ export function JobDetailDrawer({
               )}
             </div>
 
-            {/* Quick Actions */}
+            {/* Quick Status Buttons (New - direct actions in drawer) */}
+            <div className="mb-6">
+              <div className="text-sm font-medium text-gray-700 mb-2">Quick Status Update</div>
+              <div className="flex flex-wrap gap-2">
+                {QUICK_STATUSES.map((status) => (
+                  <button
+                    key={status}
+                    onClick={() => handleQuickStatus(status)}
+                    disabled={isUpdating || job.status === status}
+                    className="rounded border px-3 py-1.5 text-sm hover:bg-gray-100 disabled:opacity-50"
+                  >
+                    Mark as {status.replace("_", " ")}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                (Tracking number can be added via full Status action)
+              </p>
+            </div>
+
+            {/* Full Actions */}
             <div className="mb-6">
               <div className="text-sm font-medium text-gray-700 mb-2">Actions</div>
               <div className="flex flex-wrap gap-2">
@@ -93,7 +141,7 @@ export function JobDetailDrawer({
                   onClick={() => onUpdateStatus(job)}
                   className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
                 >
-                  Update Status
+                  Full Status Update
                 </button>
                 <button
                   onClick={() => onReassign(job)}
