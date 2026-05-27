@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     where: { apiKey },
   });
 
-  if (!partner || !partner.active) {
+  if (!partner || !partner.isActive) {
     return NextResponse.json({ error: "Invalid or inactive partner" }, { status: 403 });
   }
 
