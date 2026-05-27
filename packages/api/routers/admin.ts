@@ -368,6 +368,20 @@ export const adminRouter = router({
       }),
   }),
 
+  // Simple dashboard stats
+  dashboard: router({
+    stats: adminProcedure.query(async () => {
+      const [totalJobs, shipped, delivered, activePartners] = await Promise.all([
+        prisma.productionJob.count(),
+        prisma.productionJob.count({ where: { status: "SHIPPED" } }),
+        prisma.productionJob.count({ where: { status: "DELIVERED" } }),
+        prisma.productionPartner.count({ where: { isActive: true } }),
+      ]);
+
+      return { totalJobs, shipped, delivered, activePartners };
+    }),
+  }),
+
   // Campaigns (for ops overview if needed)
   campaigns: router({
     listAll: adminProcedure
