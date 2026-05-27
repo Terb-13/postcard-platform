@@ -1,0 +1,9 @@
+{
+  "name": "@postcard-platform/ai",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./xai.ts",
+  "dependencies": {
+    "openai": "^4.0.0"
+  }
+}
