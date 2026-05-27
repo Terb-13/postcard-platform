@@ -11,11 +11,25 @@
                       <span className="text-gray-500">Status:</span> {campaign.stripePaymentIntentId ? "Paid" : "Ready for Payment"}
                     </div>
                   )}
+
+                  {/* Artwork status with rejection handling */}
+                  <div>
+                    Artwork: {artwork ? (
+                      <>
+                        <span className={`font-medium ${artwork.status === "APPROVED" ? "text-green-600" : artwork.status === "REJECTED" ? "text-red-600" : "text-orange-600"}`}>
+                          {artwork.status}
+                        </span>
+                        {artwork.status === "REJECTED" && artwork.notes && (
+                          <div className="text-xs text-red-600 mt-0.5">Reason: {artwork.notes}</div>
+                        )}
+                      </>
+                    ) : <span className="text-gray-500">Not uploaded</span>}
+                  </div>
                 </div>
 
                 {!isInProduction && (
                   <>
-                    {!campaign.artwork && (
+                    {( !campaign.artwork || artwork?.status === "REJECTED" ) && (
                       <div>
                         <ArtworkUpload campaignId={campaign.id} onUploadComplete={refetch} />
                       </div>
