@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../trpc";
 import { TRPCError } from "@trpc/server";
+import { stripe } from "../lib/stripe";
 
 export const campaignRouter = router({
   create: protectedProcedure
@@ -47,47 +48,8 @@ export const campaignRouter = router({
     });
   }),
 
-  // Upload or replace artwork for a campaign
-  uploadArtwork: protectedProcedure
-    .input(
-      z.object({
-        campaignId: z.string(),
-        fileUrl: z.string(),
-        fileName: z.string(),
-        fileSize: z.number().optional(),
-      })
-    )
-    .mutation(async ({ input, ctx }) => {
-      const campaign = await ctx.prisma.campaign.findUnique({
-        where: { id: input.campaignId },
-      });
-
-      if (!campaign || campaign.organizationId !== ctx.user.organizationId) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Campaign not found" });
-      }
-
-      const artwork = await ctx.prisma.artwork.upsert({
-        where: { campaignId: input.campaignId },
-        update: {
-          fileUrl: input.fileUrl,
-          fileName: input.fileName,
-          fileSize: input.fileSize,
-          status: "UPLOADED",
-          prompt: null,
-        },
-        create: {
-          campaignId: input.campaignId,
-          fileUrl: input.fileUrl,
-          fileName: input.fileName,
-          fileSize: input.fileSize,
-          status: "UPLOADED",
-        },
-      });
-
-      return artwork;
-    }),
-
-  sendToProduction: protectedProcedure
+  // Create Stripe Checkout Session for sending to production
+  createCheckoutSession: protectedProcedure
     .input(z.object({ campaignId: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const campaign = await ctx.prisma.campaign.findUnique({
@@ -98,10 +60,92 @@ export const campaignRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Campaign not found" });
       }
 
-      if (campaign.status === "IN_PRODUCTION") {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Already in production" });
+      if (campaign.status === "IN_PRODUCTION" || campaign.stripePaymentIntentId) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Campaign already paid or in production" });
       }
 
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        mode: "payment",
+        line_items: [
+          {
+            price_data: {
+              currency: "usd",
+              product_data: {
+                name: `Production for: ${campaign.name}`,
+                description: `${campaign.size} postcard × ${campaign.quantity}`,
+              },
+              unit_amount: Math.round(Number(campaign.totalPrice) * 100), // in cents
+            },
+            quantity: 1,
+          },
+        ],
+        success_url: `${process.env.NEXT_PUBLIC_APP_URL}/production?success=true&campaignId=${campaign.id}`,
+        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/campaigns?canceled=true`,
+        metadata: {
+          campaignId: campaign.id,
+          userId: ctx.user.id,
+        },
+      });
+
+      await ctx.prisma.campaign.update({
+        where: { id: campaign.id },
+        data: {
+          stripeCheckoutSessionId: session.id,
+          status: "READY_FOR_PAYMENT",
+        },
+      });
+
+      return { checkoutUrl: session.url };
+    }),
+
+  // This will be called by the Stripe webhook after successful payment
+  markCampaignAsPaid: protectedProcedure
+    .input(
+      z.object({
+        campaignId: z.string(),
+        paymentIntentId: z.string(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const campaign = await ctx.prisma.campaign.findUnique({
+        where: { id: input.campaignId },
+      });
+
+      if (!campaign) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      await ctx.prisma.campaign.update({
+        where: { id: input.campaignId },
+        data: {
+          status: "PAID",
+          stripePaymentIntentId: input.paymentIntentId,
+          paidAt: new Date(),
+          amountPaid: campaign.totalPrice,
+        },
+      });
+
+      return { success: true };
+    }),
+
+  sendToProduction: protectedProcedure
+    .input(z.object({ campaignId: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      // This can remain for ops/manual use, or we can deprecate it in favor of the payment flow
+      const campaign = await ctx.prisma.campaign.findUnique({
+        where: { id: input.campaignId },
+      });
+
+      if (!campaign || campaign.organizationId !== ctx.user.organizationId) {
+        throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      if (campaign.status !== "PAID") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Campaign must be paid before sending to production" });
+      }
+
+      // Auto-assign logic (same as before)
       const firstActivePartner = await ctx.prisma.productionPartner.findFirst({
         where: { active: true },
         orderBy: { createdAt: "asc" },
