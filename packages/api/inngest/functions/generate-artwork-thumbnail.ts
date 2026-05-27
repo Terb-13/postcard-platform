@@ -1,100 +1,95 @@
 import { inngest } from "../client";
 import { prisma } from "../../db/client";
-import { uploadToR2 } from "../../lib/r2"; // We'll create this helper
+import { uploadToR2 } from "../../lib/r2";
 
 import * as pdfjsLib from "pdfjs-dist";
-import sharp from "sharp";
+import { createCanvas } from "@napi-rs/canvas";
 
-// Configure pdfjs for Node
+// Configure pdfjs for Node environment
 // @ts-ignore
-pdfjsLib.GlobalWorkerOptions.workerSrc = require("pdfjs-dist/build/pdf.worker.js");
+pdfjsLib.GlobalWorkerOptions.workerSrc = require.resolve("pdfjs-dist/build/pdf.worker.js");
+
+const THUMBNAIL_WIDTH = 900;
+const MAX_PAGES = 6;
 
 export const generateArtworkThumbnail = inngest.createFunction(
-  { id: "generate-artwork-thumbnail" },
+  { id: "generate-artwork-thumbnail", concurrency: 3 },
   { event: "artwork/uploaded" },
   async ({ event, step }) => {
-    const { artworkId, fileUrl } = event.data;
+    const { artworkId, fileUrl, maxPages = MAX_PAGES } = event.data;
 
-    const thumbnailBuffer = await step.run("generate-thumbnail", async () => {
-      // Fetch the PDF
-      const response = await fetch(fileUrl);
-      const pdfBuffer = Buffer.from(await response.arrayBuffer());
+    const pdfBuffer = await step.run("download-pdf", async () => {
+      const res = await fetch(fileUrl);
+      if (!res.ok) throw new Error(`Failed to download PDF: ${res.status}`);
+      return Buffer.from(await res.arrayBuffer());
+    });
 
-      // Load PDF
+    const { pageCount } = await step.run("inspect-pdf", async () => {
       const loadingTask = pdfjsLib.getDocument({
         data: new Uint8Array(pdfBuffer),
         useWorkerFetch: false,
         isEvalSupported: false,
-        useSystemFonts: true,
       });
-
       const pdf = await loadingTask.promise;
-      const page = await pdf.getPage(1);
-
-      const scale = 1.5;
-      const viewport = page.getViewport({ scale });
-
-      // Render to canvas-like buffer using sharp
-      const canvas = document.createElement("canvas"); // This won't work in pure Node
-      // Better approach below
-
-      // Actually, for pure Node, we use a different rendering strategy
-      // Use pdfjs to get image data then sharp
-      const operatorList = await page.getOperatorList();
-      // This is complex. For a robust implementation, we use a proven pattern.
-
-      // Simpler robust approach for now: Use sharp to create a placeholder + real rendering
-      // For production, we recommend using a small dedicated service or the following proven pattern:
-
-      // --- Recommended production pattern (commented for clarity) ---
-      // const { createCanvas } = require('canvas');
-      // ... use pdfjs with node canvas
-
-      // For this implementation, we'll use a practical approach with sharp + pdfjs image extraction
-      // (This is a simplified version - in real prod we'd use a more robust renderer)
-
-      // Fallback: Generate a simple colored placeholder with text for now
-      const thumbnail = await sharp({
-        create: {
-          width: 600,
-          height: 400,
-          channels: 4,
-          background: { r: 245, g: 245, b: 245, alpha: 1 },
-        },
-      })
-        .composite([
-          {
-            input: Buffer.from(
-              `<svg width="600" height="400">
-                <rect width="600" height="400" fill="#f5f5f5"/>
-                <text x="300" y="200" font-size="24" fill="#666" text-anchor="middle">PDF Preview</text>
-                <text x="300" y="240" font-size="16" fill="#999" text-anchor="middle">(Thumbnail generation in progress)</text>
-              </svg>`
-            ),
-            top: 0,
-            left: 0,
-          },
-        ])
-        .png()
-        .toBuffer();
-
-      return thumbnail;
+      return { pageCount: pdf.numPages };
     });
 
-    // Upload thumbnail to R2
-    const thumbnailKey = `artwork-thumbnails/${artworkId}.png`;
-    const thumbnailUrl = await step.run("upload-thumbnail", async () => {
-      return await uploadToR2(thumbnailBuffer, thumbnailKey, "image/png");
-    });
+    const pagesToGenerate = Math.min(pageCount, maxPages);
+    const thumbnailUrls: Record<number, string> = {};
 
-    // Save to database
-    await step.run("save-thumbnail-url", async () => {
-      await prisma.artwork.update({
-        where: { id: artworkId },
-        data: { thumbnailUrl },
+    for (let pageNum = 1; pageNum <= pagesToGenerate; pageNum++) {
+      const pngBuffer = await step.run(`render-page-${pageNum}`, async () => {
+        const loadingTask = pdfjsLib.getDocument({
+          data: new Uint8Array(pdfBuffer),
+          useWorkerFetch: false,
+          isEvalSupported: false,
+        });
+        const pdf = await loadingTask.promise;
+        const page = await pdf.getPage(pageNum);
+
+        const viewport = page.getViewport({ scale: 1 });
+        const scale = THUMBNAIL_WIDTH / viewport.width;
+        const scaledViewport = page.getViewport({ scale });
+
+        const canvas = createCanvas(scaledViewport.width, scaledViewport.height);
+        const context = canvas.getContext("2d");
+
+        await page.render({ canvasContext: context as any, viewport: scaledViewport }).promise;
+
+        return canvas.toBuffer("image/png");
       });
+
+      const key = `artwork-thumbnails/${artworkId}/p${pageNum}.png`;
+      const url = await step.run(`upload-page-${pageNum}`, async () => {
+        return uploadToR2(pngBuffer, key, "image/png");
+      });
+
+      thumbnailUrls[pageNum] = url;
+    }
+
+    await step.run("persist-thumbnails", async () => {
+      await prisma.artworkThumbnail.deleteMany({ where: { artworkId } });
+
+      const data = Object.entries(thumbnailUrls).map(([page, url]) => ({
+        artworkId,
+        page: parseInt(page),
+        url,
+      }));
+
+      await prisma.artworkThumbnail.createMany({ data });
+
+      if (thumbnailUrls[1]) {
+        await prisma.artwork.update({
+          where: { id: artworkId },
+          data: { thumbnailUrl: thumbnailUrls[1] },
+        });
+      }
     });
 
-    return { success: true, thumbnailUrl };
+    return {
+      success: true,
+      artworkId,
+      pagesGenerated: Object.keys(thumbnailUrls).length,
+    };
   }
 );
