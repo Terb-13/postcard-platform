@@ -4,6 +4,7 @@ model Artwork {
   status        String   @default("UPLOADED") // UPLOADED, UNDER_REVIEW, APPROVED, REJECTED
   fileUrl       String?
   thumbnailUrl  String?  // First page preview / thumbnail (legacy)
+  pageCount     Int?     // Total pages detected on upload
   fileName      String?
   fileSize      Int?
   prompt        String?  // if generated via xAI
@@ -19,19 +20,4 @@ model Artwork {
 
   @@index([status])
   @@index([campaignId])
-}
-
-model ArtworkThumbnail {
-  id         String   @id @default(cuid())
-  artworkId  String
-  page       Int      // 1-based page number
-  url        String
-  width      Int?
-  height     Int?
-  createdAt  DateTime @default(now())
-
-  artwork Artwork @relation(fields: [artworkId], references: [id])
-
-  @@unique([artworkId, page])
-  @@index([artworkId])
 }
