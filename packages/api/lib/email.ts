@@ -57,6 +57,18 @@ export const emailTemplates = {
     `,
   }),
 
+  proofReviewed: (campaignName: string, approved: boolean, notes?: string) => ({
+    subject: `Proof ${approved ? "Approved" : "Needs Changes"} for ${campaignName}`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Proof ${approved ? "Approved" : "Needs Revision"}</h2>
+        <p>The proof for your campaign <strong>${campaignName}</strong> has been ${approved ? "approved" : "reviewed and needs changes"}.</p>
+        ${notes ? `<p><strong>Notes:</strong> ${notes}</p>` : ""}
+        <p>You can track progress in your dashboard.</p>
+      </div>
+    `,
+  }),
+
   artworkRejected: (campaignName: string, notes?: string) => ({
     subject: `Action needed: Artwork for ${campaignName} needs revision`,
     html: `
