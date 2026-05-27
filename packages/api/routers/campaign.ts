@@ -38,15 +38,18 @@ export const campaignRouter = router({
       include: {
         savedMap: true,
         productionJobs: {
-          include: { productionPartner: true },
-          take: 1,
+          include: {
+            productionPartner: true,
+          },
+          orderBy: { createdAt: "desc" },
+          take: 3, // show recent jobs for this campaign
         },
       },
     });
   }),
 
-  // Finalize campaign and create ProductionJob (with auto-assign to first active partner)
-  finalizeForProduction: protectedProcedure
+  // Customer-facing action: Send this campaign to production
+  sendToProduction: protectedProcedure
     .input(z.object({ campaignId: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const campaign = await ctx.prisma.campaign.findUnique({
@@ -58,6 +61,10 @@ export const campaignRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Campaign not found" });
       }
 
+      if (campaign.status === "IN_PRODUCTION") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Campaign is already in production" });
+      }
+
       // Find first active partner for auto-assignment
       const firstActivePartner = await ctx.prisma.productionPartner.findFirst({
         where: { active: true },
@@ -67,7 +74,7 @@ export const campaignRouter = router({
       const productionJob = await ctx.prisma.productionJob.create({
         data: {
           campaignId: campaign.id,
-          productionPartnerId: firstActivePartner?.id || "", // Auto-assign if possible
+          productionPartnerId: firstActivePartner?.id || "",
           status: "RECEIVED",
           payload: {
             campaignName: campaign.name,
@@ -83,15 +90,14 @@ export const campaignRouter = router({
         data: { status: "IN_PRODUCTION" },
       });
 
-      // Log initial event
       if (productionJob.id) {
         await ctx.prisma.jobEvent.create({
           data: {
             productionJobId: productionJob.id,
             status: "RECEIVED",
-            message: firstActivePartner 
-              ? `Auto-assigned to ${firstActivePartner.name}` 
-              : "Created - awaiting partner assignment",
+            message: firstActivePartner
+              ? `Sent to production - auto-assigned to ${firstActivePartner.name}`
+              : "Sent to production - awaiting partner assignment by our team",
           },
         });
       }
@@ -99,5 +105,5 @@ export const campaignRouter = router({
       return { campaign, productionJob, assignedPartner: firstActivePartner };
     }),
 
-  // @cursor: Add getById, update, full trigger to specific partner, payment webhook trigger, etc.
+  // @cursor: Add getById, update, payment webhook trigger, etc.
 });
