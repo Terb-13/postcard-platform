@@ -8,6 +8,7 @@ import { ActivityFeed } from "./ActivityFeed";
 import { StatusUpdateModal } from "./StatusUpdateModal";
 import { ReassignModal } from "./ReassignModal";
 import { JobDetailDrawer } from "./JobDetailDrawer";
+import { CreatePartnerModal } from "./CreatePartnerModal";
 
 import type { RouterOutputs } from "@/lib/trpc/client";
 
@@ -28,6 +29,7 @@ export function OpsDashboard() {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showReassignModal, setShowReassignModal] = useState(false);
   const [showDetailDrawer, setShowDetailDrawer] = useState(false);
+  const [showCreatePartnerModal, setShowCreatePartnerModal] = useState(false);
 
   // Data for filters
   const partnersQuery = trpc.admin.partners.list.useQuery();
@@ -69,6 +71,7 @@ export function OpsDashboard() {
   const handleActionSuccess = () => {
     utils.admin.productionJobs.list.invalidate();
     utils.admin.activity.recent.invalidate();
+    utils.admin.partners.list.invalidate();
   };
 
   // Simple stats calculation (client-side for now)
@@ -104,15 +107,23 @@ export function OpsDashboard() {
         <div className="lg:col-span-2">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-xl font-semibold">Production Jobs</h2>
-            <button
-              onClick={() => {
-                setFilters({});
-                setCursor(undefined);
-              }}
-              className="text-sm text-blue-600 hover:underline"
-            >
-              Clear filters
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowCreatePartnerModal(true)}
+                className="text-sm rounded bg-emerald-600 px-3 py-1.5 text-white hover:bg-emerald-700"
+              >
+                + Add Partner
+              </button>
+              <button
+                onClick={() => {
+                  setFilters({});
+                  setCursor(undefined);
+                }}
+                className="text-sm text-blue-600 hover:underline"
+              >
+                Clear filters
+              </button>
+            </div>
           </div>
 
           {/* Filters - now includes Partner dropdown */}
@@ -198,6 +209,12 @@ export function OpsDashboard() {
         onClose={() => setShowDetailDrawer(false)}
         onUpdateStatus={openStatusModal}
         onReassign={openReassignModal}
+      />
+
+      <CreatePartnerModal
+        isOpen={showCreatePartnerModal}
+        onClose={() => setShowCreatePartnerModal(false)}
+        onSuccess={handleActionSuccess}
       />
     </div>
   );
