@@ -4,6 +4,7 @@ const isProtectedRoute = createRouteMatcher([
   "/dashboard(.*)",
   "/campaigns(.*)",
   "/maps(.*)",
+  "/ops(.*)",           // Internal operations / ERP section
   "/api/trpc(.*)",
 ]);
 
