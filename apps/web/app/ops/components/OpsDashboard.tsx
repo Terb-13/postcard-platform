@@ -40,6 +40,7 @@ export function OpsDashboard() {
     { keepPreviousData: true }
   );
   const activityQuery = trpc.admin.activity.recent.useQuery({ limit: 15 });
+  const statsQuery = trpc.admin.dashboard.stats.useQuery();
 
   const utils = trpc.useUtils();
 
@@ -72,11 +73,8 @@ export function OpsDashboard() {
     utils.admin.productionJobs.list.invalidate();
     utils.admin.activity.recent.invalidate();
     utils.admin.partners.list.invalidate();
+    utils.admin.dashboard.stats.invalidate();
   };
-
-  // Simple stats calculation (client-side for now)
-  const shippedCount = jobs.filter((j) => j.status === "SHIPPED").length;
-  const deliveredCount = jobs.filter((j) => j.status === "DELIVERED").length;
 
   return (
     <div>
@@ -88,16 +86,16 @@ export function OpsDashboard() {
         </div>
         <div className="rounded-lg border bg-white p-4">
           <div className="text-sm text-gray-500">Shipped</div>
-          <div className="text-2xl font-semibold text-gray-900">{shippedCount}</div>
+          <div className="text-2xl font-semibold text-gray-900">{statsQuery.data?.shipped ?? "—"}</div>
         </div>
         <div className="rounded-lg border bg-white p-4">
           <div className="text-sm text-gray-500">Delivered</div>
-          <div className="text-2xl font-semibold text-gray-900">{deliveredCount}</div>
+          <div className="text-2xl font-semibold text-gray-900">{statsQuery.data?.delivered ?? "—"}</div>
         </div>
         <div className="rounded-lg border bg-white p-4">
           <div className="text-sm text-gray-500">Active Partners</div>
           <div className="text-2xl font-semibold text-gray-900">
-            {partnersQuery.data?.filter((p) => p.isActive).length ?? "..."}
+            {statsQuery.data?.activePartners ?? partnersQuery.data?.filter((p) => p.isActive).length ?? "..."}
           </div>
         </div>
       </div>
