@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/packages/api/lib/stripe";
 import { prisma } from "@/lib/db";
+import { sendEmail, emailTemplates } from "@/packages/api/lib/email";
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
@@ -26,10 +27,10 @@ export async function POST(req: NextRequest) {
     if (campaignId) {
       const campaign = await prisma.campaign.findUnique({
         where: { id: campaignId },
+        include: { organization: true },
       });
 
       if (campaign) {
-        // Mark as paid
         await prisma.campaign.update({
           where: { id: campaignId },
           data: {
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
           },
         });
 
-        // Auto-create ProductionJob after successful payment
+        // Auto-create ProductionJob
         const firstActivePartner = await prisma.productionPartner.findFirst({
           where: { active: true },
           orderBy: { createdAt: "asc" },
@@ -65,7 +66,6 @@ export async function POST(req: NextRequest) {
           data: { status: "IN_PRODUCTION" },
         });
 
-        // Log the creation
         if (productionJob.id) {
           await prisma.jobEvent.create({
             data: {
@@ -75,6 +75,24 @@ export async function POST(req: NextRequest) {
                 ? `Auto-created after payment - assigned to ${firstActivePartner.name}`
                 : "Auto-created after payment - awaiting partner assignment",
             },
+          });
+        }
+
+        // Send payment confirmation email
+        const orgUser = await prisma.user.findFirst({
+          where: { organizationId: campaign.organizationId },
+          orderBy: { createdAt: "asc" },
+        });
+
+        if (orgUser?.email) {
+          const template = emailTemplates.paymentReceived(
+            campaign.name,
+            (session.amount_total || 0) / 100
+          );
+          await sendEmail({
+            to: orgUser.email,
+            subject: template.subject,
+            html: template.html,
           });
         }
 
