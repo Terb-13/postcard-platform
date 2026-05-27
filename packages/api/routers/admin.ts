@@ -220,6 +220,38 @@ export const adminRouter = router({
         });
         return event;
       }),
+
+    // Proof review
+    reviewProof: adminProcedure
+      .input(
+        z.object({
+          jobId: z.string(),
+          approved: z.boolean(),
+          note: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        const data: any = {
+          proofApprovedAt: input.approved ? new Date() : null,
+          proofApprovedBy: input.approved ? ctx.user.id : null,
+        };
+
+        const job = await prisma.productionJob.update({
+          where: { id: input.jobId },
+          data,
+        });
+
+        await prisma.jobEvent.create({
+          data: {
+            productionJobId: job.id,
+            status: input.approved ? "PROOF_APPROVED" : "PROOF_REJECTED",
+            note: input.note || (input.approved ? "Proof approved" : "Proof rejected - needs revision"),
+            actor: "ops",
+          },
+        });
+
+        return job;
+      }),
   }),
 
   // Compatibility alias for existing UI (StatusUpdateModal calls this)
