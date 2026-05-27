@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { RouterOutputs } from "@/lib/trpc/client";
 
 type JobWithDetails = RouterOutputs["admin"]["productionJobs"]["list"]["items"][number];
@@ -9,9 +10,18 @@ interface JobsTableProps {
   isLoading: boolean;
   onLoadMore: () => void;
   hasMore: boolean;
+  onUpdateStatus: (job: JobWithDetails) => void;
+  onReassign: (job: JobWithDetails) => void;
 }
 
-export function JobsTable({ jobs, isLoading, onLoadMore, hasMore }: JobsTableProps) {
+export function JobsTable({
+  jobs,
+  isLoading,
+  onLoadMore,
+  hasMore,
+  onUpdateStatus,
+  onReassign,
+}: JobsTableProps) {
   if (isLoading && jobs.length === 0) {
     return <div className="py-8 text-center text-gray-500">Loading jobs...</div>;
   }
@@ -30,6 +40,7 @@ export function JobsTable({ jobs, isLoading, onLoadMore, hasMore }: JobsTablePro
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Status</th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Tracking</th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Created</th>
+            <th className="px-4 py-3 w-32 text-right text-xs font-medium text-gray-500">Actions</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-200">
@@ -56,6 +67,22 @@ export function JobsTable({ jobs, isLoading, onLoadMore, hasMore }: JobsTablePro
               </td>
               <td className="px-4 py-3 text-sm text-gray-500">
                 {new Date(job.createdAt).toLocaleDateString()}
+              </td>
+              <td className="px-4 py-3 text-right">
+                <div className="flex justify-end gap-2">
+                  <button
+                    onClick={() => onUpdateStatus(job)}
+                    className="rounded border px-2.5 py-1 text-xs hover:bg-gray-100"
+                  >
+                    Status
+                  </button>
+                  <button
+                    onClick={() => onReassign(job)}
+                    className="rounded border px-2.5 py-1 text-xs hover:bg-gray-100"
+                  >
+                    Reassign
+                  </button>
+                </div>
               </td>
             </tr>
           ))}
