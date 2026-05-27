@@ -213,4 +213,13 @@ export const campaignRouter = router({
       }
       return campaign;
     }),
+
+  // xAI powered concept generation
+  generateConcepts: protectedProcedure
+    .input(z.object({ prompt: z.string().min(10) }))
+    .mutation(async ({ input }) => {
+      const { generatePostcardConcepts } = await import("@postcard-platform/ai/xai");
+      const result = await generatePostcardConcepts(input.prompt);
+      return { result };
+    }),
 });
