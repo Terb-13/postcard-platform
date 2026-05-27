@@ -149,6 +149,10 @@ model ProductionJob {
   shippedAt            DateTime?
   deliveredAt          DateTime?
 
+  proofUrl             String?     // Partner-uploaded proof PDF/image
+  proofApprovedAt      DateTime?
+  proofApprovedBy      String?
+
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
