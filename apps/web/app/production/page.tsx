@@ -35,7 +35,6 @@ export default function MyProductionPage() {
         </a>
       </div>
 
-      {/* In Production */}
       <section className="mb-10">
         <h2 className="text-xl font-semibold mb-4">In Production</h2>
         {inProduction.length === 0 ? (
@@ -51,16 +50,12 @@ export default function MyProductionPage() {
                       <div className="font-semibold">{campaign.name}</div>
                       <div className="text-sm text-gray-500">{campaign.size} × {campaign.quantity}</div>
                     </div>
-                    {job && (
-                      <span className="px-3 py-1 text-xs rounded-full bg-blue-100 text-blue-700">
-                        {job.status}
-                      </span>
-                    )}
+                    {job && <span className="text-xs px-3 py-1 rounded-full bg-blue-100 text-blue-700">{job.status}</span>}
                   </div>
 
                   {job && (
-                    <div className="mt-3 text-sm grid grid-cols-2 gap-4">
-                      <div>Partner: <span className="font-medium">{job.productionPartner?.name || "Assigning..."}</span></div>
+                    <div className="mt-3 text-sm">
+                      <div>Partner: <span className="font-medium">{job.productionPartner?.name || "Being assigned"}</span></div>
                       <div>Tracking: <span className="font-mono">{job.trackingNumber || "Pending"}</span></div>
                     </div>
                   )}
@@ -71,7 +66,6 @@ export default function MyProductionPage() {
         )}
       </section>
 
-      {/* Ready to Send */}
       <section>
         <h2 className="text-xl font-semibold mb-4">Ready to Send to Production</h2>
         {ready.length === 0 ? (
