@@ -42,6 +42,10 @@ export function JobDetailDrawer({
     onSuccess: () => onRefresh?.(),
   });
 
+  const reviewProof = trpc.admin.productionJobs.reviewProof.useMutation({
+    onSuccess: () => onRefresh?.(),
+  });
+
   if (!job) return null;
 
   const events = job.events ?? [];
@@ -147,6 +151,48 @@ export function JobDetailDrawer({
                 </div>
               ) : (
                 <div className="text-sm text-gray-500">No artwork uploaded yet.</div>
+              )}
+            </div>
+
+            {/* Proof Section */}
+            <div>
+              <div className="text-sm font-medium text-gray-700 mb-2">Proof</div>
+              {job.proofUrl ? (
+                <div className="space-y-3">
+                  <div className="rounded border bg-white p-3">
+                    {job.proofUrl.endsWith('.pdf') ? (
+                      <a href={job.proofUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                        View Proof PDF →
+                      </a>
+                    ) : (
+                      <img src={job.proofUrl} alt="Proof" className="max-h-48 w-full object-contain" />
+                    )}
+                  </div>
+
+                  {job.proofApprovedAt ? (
+                    <div className="text-sm text-green-600">✓ Proof approved</div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => reviewProof.mutate({ jobId: job.id, approved: true })}
+                        className="text-sm px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+                      >
+                        Approve Proof
+                      </button>
+                      <button
+                        onClick={() => {
+                          const notes = prompt("Reason for rejecting proof (optional):") || undefined;
+                          reviewProof.mutate({ jobId: job.id, approved: false, note: notes });
+                        }}
+                        className="text-sm px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                      >
+                        Reject Proof
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-sm text-gray-500">No proof uploaded yet by partner.</div>
               )}
             </div>
 
