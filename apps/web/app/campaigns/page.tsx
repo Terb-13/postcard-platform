@@ -1,15 +1,15 @@
 "use client";
 
 import { trpc } from "@/lib/trpc/client";
-import { ArtworkUpload } from "../ops/components/ArtworkUpload";
 
 export default function MyCampaignsPage() {
   const { data: campaigns, isLoading, refetch } = trpc.campaign.getMine.useQuery();
 
-  const sendToProduction = trpc.campaign.sendToProduction.useMutation({
-    onSuccess: () => {
-      alert("Campaign sent to production!");
-      refetch();
+  const createCheckout = trpc.campaign.createCheckoutSession.useMutation({
+    onSuccess: (data) => {
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl; // Redirect to Stripe
+      }
     },
     onError: (err) => alert("Error: " + err.message),
   });
@@ -50,23 +50,19 @@ export default function MyCampaignsPage() {
               <div>
                 <div className="font-semibold text-lg">{campaign.name}</div>
                 <div className="text-sm text-gray-500">
-                  {campaign.size} × {campaign.quantity} • Created {new Date(campaign.createdAt).toLocaleDateString()}
+                  {campaign.size} × {campaign.quantity}
                 </div>
 
-                {/* Artwork Status */}
                 <div className="mt-1 text-sm">
                   Artwork: {artwork ? (
                     <span className={`font-medium ${artwork.status === "APPROVED" ? "text-green-600" : artwork.status === "REJECTED" ? "text-red-600" : "text-orange-600"}`}>
                       {artwork.status}
                     </span>
-                  ) : (
-                    <span className="text-gray-500">Not uploaded</span>
-                  )}
+                  ) : <span className="text-gray-500">Not uploaded</span>}
                 </div>
               </div>
 
               <div className="flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-6">
-                {/* Status */}
                 <div className="text-sm">
                   {isInProduction ? (
                     <>
@@ -77,25 +73,21 @@ export default function MyCampaignsPage() {
                   )}
                 </div>
 
-                {/* Artwork Upload */}
                 {!isInProduction && (
-                  <div>
-                    <ArtworkUpload
-                      campaignId={campaign.id}
-                      onUploadComplete={refetch}
-                    />
-                  </div>
-                )}
-
-                {/* Send to Production */}
-                {!isInProduction && (
-                  <button
-                    onClick={() => sendToProduction.mutate({ campaignId: campaign.id })}
-                    disabled={sendToProduction.isPending}
-                    className="px-4 py-2 bg-black text-white rounded text-sm hover:bg-gray-800 disabled:opacity-60"
-                  >
-                    Send to Production
-                  </button>
+                  <>
+                    {!campaign.artwork && (
+                      <div>
+                        {/* We can add the ArtworkUpload component here if desired */}
+                      </div>
+                    )}
+                    <button
+                      onClick={() => createCheckout.mutate({ campaignId: campaign.id })}
+                      disabled={createCheckout.isPending}
+                      className="px-4 py-2 bg-black text-white rounded text-sm hover:bg-gray-800 disabled:opacity-60"
+                    >
+                      Send to Production
+                    </button>
+                  </>
                 )}
 
                 {isInProduction && (
