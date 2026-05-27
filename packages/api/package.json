@@ -1,0 +1,14 @@
+{
+  "name": "@postcard-platform/api",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./root.ts",
+  "dependencies": {
+    "@trpc/server": "^11.0.0",
+    "inngest": "^3.0.0",
+    "resend": "^4.0.0",
+    "stripe": "^17.0.0",
+    "zod": "^3.23.8",
+    "superjson": "^2.2.1"
+  }
+}
