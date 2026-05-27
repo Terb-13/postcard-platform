@@ -140,6 +140,26 @@ export const adminRouter = router({
           },
         });
 
+        // Send shipped email
+        if (input.status === "SHIPPED" && input.trackingNumber) {
+          const campaign = await prisma.campaign.findUnique({
+            where: { id: job.campaignId },
+            include: { organization: true },
+          });
+          const user = campaign
+            ? await prisma.user.findFirst({
+                where: { organizationId: campaign.organizationId },
+                orderBy: { createdAt: "asc" },
+              })
+            : null;
+
+          if (user?.email) {
+            const { sendEmail, emailTemplates } = await import("../lib/email");
+            const template = emailTemplates.jobShipped(campaign!.name, input.trackingNumber);
+            await sendEmail({ to: user.email, subject: template.subject, html: template.html });
+          }
+        }
+
         return job;
       }),
 
@@ -231,6 +251,26 @@ export const adminRouter = router({
           actor: "ops",
         },
       });
+
+      // Send shipped email
+      if (input.status === "SHIPPED" && input.trackingNumber) {
+        const campaign = await prisma.campaign.findUnique({
+          where: { id: job.campaignId },
+          include: { organization: true },
+        });
+        const user = campaign
+          ? await prisma.user.findFirst({
+              where: { organizationId: campaign.organizationId },
+              orderBy: { createdAt: "asc" },
+            })
+          : null;
+
+        if (user?.email) {
+          const { sendEmail, emailTemplates } = await import("../lib/email");
+          const template = emailTemplates.jobShipped(campaign!.name, input.trackingNumber);
+          await sendEmail({ to: user.email, subject: template.subject, html: template.html });
+        }
+      }
 
       return job;
     }),
