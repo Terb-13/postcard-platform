@@ -1,51 +1,57 @@
-  // ============================================
-  // ARTWORK REVIEW (Ops side)
-  // ============================================
-  artwork: {
-    review: protectedProcedure
-      .input(
-        z.object({
-          campaignId: z.string(),
-          status: z.enum(["APPROVED", "REJECTED"]),
-          notes: z.string().optional(),
-        })
-      )
-      .mutation(async ({ ctx, input }) => {
-        const artwork = await ctx.prisma.artwork.findUnique({
-          where: { campaignId: input.campaignId },
-        });
-
-        if (!artwork) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "No artwork found for this campaign" });
-        }
-
-        const updated = await ctx.prisma.artwork.update({
-          where: { campaignId: input.campaignId },
-          data: {
-            status: input.status,
-            notes: input.notes,
-            reviewedAt: new Date(),
-            reviewedBy: ctx.user.email,
-          },
-        });
-
-        // Log event on the latest production job if exists
-        const latestJob = await ctx.prisma.productionJob.findFirst({
-          where: { campaignId: input.campaignId },
-          orderBy: { createdAt: "desc" },
-        });
-
-        if (latestJob) {
-          await ctx.prisma.jobEvent.create({
-            data: {
-              productionJobId: latestJob.id,
-              status: latestJob.status,
-              message: `Artwork ${input.status.toLowerCase()} by ops` + (input.notes ? `: ${input.notes}` : ""),
-              metadata: { type: "ARTWORK_REVIEW", status: input.status },
+  // Update status + tracking number (internal operations)
+  updateJobStatus: protectedProcedure
+    .input(
+      z.object({
+        jobId: z.string(),
+        status: z.enum(["RECEIVED", "SENT_TO_PROVIDER", "SHIPPED", "DELIVERED"]),
+        trackingNumber: z.string().optional(),
+        message: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const job = await ctx.prisma.productionJob.update({
+        where: { id: input.jobId },
+        data: {
+          status: input.status,
+          ...(input.trackingNumber && { trackingNumber: input.trackingNumber }),
+        },
+        include: {
+          campaign: {
+            include: {
+              organization: true,
             },
+          },
+        },
+      });
+
+      await ctx.prisma.jobEvent.create({
+        data: {
+          productionJobId: input.jobId,
+          status: input.status,
+          message: input.message || `Status manually updated to ${input.status}`,
+          metadata: input.trackingNumber ? { trackingNumber: input.trackingNumber } : undefined,
+        },
+      });
+
+      // Send shipping notification when status becomes SHIPPED
+      if (input.status === "SHIPPED" && input.trackingNumber) {
+        const orgUser = await ctx.prisma.user.findFirst({
+          where: { organizationId: job.campaign.organizationId },
+          orderBy: { createdAt: "asc" },
+        });
+
+        if (orgUser?.email) {
+          const template = emailTemplates.jobShipped(
+            job.campaign.name,
+            input.trackingNumber
+          );
+          await sendEmail({
+            to: orgUser.email,
+            subject: template.subject,
+            html: template.html,
           });
         }
+      }
 
-        return updated;
-      }),
-  },
+      return job;
+    }),
