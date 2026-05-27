@@ -1,75 +1,15 @@
-"use client";
-
-import { trpc } from "@/lib/trpc/client";
-
-export default function MyCampaignsPage() {
-  const { data: campaigns, isLoading, refetch } = trpc.campaign.getMine.useQuery();
-
-  const createCheckout = trpc.campaign.createCheckoutSession.useMutation({
-    onSuccess: (data) => {
-      if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl; // Redirect to Stripe
-      }
-    },
-    onError: (err) => alert("Error: " + err.message),
-  });
-
-  if (isLoading) {
-    return <div className="max-w-5xl mx-auto px-6 py-8">Loading your campaigns...</div>;
-  }
-
-  return (
-    <div className="max-w-5xl mx-auto px-6 py-8">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-semibold">My Campaigns</h1>
-          <p className="text-gray-600 mt-1">Manage your postcard campaigns and track them through production.</p>
-        </div>
-        <a
-          href="/campaigns/new"
-          className="px-4 py-2 bg-black text-white rounded text-sm hover:bg-gray-800"
-        >
-          + New Campaign
-        </a>
-      </div>
-
-      {campaigns?.length === 0 && (
-        <div className="text-center py-12 border rounded-lg">
-          <p className="text-gray-600">You haven’t created any campaigns yet.</p>
-        </div>
-      )}
-
-      <div className="space-y-4">
-        {campaigns?.map((campaign) => {
-          const latestJob = campaign.productionJobs?.[0];
-          const isInProduction = campaign.status === "IN_PRODUCTION" || !!latestJob;
-          const artwork = campaign.artwork;
-
-          return (
-            <div key={campaign.id} className="border rounded-xl p-5 bg-white flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div>
-                <div className="font-semibold text-lg">{campaign.name}</div>
-                <div className="text-sm text-gray-500">
-                  {campaign.size} × {campaign.quantity}
-                </div>
-
-                <div className="mt-1 text-sm">
-                  Artwork: {artwork ? (
-                    <span className={`font-medium ${artwork.status === "APPROVED" ? "text-green-600" : artwork.status === "REJECTED" ? "text-red-600" : "text-orange-600"}`}>
-                      {artwork.status}
-                    </span>
-                  ) : <span className="text-gray-500">Not uploaded</span>}
-                </div>
-              </div>
-
               <div className="flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-6">
-                <div className="text-sm">
+                <div className="text-sm space-y-0.5">
                   {isInProduction ? (
                     <>
-                      <span className="font-medium">Production:</span> {latestJob?.status ?? "In Progress"}
+                      <div>
+                        <span className="font-medium">Production:</span> {latestJob?.status ?? "In Progress"}
+                      </div>
                     </>
                   ) : (
-                    <span className="text-gray-500">Draft / Ready</span>
+                    <div>
+                      <span className="text-gray-500">Status:</span> {campaign.stripePaymentIntentId ? "Paid" : "Ready for Payment"}
+                    </div>
                   )}
                 </div>
 
@@ -77,7 +17,7 @@ export default function MyCampaignsPage() {
                   <>
                     {!campaign.artwork && (
                       <div>
-                        {/* We can add the ArtworkUpload component here if desired */}
+                        <ArtworkUpload campaignId={campaign.id} onUploadComplete={refetch} />
                       </div>
                     )}
                     <button
@@ -85,7 +25,7 @@ export default function MyCampaignsPage() {
                       disabled={createCheckout.isPending}
                       className="px-4 py-2 bg-black text-white rounded text-sm hover:bg-gray-800 disabled:opacity-60"
                     >
-                      Send to Production
+                      {campaign.stripePaymentIntentId ? "Send to Production" : "Pay & Send to Production"}
                     </button>
                   </>
                 )}
@@ -96,10 +36,3 @@ export default function MyCampaignsPage() {
                   </a>
                 )}
               </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
