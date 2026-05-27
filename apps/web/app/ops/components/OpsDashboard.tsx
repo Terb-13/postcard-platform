@@ -7,6 +7,7 @@ import { JobsTable } from "./JobsTable";
 import { ActivityFeed } from "./ActivityFeed";
 import { StatusUpdateModal } from "./StatusUpdateModal";
 import { ReassignModal } from "./ReassignModal";
+import { JobDetailModal } from "./JobDetailModal";
 
 import type { RouterOutputs } from "@/lib/trpc/client";
 
@@ -26,6 +27,7 @@ export function OpsDashboard() {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showReassignModal, setShowReassignModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   // Queries
   const jobsQuery = trpc.admin.productionJobs.list.useQuery(
@@ -47,11 +49,18 @@ export function OpsDashboard() {
   const openStatusModal = (job: Job) => {
     setSelectedJob(job);
     setShowStatusModal(true);
+    setShowDetailModal(false); // close detail if open
   };
 
   const openReassignModal = (job: Job) => {
     setSelectedJob(job);
     setShowReassignModal(true);
+    setShowDetailModal(false);
+  };
+
+  const openDetail = (job: Job) => {
+    setSelectedJob(job);
+    setShowDetailModal(true);
   };
 
   const handleActionSuccess = () => {
@@ -123,6 +132,7 @@ export function OpsDashboard() {
             hasMore={!!nextCursor}
             onUpdateStatus={openStatusModal}
             onReassign={openReassignModal}
+            onRowClick={openDetail} // New: clicking row opens detail
           />
         </div>
 
@@ -149,6 +159,14 @@ export function OpsDashboard() {
         isOpen={showReassignModal}
         onClose={() => setShowReassignModal(false)}
         onSuccess={handleActionSuccess}
+      />
+
+      <JobDetailModal
+        job={selectedJob}
+        isOpen={showDetailModal}
+        onClose={() => setShowDetailModal(false)}
+        onUpdateStatus={openStatusModal}
+        onReassign={openReassignModal}
       />
     </div>
   );
