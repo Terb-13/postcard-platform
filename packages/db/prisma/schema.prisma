@@ -1,129 +1,20 @@
-generator client {
-  provider = "prisma-client-js"
-}
-
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
-model Organization {
-  id        String   @id @default(cuid())
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  users     User[]
-  maps      SavedMap[]
-  campaigns Campaign[]
-
-  @@index([createdAt])
-}
-
-model User {
-  id             String   @id @default(cuid())
-  clerkId        String   @unique
-  email          String   @unique
-  organizationId String
-  role           String   @default("MEMBER")
-  createdAt      DateTime @default(now())
-
-  organization Organization @relation(fields: [organizationId], references: [id])
-
-  @@index([organizationId, role])
-}
-
-model SavedMap {
-  id             String   @id @default(cuid())
-  organizationId String
-  name           String
-  zip            String
-  routeIds       String[]
-  totalPieces    Int
-  demographics   Json?
-  createdAt      DateTime @default(now())
-
-  organization Organization @relation(fields: [organizationId], references: [id])
-  campaigns    Campaign[]
-}
-
-model Campaign {
-  id             String   @id @default(cuid())
-  organizationId String
-  savedMapId     String?
-  name           String
-  status         String   @default("DRAFT")
-  size           String
-  quantity       Int
-  dropDate       DateTime?
-  totalPrice     Decimal  @db.Decimal(10, 2)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  organization   Organization    @relation(fields: [organizationId], references: [id])
-  savedMap       SavedMap?       @relation(fields: [savedMapId], references: [id])
-  artwork        Artwork?
-  productionJobs ProductionJob[]
-
-  @@index([organizationId, createdAt])
-  @@index([status])
-}
-
 model Artwork {
-  id         String   @id @default(cuid())
-  campaignId   String   @unique
-  prompt       String?  // xAI prompt used
-  versions     Json?
-  finalPdf     String?
-  createdAt    DateTime @default(now())
+  id          String   @id @default(cuid())
+  campaignId  String   @unique
+  status      String   @default("UPLOADED") // UPLOADED, UNDER_REVIEW, APPROVED, REJECTED
+  fileUrl     String?
+  fileName    String?
+  fileSize    Int?
+  prompt      String?  // if generated via xAI
+  versions    Json?    // history of versions
+  finalPdf    String?
+  notes       String?  // ops review notes
+  uploadedAt  DateTime @default(now())
+  reviewedAt  DateTime?
+  reviewedBy  String?
 
   campaign Campaign @relation(fields: [campaignId], references: [id])
-}
 
-model ProductionPartner {
-  id         String   @id @default(cuid())
-  name       String
-  apiKey     String   @unique
-  webhookUrl String?
-  active     Boolean  @default(true)
-  createdAt  DateTime @default(now())
-
-  jobs ProductionJob[]
-
-  @@index([active])
-}
-
-model ProductionJob {
-  id                  String   @id @default(cuid())
-  campaignId          String
-  productionPartnerId String
-  externalId          String?
-  status              String   @default("RECEIVED") // RECEIVED, SENT_TO_PROVIDER, SHIPPED, DELIVERED
-  trackingNumber      String?
-  payload             Json
-  proofUrl            String?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-
-  campaign          Campaign          @relation(fields: [campaignId], references: [id])
-  productionPartner ProductionPartner @relation(fields: [productionPartnerId], references: [id])
-  events            JobEvent[]
-
-  @@index([productionPartnerId, status, createdAt])
-  @@index([status, createdAt])
+  @@index([status])
   @@index([campaignId])
-}
-
-model JobEvent {
-  id              String   @id @default(cuid())
-  productionJobId String
-  status          String
-  message         String?
-  metadata        Json?
-  createdAt       DateTime @default(now())
-
-  productionJob ProductionJob @relation(fields: [productionJobId], references: [id])
-
-  @@index([createdAt])
-  @@index([productionJobId, createdAt])
 }
