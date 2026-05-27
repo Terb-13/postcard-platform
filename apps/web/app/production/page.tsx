@@ -1,18 +1,35 @@
 "use client";
 
+import { useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
 import { ArtworkUpload } from "../ops/components/ArtworkUpload";
 
 export default function MyProductionPage() {
+  const searchParams = useSearchParams();
   const { data: campaigns, isLoading, refetch } = trpc.campaign.getMine.useQuery();
 
-  const sendToProduction = trpc.campaign.sendToProduction.useMutation({
-    onSuccess: () => {
-      alert("Campaign sent to production!");
-      refetch();
+  const createCheckout = trpc.campaign.createCheckoutSession.useMutation({
+    onSuccess: (data) => {
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      }
     },
-    onError: (err) => alert("Error: " + err.message),
   });
+
+  // Handle Stripe success redirect
+  useEffect(() => {
+    const success = searchParams.get("success");
+    const campaignId = searchParams.get("campaignId");
+
+    if (success === "true" && campaignId) {
+      // Payment was successful - the webhook should have already created the job
+      // Just refetch to show the updated state
+      refetch();
+      // Optional: clean the URL
+      window.history.replaceState({}, "", "/production");
+    }
+  }, [searchParams, refetch]);
 
   if (isLoading) {
     return <div className="max-w-5xl mx-auto px-6 py-8">Loading...</div>;
@@ -22,7 +39,9 @@ export default function MyProductionPage() {
     (c) => c.status === "IN_PRODUCTION" || (c.productionJobs && c.productionJobs.length > 0)
   ) ?? [];
 
-  const ready = campaigns?.filter((c) => c.status === "DRAFT" || c.status === "PAID") ?? [];
+  const readyForPayment = campaigns?.filter(
+    (c) => (c.status === "DRAFT" || c.status === "READY_FOR_PAYMENT") && !c.stripePaymentIntentId
+  ) ?? [];
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-8">
@@ -35,6 +54,13 @@ export default function MyProductionPage() {
           Back to My Campaigns →
         </a>
       </div>
+
+      {/* Success message after Stripe redirect */}
+      {searchParams.get("success") === "true" && (
+        <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-4 text-green-800">
+          Payment successful! Your campaign has been sent to production and will appear below shortly.
+        </div>
+      )}
 
       <section className="mb-10">
         <h2 className="text-xl font-semibold mb-4">In Production</h2>
@@ -81,28 +107,23 @@ export default function MyProductionPage() {
 
       <section>
         <h2 className="text-xl font-semibold mb-4">Ready to Send to Production</h2>
-        {ready.length === 0 ? (
+        {readyForPayment.length === 0 ? (
           <p className="text-gray-500">No campaigns ready to send.</p>
         ) : (
           <div className="space-y-3">
-            {ready.map((campaign) => (
+            {readyForPayment.map((campaign) => (
               <div key={campaign.id} className="flex items-center justify-between border rounded-lg p-4 bg-white">
                 <div>
                   <div className="font-medium">{campaign.name}</div>
                   <div className="text-sm text-gray-500">{campaign.size} × {campaign.quantity}</div>
                 </div>
-                <div className="flex items-center gap-3">
-                  {!campaign.artwork && (
-                    <ArtworkUpload campaignId={campaign.id} onUploadComplete={refetch} />
-                  )}
-                  <button
-                    onClick={() => sendToProduction.mutate({ campaignId: campaign.id })}
-                    disabled={sendToProduction.isPending}
-                    className="px-4 py-2 bg-black text-white rounded text-sm hover:bg-gray-800 disabled:opacity-60"
-                  >
-                    Send to Production
-                  </button>
-                </div>
+                <button
+                  onClick={() => createCheckout.mutate({ campaignId: campaign.id })}
+                  disabled={createCheckout.isPending}
+                  className="px-4 py-2 bg-black text-white rounded text-sm hover:bg-gray-800 disabled:opacity-60"
+                >
+                  Pay & Send to Production
+                </button>
               </div>
             ))}
           </div>
