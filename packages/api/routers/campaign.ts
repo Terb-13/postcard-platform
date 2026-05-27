@@ -35,11 +35,17 @@ export const campaignRouter = router({
         organizationId: ctx.user.organizationId,
       },
       orderBy: { createdAt: "desc" },
-      include: { savedMap: true },
+      include: {
+        savedMap: true,
+        productionJobs: {
+          include: { productionPartner: true },
+          take: 1,
+        },
+      },
     });
   }),
 
-  // New: Finalize a campaign and create a ProductionJob
+  // Finalize campaign and create ProductionJob (with auto-assign to first active partner)
   finalizeForProduction: protectedProcedure
     .input(z.object({ campaignId: z.string() }))
     .mutation(async ({ input, ctx }) => {
@@ -52,15 +58,16 @@ export const campaignRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Campaign not found" });
       }
 
-      if (campaign.status !== "PAID" && campaign.status !== "DRAFT") {
-        // In real flow this would be after payment
-      }
+      // Find first active partner for auto-assignment
+      const firstActivePartner = await ctx.prisma.productionPartner.findFirst({
+        where: { active: true },
+        orderBy: { createdAt: "asc" },
+      });
 
-      // For now: create job with no partner assigned (ops can assign later)
       const productionJob = await ctx.prisma.productionJob.create({
         data: {
           campaignId: campaign.id,
-          productionPartnerId: "", // Will be assigned by ops or auto later
+          productionPartnerId: firstActivePartner?.id || "", // Auto-assign if possible
           status: "RECEIVED",
           payload: {
             campaignName: campaign.name,
@@ -76,8 +83,21 @@ export const campaignRouter = router({
         data: { status: "IN_PRODUCTION" },
       });
 
-      return { campaign, productionJob };
+      // Log initial event
+      if (productionJob.id) {
+        await ctx.prisma.jobEvent.create({
+          data: {
+            productionJobId: productionJob.id,
+            status: "RECEIVED",
+            message: firstActivePartner 
+              ? `Auto-assigned to ${firstActivePartner.name}` 
+              : "Created - awaiting partner assignment",
+          },
+        });
+      }
+
+      return { campaign, productionJob, assignedPartner: firstActivePartner };
     }),
 
-  // @cursor: Add getById, update, full trigger to specific partner, etc.
+  // @cursor: Add getById, update, full trigger to specific partner, payment webhook trigger, etc.
 });
