@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../trpc";
+import { TRPCError } from "@trpc/server";
 
 export const campaignRouter = router({
   create: protectedProcedure
@@ -33,14 +34,50 @@ export const campaignRouter = router({
       where: {
         organizationId: ctx.user.organizationId,
       },
-      orderBy: {
-        createdAt: "desc",
-      },
-      include: {
-        savedMap: true,
-      },
+      orderBy: { createdAt: "desc" },
+      include: { savedMap: true },
     });
   }),
 
-  // @cursor: Add getById, update, triggerProduction, etc.
+  // New: Finalize a campaign and create a ProductionJob
+  finalizeForProduction: protectedProcedure
+    .input(z.object({ campaignId: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const campaign = await ctx.prisma.campaign.findUnique({
+        where: { id: input.campaignId },
+        include: { organization: true },
+      });
+
+      if (!campaign || campaign.organizationId !== ctx.user.organizationId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Campaign not found" });
+      }
+
+      if (campaign.status !== "PAID" && campaign.status !== "DRAFT") {
+        // In real flow this would be after payment
+      }
+
+      // For now: create job with no partner assigned (ops can assign later)
+      const productionJob = await ctx.prisma.productionJob.create({
+        data: {
+          campaignId: campaign.id,
+          productionPartnerId: "", // Will be assigned by ops or auto later
+          status: "RECEIVED",
+          payload: {
+            campaignName: campaign.name,
+            size: campaign.size,
+            quantity: campaign.quantity,
+            dropDate: campaign.dropDate,
+          },
+        },
+      });
+
+      await ctx.prisma.campaign.update({
+        where: { id: campaign.id },
+        data: { status: "IN_PRODUCTION" },
+      });
+
+      return { campaign, productionJob };
+    }),
+
+  // @cursor: Add getById, update, full trigger to specific partner, etc.
 });
