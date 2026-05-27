@@ -50,5 +50,30 @@ export async function POST(
     },
   });
 
+  // Notify customer that proof was uploaded
+  const campaign = await prisma.campaign.findUnique({
+    where: { id: job.campaignId },
+    include: { organization: true },
+  });
+
+  const user = campaign
+    ? await prisma.user.findFirst({
+        where: { organizationId: campaign.organizationId },
+        orderBy: { createdAt: "asc" },
+      })
+    : null;
+
+  if (user?.email) {
+    const { sendEmail } = await import("@/packages/api/lib/email");
+    await sendEmail({
+      to: user.email,
+      subject: `Proof uploaded for ${campaign!.name}`,
+      html: `
+        <p>A proof has been uploaded by the production partner for your campaign <strong>${campaign!.name}</strong>.</p>
+        <p>Log into your dashboard to review it.</p>
+      `,
+    });
+  }
+
   return NextResponse.json({ success: true });
 }
