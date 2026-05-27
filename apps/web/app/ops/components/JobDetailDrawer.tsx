@@ -106,6 +106,8 @@ export function JobDetailDrawer({
                     thumbnails={thumbnails}
                     thumbnailUrl={artwork.thumbnailUrl}
                     pageNumber={currentPage}
+                    pageCount={artwork.pageCount ?? undefined}
+                    rejectionNotes={artwork.notes}
                     onPageCountChange={setTotalPages}
                     className="h-64 w-full object-contain border rounded bg-white"
                   />
