@@ -1,9 +1,10 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { prisma } from "../db/client";
+import { getCurrentUser } from "../../apps/web/lib/auth"; // note: cross-package import - consider moving auth helpers to packages later
+
 import type { User } from "@prisma/client";
 
-// Context type that includes the authenticated user from Clerk + Prisma
 interface CreateContextOptions {
   user: User | null;
 }
@@ -33,7 +34,9 @@ export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
   return next({
     ctx: {
       ...ctx,
-      user: ctx.user, // Now guaranteed to exist
+      user: ctx.user,
     },
-    });
+  });
 });
+
+// @cursor: Add org-level checks, rate limiting, etc. here
