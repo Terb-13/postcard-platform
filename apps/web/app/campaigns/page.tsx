@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc/client";
 import { ArtworkPreview } from "@/components/ArtworkPreview";
-import { ArtworkUpload } from "@/app/ops/components/ArtworkUpload";
+import { ArtworkUpload } from "@/components/ArtworkUpload";
 import { ProductionTimeline } from "@/components/ProductionTimeline";
 
 export default function MyCampaignsPage() {
