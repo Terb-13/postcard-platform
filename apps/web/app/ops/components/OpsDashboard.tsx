@@ -16,19 +16,17 @@ export function OpsDashboard() {
   const [filters, setFilters] = useState<Filters>({});
   const [cursor, setCursor] = useState<string | undefined>(undefined);
 
-  // Main jobs query (uses the powerful admin procedure)
+  // Main jobs query
   const jobsQuery = trpc.admin.productionJobs.list.useQuery(
     {
       ...filters,
       cursor,
       limit: 25,
     },
-    {
-      keepPreviousData: true,
-    }
+    { keepPreviousData: true }
   );
 
-  // Recent activity feed
+  // Recent activity
   const activityQuery = trpc.admin.activity.recent.useQuery({ limit: 15 });
 
   const jobs = jobsQuery.data?.items ?? [];
@@ -36,68 +34,85 @@ export function OpsDashboard() {
 
   const handleFilterChange = (newFilters: Partial<Filters>) => {
     setFilters((prev) => ({ ...prev, ...newFilters }));
-    setCursor(undefined); // reset pagination when filters change
+    setCursor(undefined);
   };
 
   return (
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-      {/* Main Jobs Section */}
-      <div className="lg:col-span-2">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Production Jobs</h2>
-          <button
-            onClick={() => {
-              setFilters({});
-              setCursor(undefined);
-            }}
-            className="text-sm text-blue-600 hover:underline"
-          >
-            Clear filters
-          </button>
+    <div>
+      {/* Quick Stats Row */}
+      <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div className="rounded-lg border bg-white p-4">
+          <div className="text-sm text-gray-500">Total Jobs (shown)</div>
+          <div className="text-2xl font-semibold text-gray-900">{jobs.length}</div>
         </div>
-
-        {/* Simple Filters */}
-        <div className="mb-4 flex flex-wrap gap-3">
-          <input
-            type="text"
-            placeholder="Search campaign or customer..."
-            className="rounded border px-3 py-2 text-sm"
-            value={filters.search || ""}
-            onChange={(e) => handleFilterChange({ search: e.target.value })}
-          />
-
-          <select
-            className="rounded border px-3 py-2 text-sm"
-            value={filters.status || ""}
-            onChange={(e) => handleFilterChange({ status: e.target.value || undefined })}
-          >
-            <option value="">All Statuses</option>
-            <option value="RECEIVED">Received</option>
-            <option value="SENT_TO_PROVIDER">Sent to Provider</option>
-            <option value="SHIPPED">Shipped</option>
-            <option value="DELIVERED">Delivered</option>
-          </select>
-
-          {/* TODO: Add partner dropdown once we have partners query wired */}
+        <div className="rounded-lg border bg-white p-4">
+          <div className="text-sm text-gray-500">Filtered Status</div>
+          <div className="text-2xl font-semibold text-gray-900">
+            {filters.status || "All"}
+          </div>
         </div>
-
-        <JobsTable
-          jobs={jobs}
-          isLoading={jobsQuery.isLoading}
-          onLoadMore={() => {
-            if (nextCursor) setCursor(nextCursor);
-          }}
-          hasMore={!!nextCursor}
-        />
+        {/* Add more stat cards later using additional queries */}
       </div>
 
-      {/* Activity Feed */}
-      <div>
-        <h2 className="mb-4 text-xl font-semibold">Recent Activity</h2>
-        <ActivityFeed
-          events={activityQuery.data ?? []}
-          isLoading={activityQuery.isLoading}
-        />
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        {/* Main Jobs Section */}
+        <div className="lg:col-span-2">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-xl font-semibold">Production Jobs</h2>
+            <button
+              onClick={() => {
+                setFilters({});
+                setCursor(undefined);
+              }}
+              className="text-sm text-blue-600 hover:underline"
+            >
+              Clear filters
+            </button>
+          </div>
+
+          {/* Filters */}
+          <div className="mb-4 flex flex-wrap gap-3">
+            <input
+              type="text"
+              placeholder="Search campaign or customer..."
+              className="w-64 rounded border px-3 py-2 text-sm"
+              value={filters.search || ""}
+              onChange={(e) => handleFilterChange({ search: e.target.value })}
+            />
+
+            <select
+              className="rounded border px-3 py-2 text-sm"
+              value={filters.status || ""}
+              onChange={(e) =>
+                handleFilterChange({ status: e.target.value || undefined })
+              }
+            >
+              <option value="">All Statuses</option>
+              <option value="RECEIVED">Received</option>
+              <option value="SENT_TO_PROVIDER">Sent to Provider</option>
+              <option value="SHIPPED">Shipped</option>
+              <option value="DELIVERED">Delivered</option>
+            </select>
+          </div>
+
+          <JobsTable
+            jobs={jobs}
+            isLoading={jobsQuery.isLoading}
+            onLoadMore={() => {
+              if (nextCursor) setCursor(nextCursor);
+            }}
+            hasMore={!!nextCursor}
+          />
+        </div>
+
+        {/* Activity Feed */}
+        <div>
+          <h2 className="mb-4 text-xl font-semibold">Recent Activity</h2>
+          <ActivityFeed
+            events={activityQuery.data ?? []}
+            isLoading={activityQuery.isLoading}
+          />
+        </div>
       </div>
     </div>
   );
