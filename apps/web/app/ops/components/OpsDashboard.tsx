@@ -41,6 +41,7 @@ export function OpsDashboard() {
   );
   const activityQuery = trpc.admin.activity.recent.useQuery({ limit: 15 });
   const statsQuery = trpc.admin.dashboard.stats.useQuery();
+  const analyticsQuery = trpc.admin.dashboard.analytics.useQuery();
 
   const utils = trpc.useUtils();
 
@@ -73,7 +74,7 @@ export function OpsDashboard() {
     utils.admin.productionJobs.list.invalidate();
     utils.admin.activity.recent.invalidate();
     utils.admin.partners.list.invalidate();
-    utils.admin.dashboard.stats.invalidate();
+    utils.admin.dashboard.analytics.invalidate();
   };
 
   return (
@@ -96,6 +97,33 @@ export function OpsDashboard() {
           <div className="text-sm text-gray-500">Active Partners</div>
           <div className="text-2xl font-semibold text-gray-900">
             {statsQuery.data?.activePartners ?? partnersQuery.data?.filter((p) => p.isActive).length ?? "..."}
+          </div>
+        </div>
+      </div>
+
+      {/* Analytics Overview */}
+      <div className="mb-8">
+        <h2 className="text-lg font-semibold mb-3">Analytics Overview</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="rounded-lg border bg-white p-4">
+            <div className="text-sm text-gray-500">Total Jobs</div>
+            <div className="text-2xl font-semibold text-gray-900">{analyticsQuery.data?.totalJobs ?? "—"}</div>
+          </div>
+          <div className="rounded-lg border bg-white p-4">
+            <div className="text-sm text-gray-500">Avg Delivery (days)</div>
+            <div className="text-2xl font-semibold text-gray-900">{analyticsQuery.data?.avgDeliveryDays ?? "—"}</div>
+          </div>
+          <div className="rounded-lg border bg-white p-4 col-span-2 md:col-span-2">
+            <div className="text-sm text-gray-500 mb-1">Jobs by Status</div>
+            <div className="flex flex-wrap gap-2 text-sm">
+              {analyticsQuery.data?.byStatus
+                ? Object.entries(analyticsQuery.data.byStatus).map(([status, count]) => (
+                    <span key={status} className="px-2 py-0.5 bg-gray-100 rounded text-gray-700">
+                      {status}: {count}
+                    </span>
+                  ))
+                : "—"}
+            </div>
           </div>
         </div>
       </div>
