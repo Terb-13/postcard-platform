@@ -250,6 +250,21 @@ export const adminRouter = router({
           },
         });
 
+        // Send notification
+        const campaign = await prisma.campaign.findUnique({
+          where: { id: job.campaignId },
+          include: { organization: true },
+        });
+        const user = campaign
+          ? await prisma.user.findFirst({ where: { organizationId: campaign.organizationId }, orderBy: { createdAt: "asc" } })
+          : null;
+
+        if (user?.email) {
+          const { sendEmail, emailTemplates } = await import("../lib/email");
+          const template = emailTemplates.proofReviewed(campaign!.name, input.approved, input.note);
+          await sendEmail({ to: user.email, subject: template.subject, html: template.html });
+        }
+
         return job;
       }),
   }),
@@ -368,7 +383,7 @@ export const adminRouter = router({
       }),
   }),
 
-  // Simple dashboard stats
+  // Simple dashboard stats + analytics
   dashboard: router({
     stats: adminProcedure.query(async () => {
       const [totalJobs, shipped, delivered, activePartners] = await Promise.all([
@@ -379,6 +394,31 @@ export const adminRouter = router({
       ]);
 
       return { totalJobs, shipped, delivered, activePartners };
+    }),
+
+    analytics: adminProcedure.query(async () => {
+      const jobs = await prisma.productionJob.findMany({
+        select: { status: true, createdAt: true, shippedAt: true, deliveredAt: true },
+      });
+
+      const turnaroundDays = jobs
+        .filter((j) => j.shippedAt && j.deliveredAt)
+        .map((j) => (new Date(j.deliveredAt!).getTime() - new Date(j.shippedAt!).getTime()) / (1000 * 3600 * 24));
+
+      const avgTurnaround = turnaroundDays.length
+        ? Math.round(turnaroundDays.reduce((a, b) => a + b, 0) / turnaroundDays.length)
+        : null;
+
+      const byStatus = jobs.reduce((acc, j) => {
+        acc[j.status] = (acc[j.status] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      return {
+        totalJobs: jobs.length,
+        byStatus,
+        avgDeliveryDays: avgTurnaround,
+      };
     }),
   }),
 
