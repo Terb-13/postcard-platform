@@ -29,7 +29,7 @@ export const adminRouter = router({
           partnerId: z.string().optional(),
           status: z.string().optional(),
           organizationId: z.string().optional(),
-          search: z.string().optional(), // search campaign name or org name
+          search: z.string().optional(),
           cursor: z.string().optional(),
           limit: z.number().min(1).max(100).default(25),
         })
@@ -63,7 +63,7 @@ export const adminRouter = router({
             productionPartner: true,
             events: {
               orderBy: { createdAt: "desc" },
-              take: 3,
+              take: 5,
             },
           },
         });
@@ -110,7 +110,7 @@ export const adminRouter = router({
           where: { id: input.jobId },
           data: {
             productionPartnerId: input.newPartnerId,
-            status: "RECEIVED", // Reset status when reassigning
+            status: "RECEIVED",
           },
         });
 
@@ -125,10 +125,39 @@ export const adminRouter = router({
 
         return updated;
       }),
+
+    // NEW: Add internal note (for ops team)
+    addNote: protectedProcedure
+      .input(
+        z.object({
+          jobId: z.string(),
+          note: z.string().min(1),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const job = await ctx.prisma.productionJob.findUnique({
+          where: { id: input.jobId },
+        });
+
+        if (!job) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Job not found" });
+        }
+
+        await ctx.prisma.jobEvent.create({
+          data: {
+            productionJobId: input.jobId,
+            status: job.status,
+            message: input.note,
+            metadata: { type: "INTERNAL_NOTE", addedBy: ctx.user.email },
+          },
+        });
+
+        return { success: true };
+      }),
   },
 
   // ============================================
-  // CAMPAIGNS - Customer order overview
+  // CAMPAIGNS
   // ============================================
   campaigns: {
     listAll: protectedProcedure
@@ -192,7 +221,7 @@ export const adminRouter = router({
   },
 
   // ============================================
-  // RECENT ACTIVITY FEED (Very useful for ops)
+  // RECENT ACTIVITY FEED
   // ============================================
   activity: {
     recent: protectedProcedure
