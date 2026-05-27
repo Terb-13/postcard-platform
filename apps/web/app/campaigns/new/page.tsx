@@ -21,6 +21,8 @@ export default function NewCampaignPage() {
     onError: (err) => alert("Error: " + err.message),
   });
 
+  const generateConcepts = trpc.campaign.generateConcepts.useMutation();
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     createCampaign.mutate(form);
@@ -78,6 +80,28 @@ export default function NewCampaignPage() {
             onChange={(e) => setForm({ ...form, dropDate: e.target.value })}
             className="w-full rounded border px-3 py-2"
           />
+        </div>
+
+        {/* xAI Quick Ideas */}
+        <div className="border-t pt-4">
+          <button
+            type="button"
+            onClick={() => {
+              if (form.name) {
+                generateConcepts.mutate({ prompt: `Create 3 high-converting postcard concepts and headlines for a local business campaign named "${form.name}". Include suggested design ideas and copy.` });
+              }
+            }}
+            disabled={generateConcepts.isPending || !form.name}
+            className="text-sm px-4 py-2 border rounded hover:bg-gray-50 disabled:opacity-50"
+          >
+            {generateConcepts.isPending ? "Generating with xAI..." : "Get AI Postcard Ideas (xAI)"}
+          </button>
+
+          {generateConcepts.data && (
+            <div className="mt-3 p-3 bg-gray-50 rounded text-sm whitespace-pre-wrap border">
+              {generateConcepts.data.result}
+            </div>
+          )}
         </div>
 
         <div className="pt-4">
