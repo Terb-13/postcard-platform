@@ -2,51 +2,40 @@
 
 **Online postcards** — A modern platform for local businesses to design, target, and send postcards at scale.
 
-## Current Status
+## Current Capabilities (as of latest push)
 
-**Strong foundation in place (May 2026):**
+**Customer Flow**
+- Create campaigns
+- Upload artwork (PDF)
+- Send to production via **Stripe Checkout**
+- Track production status and tracking numbers on `/production`
 
-**Core**
-- Full Prisma schema with production tracking models
-- Clerk auth + organization support
-- tRPC with protected procedures
-- xAI integration ready
+**Operations / ERP**
+- Powerful internal dashboard at `/ops`
+- Full job tracking, status updates, re-assignment
+- Artwork review & approval
+- Internal notes on jobs
+- Activity feed
 
-**Production & Operations (ERP-like layer)**
-- Production Partner REST API (jobs, status updates with tracking, proof upload)
-- Powerful internal `admin` tRPC router for operations team
-- Cursor-based pagination, search, filtering by partner/status/org
-- Job re-assignment to different print partners
-- Recent activity feed across all jobs
-- Full event history + tracking number support
-
-## Key Internal Capabilities (for your team)
-
-- See every order across all customers
-- Real-time view of which partner each job is with and current status
-- Filter, search, and paginate production jobs
-- Manually update status and attach tracking numbers
-- Re-assign jobs between partners
-- Recent activity feed (great for monitoring)
+**Backend**
+- Full tRPC API
+- Production Partner REST API
+- Stripe payment integration + webhooks
+- xAI for future AI features
 
 ## Tech Stack
 - Next.js 15 + tRPC
 - Prisma + PostgreSQL
 - Clerk (Auth + Roles)
-- xAI (all generative AI)
+- Stripe
+- UploadThing (artwork)
+- xAI
 
-## Getting Started
-
-```bash
-cp .env.example .env.local
-npm install
-npm run db:push
-npm run dev
-```
+## Environment Variables
+See `.env.example` for required keys (especially Stripe and UploadThing).
 
 ## Next Priorities
-- Internal operations dashboard UI (`/ops`)
-- Connect campaign creation to actual job routing
-- AI design/copy features
-- Better partner onboarding
+- Improve customer notifications (when artwork reviewed / job shipped)
+- Better design preview tools
+- Partner portal improvements
 
