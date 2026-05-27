@@ -1,6 +1,7 @@
 "use client";
 
 import { trpc } from "@/lib/trpc/client";
+import { ArtworkUpload } from "../ops/components/ArtworkUpload";
 
 export default function MyProductionPage() {
   const { data: campaigns, isLoading, refetch } = trpc.campaign.getMine.useQuery();
@@ -43,6 +44,7 @@ export default function MyProductionPage() {
           <div className="space-y-4">
             {inProduction.map((campaign) => {
               const job = campaign.productionJobs?.[0];
+              const artwork = campaign.artwork;
               return (
                 <div key={campaign.id} className="border rounded-lg p-5 bg-white">
                   <div className="flex justify-between">
@@ -53,10 +55,21 @@ export default function MyProductionPage() {
                     {job && <span className="text-xs px-3 py-1 rounded-full bg-blue-100 text-blue-700">{job.status}</span>}
                   </div>
 
-                  {job && (
-                    <div className="mt-3 text-sm">
-                      <div>Partner: <span className="font-medium">{job.productionPartner?.name || "Being assigned"}</span></div>
-                      <div>Tracking: <span className="font-mono">{job.trackingNumber || "Pending"}</span></div>
+                  <div className="mt-3 text-sm grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>Partner: <span className="font-medium">{job?.productionPartner?.name || "Being assigned"}</span></div>
+                    <div>Tracking: <span className="font-mono">{job?.trackingNumber || "Pending"}</span></div>
+                    <div>
+                      Artwork: {artwork ? (
+                        <span className={`font-medium ${artwork.status === "APPROVED" ? "text-green-600" : artwork.status === "REJECTED" ? "text-red-600" : ""}`}>
+                          {artwork.status}
+                        </span>
+                      ) : "Not uploaded"}
+                    </div>
+                  </div>
+
+                  {!artwork && (
+                    <div className="mt-4">
+                      <ArtworkUpload campaignId={campaign.id} onUploadComplete={refetch} />
                     </div>
                   )}
                 </div>
@@ -78,13 +91,18 @@ export default function MyProductionPage() {
                   <div className="font-medium">{campaign.name}</div>
                   <div className="text-sm text-gray-500">{campaign.size} × {campaign.quantity}</div>
                 </div>
-                <button
-                  onClick={() => sendToProduction.mutate({ campaignId: campaign.id })}
-                  disabled={sendToProduction.isPending}
-                  className="px-4 py-2 bg-black text-white rounded text-sm hover:bg-gray-800 disabled:opacity-60"
-                >
-                  Send to Production
-                </button>
+                <div className="flex items-center gap-3">
+                  {!campaign.artwork && (
+                    <ArtworkUpload campaignId={campaign.id} onUploadComplete={refetch} />
+                  )}
+                  <button
+                    onClick={() => sendToProduction.mutate({ campaignId: campaign.id })}
+                    disabled={sendToProduction.isPending}
+                    className="px-4 py-2 bg-black text-white rounded text-sm hover:bg-gray-800 disabled:opacity-60"
+                  >
+                    Send to Production
+                  </button>
+                </div>
               </div>
             ))}
           </div>
