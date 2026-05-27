@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { UploadButton } from "@/lib/uploadthing";
 
 interface Job {
   id: string;
@@ -97,8 +98,8 @@ export default function PartnerPortal() {
     }
   };
 
-  const submitProof = async () => {
-    if (!selectedJob || !apiKey || !proofUrlInput) return;
+  const submitProofWithUrl = async (url: string) => {
+    if (!selectedJob || !apiKey) return;
 
     try {
       const res = await fetch(`/api/production/jobs/${selectedJob.id}/proof`, {
@@ -107,7 +108,7 @@ export default function PartnerPortal() {
           "Content-Type": "application/json",
           "x-production-key": apiKey,
         },
-        body: JSON.stringify({ proofUrl: proofUrlInput }),
+        body: JSON.stringify({ proofUrl: url }),
       });
 
       if (!res.ok) throw new Error("Failed to submit proof");
@@ -119,6 +120,11 @@ export default function PartnerPortal() {
     } catch (err: any) {
       setError(err.message);
     }
+  };
+
+  const submitProof = async () => {
+    if (!proofUrlInput) return;
+    await submitProofWithUrl(proofUrlInput);
   };
 
   const resetActionForm = () => {
@@ -296,24 +302,33 @@ export default function PartnerPortal() {
                     </button>
                   </div>
 
-                  {/* Proof Upload */}
+                  {/* Proof Upload - Real UploadThing */}
                   <div>
                     <div className="text-sm font-medium mb-2">Submit Proof</div>
-                    <input
-                      type="text"
-                      placeholder="Public URL to proof file (PDF or image)"
-                      value={proofUrlInput}
-                      onChange={(e) => setProofUrlInput(e.target.value)}
-                      className="w-full border rounded-lg px-3 py-2 text-sm mb-2"
+
+                    <UploadButton
+                      endpoint="artworkUploader"
+                      onClientUploadComplete={(res) => {
+                        if (res?.[0]?.url) {
+                          setProofUrlInput(res[0].url);
+                          // Auto-submit after successful upload
+                          submitProofWithUrl(res[0].url);
+                        }
+                      }}
+                      onUploadError={(error: Error) => {
+                        setError(`Upload failed: ${error.message}`);
+                      }}
                     />
-                    <button
-                      onClick={submitProof}
-                      disabled={!proofUrlInput}
-                      className="w-full border border-dashed py-2.5 text-sm rounded-lg disabled:opacity-50 hover:bg-gray-50"
-                    >
-                      Submit Proof
-                    </button>
-                    <p className="text-[10px] text-gray-500 mt-1">In production this can use direct file upload.</p>
+
+                    {proofUrlInput && (
+                      <div className="mt-2 text-xs text-green-600">
+                        File uploaded: {proofUrlInput.split('/').pop()}
+                      </div>
+                    )}
+
+                    <p className="text-[10px] text-gray-500 mt-1">
+                      Upload PDF or image proof directly.
+                    </p>
                   </div>
 
                   {/* Recent Events */}
