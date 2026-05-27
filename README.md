@@ -2,20 +2,14 @@
 
 **Online postcards** — A modern platform for local businesses to design, target, and send postcards at scale.
 
-## Key Features
+## Artwork & Design Previews
+- Client-side PDF preview using PDF.js (instant feedback)
+- Server-side thumbnail generation via Inngest (background job)
+- `thumbnailUrl` support in database
+- Full artwork review workflow (upload → review → approve/reject)
 
-**Customer Experience**
-- Create campaigns + upload artwork (PDF)
-- Live PDF preview (client-side) when uploading
-- Artwork rejection feedback + easy re-upload
-- Pay via Stripe to send to production
-- Visual production timeline
+Inngest is used for reliable background processing of thumbnails after upload.
 
-**Operations**
-- Full artwork preview in the ops drawer
-- Approve / Reject artwork with notes
-- Payment status, job tracking, re-assignment
-
-**Current Focus**
-We are actively building a better design preview experience (thumbnails + better validation).
+## Getting Started with Inngest
+Run `npx inngest-cli@latest dev -u http://localhost:3000/api/inngest` to develop functions locally.
 
