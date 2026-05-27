@@ -2,33 +2,26 @@
 
 **Online postcards** — A modern platform for local businesses to design, target, and send postcards at scale.
 
-## Key Features (Current)
+## Key Features
 
 **Customer Experience**
-- Create campaigns + upload artwork (PDF)
-- Artwork rejection feedback with notes from ops team
-- Re-upload capability after rejection
-- Pay via Stripe Checkout to send to production
-- Track production status, tracking numbers, and artwork status
+- Create campaigns + upload artwork
+- Full artwork review flow (rejection with notes + easy re-upload)
+- Pay via Stripe to send to production
+- Clear production timeline showing Paid → Artwork Review → In Production → Shipped → Delivered
+- Track status and tracking numbers
 
-**Operations Dashboard (`/ops`)**
-- Powerful internal tools for managing all orders
-- Artwork review & approval/rejection with notes
-- Payment status visibility
+**Operations (Internal ERP at `/ops`)**
+- Powerful dashboard for managing all jobs
+- Artwork approval/rejection with notes
 - Internal notes on jobs
-- Job re-assignment, quick status updates, activity feed
+- Payment status visibility
+- Reassignment and quick status updates
 
-**Automated Notifications**
-- Payment confirmation
-- Artwork rejection (with ops notes)
-- Shipping notification with tracking
+**Automation**
+- Auto job creation after payment
+- Email notifications for payment, artwork rejection, and shipping
 
-## Current Status
-The core customer-to-ops-to-print flow is functional and connected, including payments and artwork review.
-
-## Next Priorities
-- More accurate production timeline for customers
-- Design preview / thumbnail generation
-- Improved partner portal
-- Better analytics for operations
+## Status
+Core flows are connected and functional. The customer timeline and artwork rejection experience have been significantly improved.
 
