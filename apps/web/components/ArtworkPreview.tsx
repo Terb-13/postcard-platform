@@ -4,33 +4,44 @@ import { useEffect, useRef, useState } from "react";
 
 interface ArtworkPreviewProps {
   fileUrl: string;
-  thumbnailUrl?: string | null;
-  pageNumber?: number;           // 1-based
+  thumbnailUrl?: string | null;           // legacy single thumbnail (page 1)
+  thumbnails?: Record<number, string>;    // per-page thumbnails: { 1: url, 2: url, ... }
+  pageNumber?: number;                    // 1-based
   className?: string;
   onPageCountChange?: (count: number) => void;
 }
 
 /**
  * ArtworkPreview
- * Shows thumbnail if available (page 1 only).
- * Otherwise renders a specific page using PDF.js in the browser.
- * Supports multi-page viewing via pageNumber prop.
+ *
+ * Priority for a given page:
+ * 1. thumbnails[pageNumber] (server-generated, fastest)
+ * 2. thumbnailUrl (legacy, only for page 1)
+ * 3. Client-side PDF.js rendering (fallback)
  */
 export function ArtworkPreview({
   fileUrl,
   thumbnailUrl,
+  thumbnails,
   pageNumber = 1,
   className = "",
   onPageCountChange,
 }: ArtworkPreviewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [totalPages, setTotalPages] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState(!thumbnailUrl);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
 
+  // Determine the best image source for the current page
+  const pageThumbnail = thumbnails?.[pageNumber];
+  const effectiveThumbnail =
+    pageThumbnail || (pageNumber === 1 ? thumbnailUrl : null);
+
   useEffect(() => {
-    if (thumbnailUrl && pageNumber === 1) {
+    // If we have a pre-generated thumbnail for this page, no need to render client-side
+    if (effectiveThumbnail) {
       setIsLoading(false);
+      setError(false);
       return;
     }
 
@@ -81,12 +92,13 @@ export function ArtworkPreview({
     renderPage();
 
     return () => { isMounted = false; };
-  }, [fileUrl, pageNumber, thumbnailUrl, onPageCountChange]);
+  }, [fileUrl, pageNumber, effectiveThumbnail, onPageCountChange]);
 
-  if (thumbnailUrl && pageNumber === 1) {
+  // Use pre-generated thumbnail if available for this page
+  if (effectiveThumbnail) {
     return (
       <img
-        src={thumbnailUrl}
+        src={effectiveThumbnail}
         alt={`Artwork page ${pageNumber}`}
         className={`rounded border object-contain bg-white ${className}`}
       />
