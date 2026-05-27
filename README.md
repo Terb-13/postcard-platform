@@ -2,6 +2,8 @@
 
 **Online postcards** — A modern platform for local businesses to design, target, and send postcards at scale.
 
+> **Full requirements, API keys, domains, and infrastructure checklist**: See [REQUIREMENTS.md](./REQUIREMENTS.md)
+
 ## Artwork Experience
 
 **For Customers**
