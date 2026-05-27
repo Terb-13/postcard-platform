@@ -67,6 +67,9 @@ model Campaign {
   stripePaymentIntentId String?  @unique
   stripeSessionId       String?
 
+  paidAt                DateTime?
+  amountPaidCents       Int?
+
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
