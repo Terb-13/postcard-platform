@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
+import type { PrismaClient } from "@prisma/client";
 import { protectedProcedure, router } from "../trpc";
 import { TRPCError } from "@trpc/server";
 import { inngest } from "../inngest/client";
@@ -14,6 +15,64 @@ async function loadTargetingStats(zctas: string[]) {
   } catch (err) {
     mapCensusError(err);
   }
+}
+
+type TargetingCriteriaSnapshot = {
+  geoJson: Prisma.InputJsonValue;
+  filters?: Prisma.InputJsonValue;
+  estimatedReach: number;
+  estimatedCostCents: number;
+};
+
+async function upsertTargetingCriteria(
+  prisma: PrismaClient,
+  campaignId: string,
+  snapshot: TargetingCriteriaSnapshot
+) {
+  const estimatedCost = snapshot.estimatedCostCents / 100;
+
+  await prisma.targetingCriteria.upsert({
+    where: { campaignId },
+    create: {
+      campaignId,
+      geoJson: snapshot.geoJson,
+      filters: snapshot.filters ?? undefined,
+      estimatedReach: snapshot.estimatedReach,
+      estimatedCost,
+    },
+    update: {
+      geoJson: snapshot.geoJson,
+      filters: snapshot.filters ?? undefined,
+      estimatedReach: snapshot.estimatedReach,
+      estimatedCost,
+    },
+  });
+}
+
+function buildTargetingCriteriaSnapshot(
+  targeting: {
+    zctas: string[];
+    geoJson?: unknown;
+    filters?: unknown;
+  },
+  reach: number,
+  totalPriceCents: number
+): TargetingCriteriaSnapshot {
+  const geoJson = (targeting.geoJson ?? {
+    type: "FeatureCollection",
+    features: targeting.zctas.map((z) => ({
+      type: "Feature",
+      properties: { zcta: z },
+      geometry: null,
+    })),
+  }) as Prisma.InputJsonValue;
+
+  return {
+    geoJson,
+    filters: targeting.filters as Prisma.InputJsonValue | undefined,
+    estimatedReach: reach,
+    estimatedCostCents: totalPriceCents,
+  };
 }
 
 const targetingInputSchema = z
@@ -117,6 +176,25 @@ export const campaignRouter = router({
         },
       });
 
+      if (input.targeting?.zctas?.length && totalPriceCents != null) {
+        const reach =
+          (targetingMetadata as { estimate?: { reach?: number } } | undefined)?.estimate
+            ?.reach ?? quantity;
+        await upsertTargetingCriteria(
+          ctx.prisma,
+          campaign.id,
+          buildTargetingCriteriaSnapshot(
+            {
+              zctas: input.targeting.zctas,
+              geoJson: input.targeting.geoJson,
+              filters: input.targeting.filters,
+            },
+            reach,
+            totalPriceCents
+          )
+        );
+      }
+
       return campaign;
     }),
 
@@ -214,10 +292,36 @@ export const campaignRouter = router({
         }
       }
 
-      return ctx.prisma.campaign.update({
+      const updated = await ctx.prisma.campaign.update({
         where: { id: input.id },
         data,
       });
+
+      if (input.targeting?.zctas?.length) {
+        const reach =
+          (
+            (data.targetingMetadata ?? existing.targetingMetadata) as {
+              estimate?: { reach?: number };
+            } | null
+          )?.estimate?.reach ?? updated.quantity;
+        const totalCents = updated.totalPriceCents ?? existing.totalPriceCents ?? 0;
+
+        await upsertTargetingCriteria(
+          ctx.prisma,
+          input.id,
+          buildTargetingCriteriaSnapshot(
+            {
+              zctas: input.targeting.zctas,
+              geoJson: input.targeting.geoJson,
+              filters: input.targeting.filters,
+            },
+            reach,
+            totalCents
+          )
+        );
+      }
+
+      return updated;
     }),
 
   // List my campaigns with artwork (incl. thumbnails) + production job info for timeline/preview

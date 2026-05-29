@@ -26,6 +26,7 @@ import { TargetingStep } from "./steps/TargetingStep";
 import { ReviewStep } from "./steps/ReviewStep";
 import { CheckoutStep } from "./steps/CheckoutStep";
 import { WizardFeedback } from "./WizardFeedback";
+import { submitCampaign } from "./submitCampaign";
 
 const STEP_IDS = WIZARD_STEPS.map((s) => s.id);
 
@@ -50,6 +51,8 @@ export function CampaignWizard() {
   const [artworkRefetchKey, setArtworkRefetchKey] = useState(0);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [stepError, setStepError] = useState<StepError>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [targetingValidationError, setTargetingValidationError] = useState<string | null>(null);
 
   const basicsForm = useForm<CampaignBasics>({
@@ -67,11 +70,8 @@ export function CampaignWizard() {
 
   const createCampaign = trpc.campaign.create.useMutation();
   const updateDraft = trpc.campaign.updateDraft.useMutation();
-  const createCheckout = trpc.campaign.createCheckoutSession.useMutation({
-    onSuccess: (res) => {
-      if (res?.url) window.location.href = res.url;
-    },
-  });
+  const uploadArtwork = trpc.campaign.uploadArtwork.useMutation();
+  const createCheckout = trpc.campaign.createCheckoutSession.useMutation();
 
   const estimateQuery = trpc.targeting.estimateAudience.useQuery(
     {
@@ -136,6 +136,7 @@ export function CampaignWizard() {
       setStepIndex(clamped);
       setStepError(null);
       setTargetingValidationError(null);
+      setSubmitError(null);
       const params = new URLSearchParams();
       params.set("step", String(clamped));
       if (campaignId) params.set("campaignId", campaignId);
@@ -158,6 +159,7 @@ export function CampaignWizard() {
             ? {
                 zctas: zctaList,
                 geoJson: targeting.geoJson,
+                filters: targeting.filters,
                 quantityOverride: targeting.quantityOverride,
               }
             : undefined,
@@ -178,6 +180,7 @@ export function CampaignWizard() {
           ? {
               zctas: zctaList,
               geoJson: targeting.geoJson,
+              filters: targeting.filters,
               quantityOverride: targeting.quantityOverride,
             }
           : undefined,
@@ -289,27 +292,82 @@ export function CampaignWizard() {
     }
 
     if (currentStepId === "review") {
-      if (!campaignId) return;
-      try {
-        setSaveStatus("saving");
-        await updateDraft.mutateAsync({
-          id: campaignId,
-          dropDate: dropDate || null,
-          notes: notes || null,
-        });
-        setSaveStatus("saved");
-        goToStep(stepIndex + 1);
-      } catch (e) {
-        setSaveStatus("error");
-        setStepError({
-          step: "review",
-          message: e instanceof Error ? e.message : "Could not save",
-        });
-      }
       return;
     }
 
     goToStep(stepIndex + 1);
+  };
+
+  const handleSubmit = async () => {
+    setSubmitError(null);
+    setStepError(null);
+
+    if (targeting.zctas.length === 0) {
+      setSubmitError("Select at least one ZIP code before submitting.");
+      return;
+    }
+
+    if (!campaign?.artwork?.fileUrl) {
+      setSubmitError("Upload your postcard PDF before submitting.");
+      return;
+    }
+
+    if (estimateQuery.isFetching && !estimateQuery.data) {
+      setSubmitError("Please wait for pricing estimates to finish loading.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const { campaignId: submittedId, checkoutUrl } = await submitCampaign(
+        {
+          create: createCampaign.mutateAsync,
+          updateDraft: updateDraft.mutateAsync,
+          uploadArtwork: uploadArtwork.mutateAsync,
+          createCheckoutSession: createCheckout.mutateAsync,
+        },
+        {
+          campaignId,
+          basics: basicsForm.getValues(),
+          targeting,
+          dropDate,
+          notes,
+          estimate: estimateQuery.data,
+          existingArtwork: campaign?.artwork,
+        }
+      );
+
+      if (submittedId !== campaignId) {
+        setCampaignId(submittedId);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("campaignId", submittedId);
+        params.set("step", String(stepIndex));
+        router.replace(`/campaigns/new?${params.toString()}`, { scroll: false });
+      }
+
+      window.location.href = checkoutUrl;
+    } catch (e) {
+      const message = formatTrpcError(e);
+      setSubmitError(message);
+      setStepError({ step: "review", message });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCheckoutPay = () => {
+    if (!campaignId) return;
+    createCheckout.mutate(
+      { campaignId },
+      {
+        onSuccess: (res) => {
+          if (res?.url) window.location.href = res.url;
+        },
+        onError: (e) => {
+          setStepError({ step: "checkout", message: formatTrpcError(e) });
+        },
+      }
+    );
   };
 
   const handleBack = () => goToStep(stepIndex - 1);
@@ -326,7 +384,12 @@ export function CampaignWizard() {
     return meta ?? null;
   }, [campaign?.targetingMetadata]);
 
-  const isSaving = createCampaign.isPending || updateDraft.isPending || saveStatus === "saving";
+  const isSaving =
+    createCampaign.isPending ||
+    updateDraft.isPending ||
+    uploadArtwork.isPending ||
+    saveStatus === "saving";
+  const isBusy = isSaving || isSubmitting || createCheckout.isPending;
 
   return (
     <div className="min-h-screen bg-[var(--color-bg)] pb-24 lg:pb-0">
@@ -436,13 +499,17 @@ export function CampaignWizard() {
                   onNotesChange={setNotes}
                   campaign={campaign}
                   targetingSummary={targetingSummary}
+                  onSubmit={handleSubmit}
+                  isSubmitting={isSubmitting}
+                  submitError={submitError}
+                  onDismissSubmitError={() => setSubmitError(null)}
                 />
               )}
 
               {currentStepId === "checkout" && campaignId && (
                 <CheckoutStep
                   campaign={campaign}
-                  onPay={() => createCheckout.mutate({ campaignId })}
+                  onPay={handleCheckoutPay}
                   isPaying={createCheckout.isPending}
                 />
               )}
@@ -455,23 +522,23 @@ export function CampaignWizard() {
             type="button"
             variant="secondary"
             onClick={handleBack}
-            disabled={stepIndex === 0 || isSaving}
+            disabled={stepIndex === 0 || isBusy}
           >
             Back
           </Button>
           <div className="flex gap-3">
-            {currentStepId !== "checkout" && (
+            {currentStepId !== "checkout" && currentStepId !== "review" && (
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleSaveDraft}
-                disabled={isSaving}
+                disabled={isBusy}
               >
                 {saveStatus === "saving" ? "Saving…" : "Save draft"}
               </Button>
             )}
-            {currentStepId !== "checkout" && (
-              <Button type="button" onClick={handleNext} disabled={isSaving}>
+            {currentStepId !== "checkout" && currentStepId !== "review" && (
+              <Button type="button" onClick={handleNext} disabled={isBusy}>
                 {isSaving ? "Saving…" : "Continue"}
               </Button>
             )}

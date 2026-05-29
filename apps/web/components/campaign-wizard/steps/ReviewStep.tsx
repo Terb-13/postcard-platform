@@ -3,9 +3,11 @@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 import type { TargetingSelection } from "@/components/targeting";
 import type { CampaignBasics } from "../schema";
+import { WizardFeedback } from "../WizardFeedback";
 
 type Props = {
   basics: CampaignBasics;
@@ -31,6 +33,10 @@ type Props = {
     zctas?: string[];
     estimate?: { reach?: number; avgMedianIncome?: number };
   } | null;
+  onSubmit?: () => void | Promise<void>;
+  isSubmitting?: boolean;
+  submitError?: string | null;
+  onDismissSubmitError?: () => void;
 };
 
 export function ReviewStep({
@@ -45,6 +51,10 @@ export function ReviewStep({
   onNotesChange,
   campaign,
   targetingSummary,
+  onSubmit,
+  isSubmitting = false,
+  submitError,
+  onDismissSubmitError,
 }: Props) {
   const zctas = targeting.zctas.map((z) => z.zcta);
   const quantity = campaign?.quantity ?? estimate?.pricing?.quantity ?? 0;
@@ -175,6 +185,32 @@ export function ReviewStep({
           />
         </div>
       </div>
+
+      {submitError && (
+        <WizardFeedback
+          message={submitError}
+          variant="error"
+          onDismiss={onDismissSubmitError}
+        />
+      )}
+
+      {onSubmit && (
+        <div className="pt-2">
+          <Button
+            type="button"
+            size="lg"
+            className="w-full sm:w-auto"
+            onClick={() => void onSubmit()}
+            disabled={isSubmitting || (isEstimateLoading && !estimate)}
+          >
+            {isSubmitting ? "Creating campaign…" : "Create Campaign & Pay"}
+          </Button>
+          <p className="mt-2 text-xs text-[var(--color-text-muted)]">
+            You&apos;ll be redirected to Stripe for secure payment. Artwork must be approved
+            before checkout completes.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
