@@ -6,7 +6,13 @@ import { getCurrentUser } from "@/lib/auth";
 export const runtime = "nodejs";
 
 const handler = async (req: Request) => {
-  const user = await getCurrentUser();
+  let user = null;
+  try {
+    user = await getCurrentUser();
+  } catch (error) {
+    // Public procedures (e.g. landing demo) must work even if Clerk context fails.
+    console.warn("[tRPC] getCurrentUser failed; continuing as anonymous:", error);
+  }
 
   return fetchRequestHandler({
     endpoint: "/api/trpc",

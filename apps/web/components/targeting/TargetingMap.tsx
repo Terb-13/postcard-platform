@@ -8,7 +8,7 @@ import type { Feature, FeatureCollection, Polygon } from "geojson";
 import "mapbox-gl/dist/mapbox-gl.css";
 
 import { trpc } from "@/lib/trpc/client";
-import { cn, formatCurrency, formatNumber } from "@/lib/utils";
+import { cn, formatCurrency, formatNumber, formatTrpcError } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ZipSearch } from "./ZipSearch";
@@ -121,6 +121,13 @@ export function TargetingMap({
   );
 
   const estimateQuery = demoMode ? demoEstimateQuery : authEstimateQuery;
+
+  const censusError = estimateQuery.error;
+  const censusErrorMessage = censusError ? formatTrpcError(censusError) : undefined;
+  const censusErrorCode =
+    censusError && typeof censusError === "object" && "data" in censusError
+      ? String((censusError as { data?: { code?: string } }).data?.code ?? "")
+      : undefined;
 
   const isUpdating =
     isEstimateStale ||
@@ -319,6 +326,8 @@ export function TargetingMap({
     isLoading: isInitialLoading,
     isUpdating,
     isError: estimateQuery.isError,
+    errorMessage: censusErrorMessage,
+    errorCode: censusErrorCode || undefined,
     onRetry: () => estimateQuery.refetch(),
     quantityOverride: selection.quantityOverride,
     onQuantityOverrideChange: (q: number | undefined) =>

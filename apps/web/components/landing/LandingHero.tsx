@@ -1,11 +1,11 @@
 import { AuthButtons } from "./AuthButtons";
-import { LandingHeroPreview } from "./LandingHeroPreview";
+import { LandingVisual } from "./LandingVisual";
 
 export function LandingHero() {
   return (
     <section className="relative overflow-hidden border-b border-[var(--color-border)] bg-[var(--color-surface)]">
       <div
-        className="absolute inset-0 opacity-[0.35] pointer-events-none hidden lg:block"
+        className="absolute inset-0 opacity-[0.3] pointer-events-none hidden lg:block"
         aria-hidden
         style={{
           backgroundImage: `
@@ -13,13 +13,12 @@ export function LandingHero() {
             linear-gradient(to bottom, var(--color-border) 1px, transparent 1px)
           `,
           backgroundSize: "64px 64px",
-          maskImage: "radial-gradient(ellipse 90% 80% at 30% 20%, black 15%, transparent 70%)",
+          maskImage: "radial-gradient(ellipse 90% 80% at 20% 30%, black 10%, transparent 72%)",
         }}
       />
-      <div className="absolute top-0 right-0 w-2/3 h-full bg-[radial-gradient(ellipse_at_top_right,rgba(10,102,194,0.07),transparent_60%)] pointer-events-none" />
 
-      <div className="container relative z-10 pt-14 pb-16 sm:pt-20 sm:pb-20 lg:pt-28 lg:pb-32">
-        <div className="lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-16 xl:gap-24 lg:items-center">
+      <div className="container relative z-10 pt-14 pb-12 sm:pt-20 sm:pb-16 lg:pt-24 lg:pb-20">
+        <div className="lg:grid lg:grid-cols-2 lg:gap-14 xl:gap-20 lg:items-center">
           <div className="max-w-3xl lg:max-w-none">
             <p className="landing-eyebrow mb-5 lg:mb-6">
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-600 mr-2 align-middle" aria-hidden />
@@ -31,10 +30,9 @@ export function LandingHero() {
               <span className="text-[var(--color-accent)]">real Census data</span>
             </h1>
 
-            <p className="landing-hero-lead max-w-xl mb-10 lg:mb-11">
-              Stop mailing everyone in a ZIP. See median income, movers, and household reach on
-              the map — then send with confidence through a guided workflow and professional
-              fulfillment.
+            <p className="landing-hero-lead max-w-xl mb-8 lg:mb-10">
+              Software that maps US Census demographics to every ZIP — so you see who you&apos;re
+              reaching, what it costs, and when mail goes out. No spreadsheets. No guesswork.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 lg:gap-5">
@@ -47,7 +45,7 @@ export function LandingHero() {
               </a>
             </div>
 
-            <ul className="mt-10 lg:mt-12 flex flex-col sm:flex-row sm:flex-wrap gap-x-10 gap-y-3 text-sm text-[var(--color-text-muted)]">
+            <ul className="mt-8 lg:mt-10 flex flex-col sm:flex-row sm:flex-wrap gap-x-10 gap-y-3 text-sm text-[var(--color-text-muted)]">
               <li className="flex items-center gap-2.5">
                 <CheckIcon />
                 No credit card to explore
@@ -63,7 +61,17 @@ export function LandingHero() {
             </ul>
           </div>
 
-          <LandingHeroPreview />
+          <div className="mt-10 lg:mt-0">
+            <LandingVisual
+              src="/images/hero.jpg"
+              alt="Postcard Platform targeting interface showing geo data and audience metrics on a map"
+              aspect="hero"
+              priority
+              sizes="(max-width: 1024px) 100vw, 48vw"
+              caption="Geo-targeting powered by live Census ACS data"
+              className="lg:shadow-[var(--shadow-xl)]"
+            />
+          </div>
         </div>
       </div>
     </section>

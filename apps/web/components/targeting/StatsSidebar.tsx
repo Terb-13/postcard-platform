@@ -29,6 +29,8 @@ type Props = {
   isLoading?: boolean;
   isUpdating?: boolean;
   isError?: boolean;
+  errorMessage?: string;
+  errorCode?: string;
   onRetry?: () => void;
   quantityOverride?: number;
   onQuantityOverrideChange?: (value: number | undefined) => void;
@@ -44,6 +46,8 @@ export function StatsSidebar({
   isLoading,
   isUpdating,
   isError,
+  errorMessage,
+  errorCode,
   onRetry,
   quantityOverride,
   onQuantityOverrideChange,
@@ -94,7 +98,7 @@ export function StatsSidebar({
         {selectedCount === 0 ? (
           <EmptyState />
         ) : isError ? (
-          <ErrorState onRetry={onRetry} />
+          <ErrorState message={errorMessage} code={errorCode} onRetry={onRetry} />
         ) : (
           <>
             <div
@@ -274,12 +278,26 @@ function EmptyState() {
   );
 }
 
-function ErrorState({ onRetry }: { onRetry?: () => void }) {
+function ErrorState({
+  message,
+  code,
+  onRetry,
+}: {
+  message?: string;
+  code?: string;
+  onRetry?: () => void;
+}) {
+  const detail =
+    message?.trim() ||
+    "Could not load Census data. Check your connection and try again.";
+
   return (
     <div className="rounded-xl bg-red-50 border border-red-100 p-4 space-y-3">
-      <p className="text-sm text-red-800">
-        Could not load Census data. Check your connection and try again.
-      </p>
+      <p className="text-sm font-medium text-red-900">Could not load Census data</p>
+      <p className="text-sm text-red-800 leading-relaxed">{detail}</p>
+      {code && (
+        <p className="text-micro font-mono text-red-700/80">Error code: {code}</p>
+      )}
       {onRetry && (
         <Button type="button" variant="outline" size="sm" onClick={onRetry}>
           Retry estimate

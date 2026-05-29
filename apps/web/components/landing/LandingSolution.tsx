@@ -1,4 +1,5 @@
 import { LandingSectionHeader } from "./LandingSectionHeader";
+import { LandingVisual } from "./LandingVisual";
 
 const PILLARS = [
   {
@@ -27,11 +28,32 @@ export function LandingSolution() {
       <div className="container">
         <LandingSectionHeader
           align="center"
-          className="lg:mb-16"
+          className="lg:mb-14 mx-auto"
           eyebrow="Your guide"
-          title="Precision targeting without the complexity"
-          description="Postcard Platform combines authoritative geo data with a workflow built for operators — so you can see your audience, set your budget, and send with confidence."
+          title="Data and software — built for precise direct mail"
+          description="Postcard Platform turns authoritative Census geo data into a clear workflow: see your audience, set your budget, and send with confidence."
         />
+
+        <div className="grid gap-5 lg:grid-cols-12 lg:gap-6 mb-10 lg:mb-14 max-w-6xl mx-auto">
+          <div className="lg:col-span-7">
+            <LandingVisual
+              src="/images/solution.jpg"
+              alt="Postcard Platform solution showing targeted direct mail powered by data"
+              aspect="wide"
+              sizes="(max-width: 1024px) 100vw, 58vw"
+              caption="Targeted campaigns driven by software, not guesswork"
+            />
+          </div>
+          <div className="lg:col-span-5">
+            <LandingVisual
+              src="/images/data.jpg"
+              alt="Census demographic data layers applied to geographic targeting"
+              aspect="tall"
+              sizes="(max-width: 1024px) 100vw, 38vw"
+              caption="US Census ACS — income, movers, population by ZIP"
+            />
+          </div>
+        </div>
 
         <div className="grid gap-5 lg:grid-cols-3 lg:gap-6 max-w-6xl mx-auto">
           {PILLARS.map((pillar) => (

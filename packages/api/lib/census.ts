@@ -168,21 +168,40 @@ async function fetchZctasFromApi(zctas: string[]): Promise<Map<string, ZipDemogr
   const key = process.env.CENSUS_API_KEY!.trim();
   const vars = Object.values(CENSUS_VARS).join(",");
   const base = `https://api.census.gov/data/${ACS_YEAR}/${ACS_DATASET}`;
-  const params = new URLSearchParams({ get: `NAME,${vars}`, key });
-
-  for (const z of zctas) {
-    params.append("for", `zip code tabulation area:${z}`);
-  }
+  // Census expects comma-separated ZCTAs in a single `for` param — multiple append() only returns one ZIP.
+  const params = new URLSearchParams({
+    get: `NAME,${vars}`,
+    key,
+    for: `zip code tabulation area:${zctas.join(",")}`,
+  });
 
   const url = `${base}?${params.toString()}`;
-  const res = await fetch(url);
+  const res = await fetch(url, { headers: { Accept: "application/json" } });
+  const contentType = res.headers.get("content-type") ?? "";
+  const bodyText = await res.text();
 
   if (!res.ok) {
-    throw new Error(`Census API error (${res.status}) for ZCTAs: ${zctas.join(", ")}`);
+    throw new Error(
+      `Census API HTTP ${res.status} for ZCTAs ${zctas.join(", ")}: ${bodyText.slice(0, 200)}`
+    );
   }
 
-  const json = (await res.json()) as string[][];
-  if (!json || json.length < 2) {
+  if (bodyText.trimStart().startsWith("<") || !contentType.includes("json")) {
+    throw new CensusConfigError(
+      "Census API rejected the request. Set a valid CENSUS_API_KEY in your server environment (https://api.census.gov/data/key_signup.html)."
+    );
+  }
+
+  let json: string[][];
+  try {
+    json = JSON.parse(bodyText) as string[][];
+  } catch {
+    throw new Error(
+      `Census API returned invalid JSON for ZCTAs ${zctas.join(", ")}: ${bodyText.slice(0, 120)}`
+    );
+  }
+
+  if (!Array.isArray(json) || json.length < 2) {
     return new Map(zctas.map((z) => [z, emptyZcta(z)]));
   }
 

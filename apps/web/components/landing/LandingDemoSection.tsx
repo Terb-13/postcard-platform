@@ -6,7 +6,7 @@ export function LandingDemoSection() {
   return (
     <section
       id="demo"
-      className="section section-rhythm scroll-mt-20 bg-[var(--color-bg-subtle)] border-y border-[var(--color-border)]"
+      className="section section-rhythm scroll-mt-20 bg-[var(--color-bg)] border-y border-[var(--color-border)]"
     >
       <div className="container">
         <div className="lg:grid lg:grid-cols-12 lg:gap-12 xl:gap-16 lg:items-start">

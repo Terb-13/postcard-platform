@@ -16,3 +16,15 @@ export function formatCurrency(cents: number): string {
 export function formatNumber(n: number): string {
   return new Intl.NumberFormat("en-US").format(n);
 }
+
+/** Extract a human-readable message from a tRPC / React Query error */
+export function formatTrpcError(error: unknown): string {
+  if (!error) return "Unknown error";
+  if (typeof error === "string") return error;
+  if (error instanceof Error) return error.message;
+  if (typeof error === "object" && "message" in error) {
+    const msg = (error as { message?: unknown }).message;
+    if (typeof msg === "string" && msg.length > 0) return msg;
+  }
+  return "Unknown error";
+}
