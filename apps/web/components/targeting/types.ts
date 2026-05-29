@@ -1,3 +1,6 @@
+/** Max ZCTAs per campaign / estimate request (matches API schema) */
+export const MAX_TARGETING_ZCTAS = 50;
+
 export type SelectedZcta = {
   zcta: string;
   placeName?: string;

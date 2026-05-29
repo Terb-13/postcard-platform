@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
@@ -10,6 +10,7 @@ import { Stepper } from "@/components/ui/stepper";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc/client";
+import { formatTrpcError } from "@/lib/utils";
 import type { RouterOutputs } from "@/lib/trpc/client";
 import type { TargetingSelection } from "@/components/targeting";
 import { ArtworkUpload } from "@/components/ArtworkUpload";
@@ -77,9 +78,49 @@ export function CampaignWizard() {
       zctas: targeting.zctas.map((z) => z.zcta),
       size,
       quantityOverride: targeting.quantityOverride,
+      filters: targeting.filters,
+      geoJson: targeting.geoJson,
     },
     { enabled: targeting.zctas.length > 0, staleTime: 30_000, placeholderData: (prev) => prev }
   );
+
+  const hydratedRef = useRef(false);
+
+  useEffect(() => {
+    if (!campaign || hydratedRef.current) return;
+    hydratedRef.current = true;
+
+    const validSizes = ["4x6", "5x7", "6x9", "6x11"] as const;
+    const campaignSize = validSizes.includes(campaign.size as (typeof validSizes)[number])
+      ? (campaign.size as CampaignBasics["size"])
+      : "6x11";
+
+    basicsForm.reset({
+      name: campaign.name,
+      size: campaignSize,
+    });
+
+    if (campaign.dropDate) {
+      setDropDate(new Date(campaign.dropDate).toISOString().slice(0, 10));
+    }
+    if (campaign.notes) setNotes(campaign.notes);
+
+    const meta = campaign.targetingMetadata as {
+      zctas?: string[];
+      filters?: TargetingSelection["filters"];
+    } | null;
+
+    const zctaList = meta?.zctas ?? [];
+    if (zctaList.length > 0) {
+      setTargeting({
+        zctas: zctaList.map((z) => ({ zcta: z, placeName: `ZCTA ${z}` })),
+        filters: meta?.filters,
+        geoJson: campaign.savedMap?.geoJson
+          ? (campaign.savedMap.geoJson as unknown as TargetingSelection["geoJson"])
+          : undefined,
+      });
+    }
+  }, [campaign, basicsForm]);
 
   const currentStepId = STEP_IDS[stepIndex] as WizardStepId;
 
@@ -194,10 +235,14 @@ export function CampaignWizard() {
         setTargetingValidationError("Select at least one ZIP code to continue.");
         return;
       }
+      if (estimateQuery.isFetching && !estimateQuery.data) {
+        setTargetingValidationError("Please wait for Census estimates to finish loading.");
+        return;
+      }
       if (estimateQuery.isError) {
         setStepError({
           step: "targeting",
-          message: "Census estimate unavailable. Check your connection and try again.",
+          message: formatTrpcError(estimateQuery.error),
         });
         return;
       }

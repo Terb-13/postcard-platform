@@ -4,8 +4,17 @@ import { protectedProcedure, router } from "../trpc";
 import { TRPCError } from "@trpc/server";
 import { inngest } from "../inngest/client";
 import { stripe } from "../lib/stripe";
-import { getStatsForZctas } from "../lib/census";
+import { getACSStats } from "../lib/census";
+import { mapCensusError } from "../lib/census-errors";
 import { calculateCampaignPricing } from "../lib/pricing";
+
+async function loadTargetingStats(zctas: string[]) {
+  try {
+    return await getACSStats(zctas);
+  } catch (err) {
+    mapCensusError(err);
+  }
+}
 
 const targetingInputSchema = z
   .object({
@@ -46,7 +55,7 @@ export const campaignRouter = router({
       let savedMapId: string | undefined;
 
       if (input.targeting?.zctas?.length) {
-        const stats = await getStatsForZctas(input.targeting.zctas);
+        const stats = await loadTargetingStats(input.targeting.zctas);
         const reach = stats.households > 0 ? stats.households : stats.population;
         const pricing = calculateCampaignPricing({
           size: input.size,
@@ -149,7 +158,7 @@ export const campaignRouter = router({
       if (input.notes !== undefined) data.notes = input.notes;
 
       if (input.targeting?.zctas?.length) {
-        const stats = await getStatsForZctas(input.targeting.zctas);
+        const stats = await loadTargetingStats(input.targeting.zctas);
         const reach = stats.households > 0 ? stats.households : stats.population;
         const pricing = calculateCampaignPricing({
           size: (input.size ?? existing.size) as string,

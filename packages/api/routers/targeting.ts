@@ -1,11 +1,8 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { publicProcedure, protectedProcedure, router } from "../trpc";
-import {
-  CensusConfigError,
-  audienceEstimateFromStats,
-  getACSStats,
-} from "../lib/census";
+import { audienceEstimateFromStats, getACSStats } from "../lib/census";
+import { mapCensusError } from "../lib/census-errors";
 import { calculateCampaignPricing } from "../lib/pricing";
 import {
   getZctaBoundaries,
@@ -23,26 +20,6 @@ const filtersSchema = z
   .optional();
 
 const zctaArraySchema = z.array(z.string().min(5).max(10)).max(50);
-
-function mapCensusError(err: unknown): never {
-  if (err instanceof CensusConfigError) {
-    throw new TRPCError({ code: "PRECONDITION_FAILED", message: err.message });
-  }
-  if (err instanceof TRPCError) {
-    throw err;
-  }
-  if (err instanceof Error) {
-    throw new TRPCError({
-      code: "BAD_GATEWAY",
-      message: err.message,
-      cause: err,
-    });
-  }
-  throw new TRPCError({
-    code: "INTERNAL_SERVER_ERROR",
-    message: "Unexpected error loading Census data",
-  });
-}
 
 function applyFilters(
   stats: Awaited<ReturnType<typeof getACSStats>>,

@@ -9,15 +9,16 @@ import "mapbox-gl/dist/mapbox-gl.css";
 
 import { trpc } from "@/lib/trpc/client";
 import { cn, formatCurrency, formatNumber, formatTrpcError } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { ZipSearch } from "./ZipSearch";
 import { StatsSidebar } from "./StatsSidebar";
-import { DrawControl } from "./MapDrawControl";
-import { incomeToColor, INCOME_LEGEND } from "./income-scale";
+import { DrawControl, useMapDrawInteractions } from "./MapDrawControl";
+import { incomeToColor, INCOME_LEGEND_GRADIENT } from "./income-scale";
 import type { SelectedZcta, TargetingSelection } from "./types";
+import { MAX_TARGETING_ZCTAS } from "./types";
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+/** light-v11 supports custom fill/line layers; Standard style hides them without slot config */
+const MAP_STYLE = "mapbox://styles/mapbox/light-v11";
 const DEFAULT_CENTER = { longitude: -98.5795, latitude: 39.8283, zoom: 3.5 };
 const VIEWPORT_ZOOM_MIN = 8;
 
@@ -56,6 +57,7 @@ export function TargetingMap({
   const [drawMode, setDrawMode] = useState(false);
   const [mobileStatsOpen, setMobileStatsOpen] = useState(false);
   const [selectionPulse, setSelectionPulse] = useState(false);
+  const [mapNotice, setMapNotice] = useState<string | null>(null);
   const [viewportBbox, setViewportBbox] = useState<[number, number, number, number] | null>(
     null
   );
@@ -150,6 +152,16 @@ export function TargetingMap({
 
   const findInPolygon = trpc.targeting.findZctasInPolygon.useMutation();
 
+  useMapDrawInteractions(mapRef, drawMode);
+
+  useEffect(() => {
+    if (selectedBoundaries.isError) {
+      setMapNotice(
+        "Could not load ZIP boundaries. Check your connection or try fewer ZIPs."
+      );
+    }
+  }, [selectedBoundaries.isError]);
+
   const statsByZcta = useMemo(() => {
     const map = new Map<string, { medianIncome: number | null; population: number }>();
     estimateQuery.data?.zctas?.forEach((z) => {
@@ -164,7 +176,7 @@ export function TargetingMap({
       const stats = statsByZcta.get(zcta);
       const fillColor = selected
         ? incomeToColor(stats?.medianIncome)
-        : "#e2e8f0";
+        : "#e8edf4";
       return {
         ...f,
         properties: {
@@ -218,14 +230,25 @@ export function TargetingMap({
 
   const addZcta = useCallback(
     (item: SelectedZcta) => {
-      if (selection.zctas.some((z) => z.zcta === item.zcta)) return;
-      const next = [...selection.zctas, item];
+      const zcta = item.zcta.replace(/\D/g, "").slice(0, 5).padStart(5, "0");
+      if (zcta.length !== 5) return;
+      if (selection.zctas.some((z) => z.zcta === zcta)) {
+        setMapNotice(`ZIP ${zcta} is already selected.`);
+        return;
+      }
+      if (selection.zctas.length >= MAX_TARGETING_ZCTAS) {
+        setMapNotice(`Maximum ${MAX_TARGETING_ZCTAS} ZIP codes per campaign.`);
+        return;
+      }
+      setMapNotice(null);
+      const normalized = { ...item, zcta };
+      const next = [...selection.zctas, normalized];
       onSelectionChange({ ...selection, zctas: next });
-      if (item.center) {
+      if (normalized.center) {
         setViewState((v) => ({
           ...v,
-          longitude: item.center![0],
-          latitude: item.center![1],
+          longitude: normalized.center![0],
+          latitude: normalized.center![1],
           zoom: Math.max(v.zoom, 11),
         }));
       }
@@ -280,15 +303,29 @@ export function TargetingMap({
             center: c.center,
             placeName: c.placeName,
           }));
-        if (newItems.length > 0) {
-          onSelectionChange({
-            ...selection,
-            zctas: [...selection.zctas, ...newItems],
-            geoJson: featureCollection([feature]) as FeatureCollection,
-          });
+        if (newItems.length === 0) {
+          setMapNotice("No ZIP codes found in that area. Try a smaller or more zoomed-in shape.");
+          return;
         }
-      } catch {
-        alert("Could not find ZIP codes in that area. Try zooming in or drawing a smaller shape.");
+
+        const merged = [...selection.zctas, ...newItems];
+        let notice: string | null = null;
+        let zctas = merged;
+        if (merged.length > MAX_TARGETING_ZCTAS) {
+          zctas = merged.slice(0, MAX_TARGETING_ZCTAS);
+          notice = `Added ${newItems.length} ZIPs; capped at ${MAX_TARGETING_ZCTAS} per campaign.`;
+        }
+        setMapNotice(notice);
+        onSelectionChange({
+          ...selection,
+          zctas,
+          geoJson: featureCollection([feature]) as FeatureCollection,
+        });
+      } catch (err) {
+        setMapNotice(
+          formatTrpcError(err) ||
+            "Could not find ZIP codes in that area. Try zooming in or drawing a smaller shape."
+        );
       }
     },
     [findInPolygon, onSelectionChange, selection]
@@ -333,6 +370,9 @@ export function TargetingMap({
     onQuantityOverrideChange: (q: number | undefined) =>
       onSelectionChange({ ...selection, quantityOverride: q }),
     onClearSelection: clearSelection,
+    filters: selection.filters,
+    onFiltersChange: (filters: TargetingSelection["filters"]) =>
+      onSelectionChange({ ...selection, filters }),
     readOnly: readOnlySidebar,
   };
 
@@ -356,75 +396,82 @@ export function TargetingMap({
   }
 
   return (
-    <div className={cn("flex flex-col lg:flex-row gap-4", className)}>
-      <div className="flex-1 min-h-[320px] sm:min-h-[420px] lg:min-h-[520px] flex flex-col gap-3">
-        <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
-          <ZipSearch onSelect={addZcta} className="flex-1" />
+    <div className={cn("flex flex-col lg:flex-row gap-5 lg:gap-6", className)}>
+      <div className="flex-1 min-h-[320px] sm:min-h-[440px] lg:min-h-[540px] flex flex-col gap-3">
+        <div className="targeting-toolbar relative z-20">
+          <ZipSearch onSelect={addZcta} className="flex-1 min-w-[200px]" />
           {!hideDrawControl && (
-            <Button
+            <button
               type="button"
-              variant={drawMode ? "primary" : "secondary"}
-              size="sm"
+              className={cn(
+                "targeting-draw-btn shrink-0",
+                drawMode && "targeting-draw-btn-active"
+              )}
               onClick={() => setDrawMode((d) => !d)}
               disabled={findInPolygon.isPending}
             >
-              {findInPolygon.isPending
-                ? "Finding ZIPs…"
-                : drawMode
-                  ? "Drawing… click map"
-                  : "Draw custom area"}
-            </Button>
+              <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Z" />
+              </svg>
+              {findInPolygon.isPending ? "Finding…" : drawMode ? "Drawing…" : "Draw area"}
+            </button>
           )}
         </div>
 
         <SelectedChips zctas={selection.zctas} onRemove={removeZcta} />
 
-        <div className="relative flex-1 rounded-2xl overflow-hidden border border-[var(--color-border)] min-h-[280px] sm:min-h-[360px]">
+        {mapNotice && (
+          <p
+            role="status"
+            className="text-xs font-medium text-amber-900 bg-amber-50/90 border border-amber-200/80 rounded-xl px-4 py-2.5"
+          >
+            {mapNotice}
+          </p>
+        )}
+
+        <div className="targeting-shell relative flex-1 min-h-[300px] sm:min-h-[380px]">
+          <div className="targeting-map-vignette" aria-hidden />
           <MapGL
             ref={mapRef}
             {...viewState}
             onMove={(evt) => setViewState(evt.viewState)}
             onMoveEnd={updateViewportBbox}
             mapboxAccessToken={MAPBOX_TOKEN}
-            mapStyle="mapbox://styles/mapbox/light-v11"
+            mapStyle={MAP_STYLE}
             interactiveLayerIds={drawMode ? [] : ["zcta-fill"]}
             onClick={onMapClick}
-            cursor={drawMode ? "crosshair" : undefined}
-            style={{ width: "100%", height: "100%", minHeight: 280 }}
+            cursor={drawMode ? "crosshair" : "pointer"}
+            style={{ width: "100%", height: "100%", minHeight: 300 }}
           >
-            <NavigationControl position="top-right" />
+            <NavigationControl position="top-right" visualizePitch={false} showCompass={false} />
             <DrawControl drawMode={drawMode} onPolygonComplete={handlePolygonComplete} />
-            {mapGeoJson.features.length > 0 && (
+            {(mapGeoJson.features.length > 0 || selectedBoundaries.isLoading) && (
               <Source id="zcta-areas" type="geojson" data={mapGeoJson}>
                 <Layer
                   id="zcta-fill"
                   type="fill"
                   paint={{
                     "fill-color": ["get", "fillColor"],
-                    "fill-opacity": [
-                      "case",
-                      ["get", "selected"],
-                      0.62,
-                      0.35,
-                    ],
+                    "fill-opacity": ["case", ["get", "selected"], 0.78, 0.42],
+                  }}
+                />
+                <Layer
+                  id="zcta-outline-glow"
+                  type="line"
+                  filter={["==", ["get", "selected"], true]}
+                  paint={{
+                    "line-color": "#0A66C2",
+                    "line-width": 6,
+                    "line-blur": 4,
+                    "line-opacity": 0.35,
                   }}
                 />
                 <Layer
                   id="zcta-outline"
                   type="line"
                   paint={{
-                    "line-color": [
-                      "case",
-                      ["get", "selected"],
-                      "#0A2540",
-                      "#94a3b8",
-                    ],
-                    "line-width": [
-                      "case",
-                      ["get", "selected"],
-                      3,
-                      1,
-                    ],
+                    "line-color": ["case", ["get", "selected"], "#0A2540", "#cbd5e1"],
+                    "line-width": ["case", ["get", "selected"], 2.5, 1],
                   }}
                 />
               </Source>
@@ -432,60 +479,68 @@ export function TargetingMap({
           </MapGL>
 
           {selection.zctas.length > 0 && (
-            <div className="absolute top-3 left-3">
-              <Badge
+            <div className="absolute top-3 left-3 z-10">
+              <span
                 className={cn(
-                  "bg-white/95 backdrop-blur shadow-sm text-[var(--color-text)] border border-[var(--color-border)] transition-transform duration-300",
-                  selectionPulse && "scale-105 ring-2 ring-[var(--color-accent)]/40"
+                  "targeting-glass inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] transition-transform duration-300",
+                  selectionPulse && "scale-105"
                 )}
               >
-                {selection.zctas.length} selected zip{selection.zctas.length === 1 ? "" : "s"}
-              </Badge>
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-accent)]" />
+                {selection.zctas.length} ZIP{selection.zctas.length === 1 ? "" : "s"}
+              </span>
             </div>
           )}
 
           {isUpdating && selection.zctas.length > 0 && (
-            <div className="absolute top-3 right-14 z-10">
-              <Badge className="bg-[var(--color-accent)] text-white border-0 shadow-md">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-white animate-pulse mr-1.5" />
-                Updating…
-              </Badge>
+            <div className="absolute top-3 right-12 z-10">
+              <span className="targeting-glass inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold text-[var(--color-accent)]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-accent)] animate-pulse" />
+                Live
+              </span>
             </div>
           )}
 
           {drawMode && (
-            <div className="absolute top-3 right-14 bg-[var(--color-bg-dark)] text-white text-xs px-3 py-2 rounded-xl shadow-md max-w-[200px]">
-              Click to place points, double-click to finish
+            <div className="absolute top-3 right-12 z-10 max-w-[200px]">
+              <div className="targeting-glass rounded-xl px-3 py-2 text-[11px] font-medium text-[var(--color-text-secondary)] leading-snug">
+                Click corners of your area, then double-click to close the shape
+              </div>
             </div>
           )}
 
-          <div className="absolute bottom-3 left-3 bg-white/95 backdrop-blur rounded-xl border border-[var(--color-border)] p-3 shadow-md max-w-[240px] hidden sm:block">
-            <p className="text-micro font-semibold text-[var(--color-text-secondary)] mb-2">
-              Median income (selected)
+          {selectedBoundaries.isLoading && zctaCodes.length > 0 && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+              <span className="targeting-glass rounded-full px-4 py-2 text-xs font-medium text-[var(--color-text-muted)]">
+                Loading ZIP boundaries…
+              </span>
+            </div>
+          )}
+
+          <div className="absolute bottom-3 left-3 z-10 targeting-glass rounded-xl p-3 max-w-[220px] hidden sm:block">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-2">
+              Median income
             </p>
-            <div className="flex flex-col gap-1.5">
-              {INCOME_LEGEND.map((item) => (
-                <div key={item.label} className="flex items-center gap-1.5 text-micro">
-                  <span
-                    className="w-3 h-3 rounded-sm shrink-0 border border-black/5"
-                    style={{ background: item.color }}
-                  />
-                  <span className="text-[var(--color-text-muted)]">{item.label}</span>
-                </div>
-              ))}
+            <div
+              className="targeting-legend-bar mb-2"
+              style={{ background: INCOME_LEGEND_GRADIENT }}
+            />
+            <div className="flex justify-between text-[10px] text-[var(--color-text-muted)]">
+              <span>Lower</span>
+              <span>Higher</span>
             </div>
           </div>
         </div>
 
-        <p className="text-micro text-[var(--color-text-muted)] hidden sm:block">
+        <p className="text-[11px] text-[var(--color-text-muted)] hidden sm:block leading-relaxed">
           {drawMode
-            ? "Draw a shape around the neighborhoods you want to reach."
-            : "Click any ZIP on the map to add or remove it from your selection. Zoom in to see more ZIP boundaries."}
+            ? "Draw a boundary around neighborhoods you want to reach — matching ZIPs are added automatically."
+            : "Click ZIP boundaries to toggle selection. Zoom in to explore more areas."}
         </p>
       </div>
 
       {/* Desktop sidebar */}
-      <StatsSidebar className="hidden lg:flex lg:w-80 shrink-0" {...sidebarProps} />
+      <StatsSidebar className="hidden lg:flex lg:w-[340px] shrink-0" {...sidebarProps} />
 
       {/* Mobile: sticky summary bar + bottom sheet */}
       {mobileStatsSheet && (
@@ -500,22 +555,23 @@ export function TargetingMap({
               <button
                 type="button"
                 aria-label="Close stats panel"
-                className="lg:hidden fixed inset-0 z-40 bg-black/30 backdrop-blur-[1px]"
+                className="lg:hidden fixed inset-0 z-40 bg-[#0a2540]/25 backdrop-blur-sm"
                 onClick={() => setMobileStatsOpen(false)}
               />
-              <div className="lg:hidden fixed inset-x-0 bottom-0 z-50 max-h-[75vh] overflow-y-auto rounded-t-3xl border-t border-[var(--color-border)] bg-white shadow-2xl animate-in slide-in-from-bottom duration-300">
-                <div className="sticky top-0 bg-white border-b border-[var(--color-border)] px-4 py-3 flex items-center justify-between">
-                  <span className="font-semibold text-sm">Audience & cost</span>
+              <div className="lg:hidden fixed inset-x-0 bottom-0 z-50 max-h-[82vh] flex flex-col targeting-mobile-sheet animate-in slide-in-from-bottom duration-300">
+                <div className="targeting-sheet-handle shrink-0" aria-hidden />
+                <div className="sticky top-0 bg-[var(--color-surface)] px-5 py-3 flex items-center justify-between border-b border-[var(--color-border-subtle)] shrink-0">
+                  <span className="font-semibold text-sm tracking-tight">Audience intelligence</span>
                   <button
                     type="button"
                     onClick={() => setMobileStatsOpen(false)}
-                    className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] px-2 py-1"
+                    className="text-xs font-semibold text-[var(--color-accent)] px-2 py-1"
                   >
-                    Close
+                    Done
                   </button>
                 </div>
-                <div className="p-4">
-                  <StatsSidebar {...sidebarProps} compact className="border-0 shadow-none" />
+                <div className="overflow-y-auto flex-1 overscroll-contain">
+                  <StatsSidebar {...sidebarProps} compact className="targeting-sidebar-flat border-0 shadow-none rounded-none" />
                 </div>
               </div>
             </>
@@ -549,31 +605,33 @@ function MobileStatsBar({
   onToggle: () => void;
 }) {
   return (
-    <div className="lg:hidden sticky bottom-0 -mx-1 px-1 pb-1 pt-2 bg-gradient-to-t from-[var(--color-bg)] via-[var(--color-bg)] to-transparent">
+    <div className="lg:hidden fixed inset-x-0 bottom-0 z-30 px-3 pb-3 pt-6 bg-gradient-to-t from-[var(--color-bg)] via-[var(--color-bg)]/95 to-transparent pointer-events-none">
       <button
         type="button"
         onClick={onToggle}
-        className="w-full rounded-2xl border border-[var(--color-border)] bg-white shadow-lg px-4 py-3 flex items-center justify-between gap-3 active:scale-[0.99] transition-transform"
+        className="targeting-mobile-bar pointer-events-auto w-full px-4 py-3.5 flex items-center justify-between gap-3 active:scale-[0.99] transition-transform"
       >
-        <div className="text-left min-w-0">
+        <div className="text-left min-w-0 flex-1">
           {selectedCount === 0 ? (
-            <p className="text-sm text-[var(--color-text-muted)]">Select ZIPs to see reach & cost</p>
+            <p className="text-sm font-medium text-[var(--color-text-muted)]">
+              Tap the map to build your audience
+            </p>
           ) : (
             <>
-              <p className="text-xs text-[var(--color-text-muted)]">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
                 {selectedCount} ZIP{selectedCount === 1 ? "" : "s"}
-                {isUpdating && " · updating…"}
+                {isUpdating && " · updating"}
               </p>
-              <p className="text-sm font-semibold truncate">
+              <p className="text-base font-bold tabular-nums truncate tracking-tight mt-0.5">
                 {isLoading && !estimate ? (
-                  <span className="animate-pulse">Calculating…</span>
+                  <span className="animate-pulse text-[var(--color-text-muted)]">Calculating…</span>
                 ) : (
                   <>
-                    ~{formatNumber(estimate?.reach ?? 0)} households
+                    {formatNumber(estimate?.reach ?? 0)}{" "}
+                    <span className="text-sm font-medium text-[var(--color-text-muted)]">households</span>
                     {estimate?.pricing?.totalPriceCents != null && (
-                      <span className="text-[var(--color-text-muted)] font-normal">
-                        {" "}
-                        · {formatCurrency(estimate.pricing.totalPriceCents)}
+                      <span className="text-sm font-semibold text-[var(--color-accent)] ml-1.5">
+                        {formatCurrency(estimate.pricing.totalPriceCents)}
                       </span>
                     )}
                   </>
@@ -582,8 +640,17 @@ function MobileStatsBar({
             </>
           )}
         </div>
-        <span className="text-xs font-semibold text-[var(--color-accent)] shrink-0">
-          {isOpen ? "Hide" : "Details"} ↑
+        <span className="flex items-center gap-1 text-xs font-bold text-[var(--color-accent)] shrink-0">
+          {isOpen ? "Close" : "Details"}
+          <svg
+            className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2.5}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" />
+          </svg>
         </span>
       </button>
     </div>
@@ -607,11 +674,11 @@ function SelectedChips({
           key={z.zcta}
           type="button"
           onClick={() => onRemove(z.zcta)}
-          className="inline-flex items-center gap-1 rounded-full bg-[var(--color-accent-light)] text-[var(--color-accent)] px-2.5 py-1 text-xs font-medium hover:bg-[var(--color-accent)] hover:text-white transition-colors"
-          title="Click to remove"
+          className="targeting-chip"
+          title="Remove from selection"
         >
           {z.zcta}
-          <span aria-hidden>×</span>
+          <span aria-hidden className="opacity-60">×</span>
         </button>
       ))}
     </div>
