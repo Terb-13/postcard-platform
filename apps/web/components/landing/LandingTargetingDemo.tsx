@@ -19,18 +19,22 @@ export function LandingTargetingDemo() {
   });
 
   return (
-    <div className="rounded-2xl sm:rounded-3xl border border-[var(--color-border)] bg-white shadow-lg sm:shadow-xl">
-      <div className="flex items-center justify-between gap-3 border-b border-[var(--color-border)] bg-[var(--color-bg-alt)] px-4 py-3 sm:px-6 sm:py-4 rounded-t-2xl sm:rounded-t-3xl overflow-hidden">
+    <div className="rounded-2xl sm:rounded-3xl border border-[var(--color-border)] bg-white shadow-lg lg:shadow-none lg:border-0 lg:rounded-none lg:bg-transparent">
+      <div className="flex items-center justify-between gap-3 border-b border-[var(--color-border)] bg-[var(--color-bg-alt)] px-4 py-3 sm:px-6 sm:py-4 lg:px-8 lg:py-5 rounded-t-2xl sm:rounded-t-3xl lg:rounded-t-[1.25rem] overflow-hidden">
         <div className="flex items-center gap-2 text-sm text-[var(--color-text-muted)] min-w-0">
           <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-          <span className="truncate">Census ACS · live estimates</span>
+          <span className="truncate font-medium">Census ACS · live estimates</span>
         </div>
-        <span className="text-micro font-medium text-[var(--color-accent)] shrink-0 hidden sm:inline">
-          No login required
-        </span>
+        <div className="hidden sm:flex items-center gap-3 shrink-0">
+          <span className="text-micro font-medium text-[var(--color-accent)]">No login required</span>
+          <span className="hidden lg:inline text-micro text-[var(--color-text-muted)]">·</span>
+          <span className="hidden lg:inline text-micro text-[var(--color-text-muted)]">
+            Same engine as campaigns
+          </span>
+        </div>
       </div>
 
-      <div className="p-3 sm:p-5 lg:p-6">
+      <div className="p-3 sm:p-5 lg:p-8">
         <TargetingMap
           size="6x11"
           selection={selection}
@@ -39,11 +43,12 @@ export function LandingTargetingDemo() {
           readOnlySidebar
           mobileStatsSheet
           initialViewState={DEMO_VIEW}
+          className="lg:min-h-[560px]"
         />
       </div>
 
-      <div className="border-t border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-4 sm:px-6 sm:py-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 rounded-b-2xl sm:rounded-b-3xl">
-        <p className="text-sm text-[var(--color-text-secondary)] text-center sm:text-left">
+      <div className="border-t border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 rounded-b-2xl sm:rounded-b-3xl lg:rounded-b-[1.25rem]">
+        <p className="text-sm lg:text-[15px] text-[var(--color-text-secondary)] text-center sm:text-left max-w-md">
           Same map as the campaign wizard — search ZIPs, tap boundaries, or draw an area.
         </p>
         <AuthButtons variant="demo" />

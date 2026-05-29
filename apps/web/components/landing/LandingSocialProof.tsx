@@ -1,3 +1,5 @@
+import { LandingSectionHeader } from "./LandingSectionHeader";
+
 const QUOTES = [
   {
     quote: "We finally know exactly who we're mailing — and what it costs before we commit.",
@@ -15,33 +17,33 @@ const QUOTES = [
 
 export function LandingSocialProof() {
   return (
-    <section className="section bg-[var(--color-bg)]">
+    <section className="section section-rhythm bg-[var(--color-bg)]">
       <div className="container">
-        <div className="max-w-2xl mx-auto text-center mb-10 sm:mb-12">
-          <p className="landing-eyebrow mb-3">Results</p>
-          <h2 className="heading-lg text-[var(--color-bg-dark)] tracking-[-0.03em]">
-            Built for operators who need precision
-          </h2>
-          <p className="mt-4 body-lg text-[var(--color-text-secondary)]">
-            Restaurants, home services, real estate, and retail use Postcard to reach neighborhoods
-            that match their offer — not everyone in the county.
-          </p>
-        </div>
+        <LandingSectionHeader
+          align="center"
+          className="lg:mb-14 mx-auto"
+          eyebrow="Results"
+          title="Built for operators who need precision"
+          description="Restaurants, home services, real estate, and retail use Postcard to reach neighborhoods that match their offer — not everyone in the county."
+        />
 
-        <div className="grid gap-5 sm:grid-cols-3 max-w-5xl mx-auto">
-          {QUOTES.map((item) => (
-            <blockquote key={item.role} className="quote-card p-6 sm:p-7">
-              <p className="text-[15px] text-[var(--color-text-secondary)] leading-relaxed pt-6">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6 max-w-6xl mx-auto">
+          {QUOTES.map((item, i) => (
+            <blockquote
+              key={item.role}
+              className={`landing-quote-card ${i === 1 ? "lg:translate-y-4" : ""}`}
+            >
+              <p className="landing-body text-[var(--color-text-secondary)] leading-relaxed">
                 {item.quote}
               </p>
-              <footer className="mt-4 text-sm font-medium text-[var(--color-text-muted)]">
-                — {item.role}
+              <footer className="mt-6 pt-5 border-t border-[var(--color-border)] text-sm font-medium text-[var(--color-text-muted)]">
+                {item.role}
               </footer>
             </blockquote>
           ))}
         </div>
 
-        <p className="mt-10 text-center text-micro text-[var(--color-text-muted)]">
+        <p className="mt-12 lg:mt-14 text-center text-micro text-[var(--color-text-muted)]">
           Customer stories — placeholders for launch testimonials
         </p>
       </div>

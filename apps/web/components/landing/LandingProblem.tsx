@@ -1,3 +1,5 @@
+import { LandingSectionHeader } from "./LandingSectionHeader";
+
 const PAINS = [
   {
     title: "Blanket mail wastes budget",
@@ -18,34 +20,40 @@ const PAINS = [
 
 export function LandingProblem() {
   return (
-    <section id="problem" className="section bg-[var(--color-bg)] scroll-mt-20">
+    <section id="problem" className="section section-rhythm bg-[var(--color-bg)] scroll-mt-20">
       <div className="container">
-        <div className="max-w-2xl mb-12 sm:mb-14">
-          <p className="landing-eyebrow mb-3">The challenge</p>
-          <h2 className="heading-lg text-[var(--color-bg-dark)] tracking-[-0.03em]">
-            Direct mail works — but untargeted mail doesn&apos;t
-          </h2>
-          <p className="mt-4 body-lg text-[var(--color-text-secondary)]">
-            You already know postcards can drive local business. The hard part is knowing{" "}
-            <em className="not-italic font-medium text-[var(--color-text)]">which</em> homes are
-            worth reaching — and proving it before you spend.
-          </p>
-        </div>
+        <div className="lg:grid lg:grid-cols-12 lg:gap-16 xl:gap-20 lg:items-start">
+          <div className="lg:col-span-5 lg:sticky lg:top-28 lg:self-start">
+            <LandingSectionHeader
+              eyebrow="The challenge"
+              title="Direct mail works — but untargeted mail doesn't"
+              description={
+                <>
+                  You already know postcards can drive local business. The hard part is knowing{" "}
+                  <span className="font-medium text-[var(--color-text)]">which</span> homes are
+                  worth reaching — and proving it before you spend.
+                </>
+              }
+            />
+          </div>
 
-        <div className="grid gap-5 md:grid-cols-3">
-          {PAINS.map((pain, i) => (
-            <article key={pain.title} className="pain-card">
-              <span className="text-micro font-mono font-semibold text-[var(--color-text-muted)]">
-                0{i + 1}
-              </span>
-              <h3 className="mt-3 font-semibold text-lg tracking-tight text-[var(--color-bg-dark)]">
-                {pain.title}
-              </h3>
-              <p className="mt-2 text-[15px] text-[var(--color-text-secondary)] leading-relaxed">
-                {pain.description}
-              </p>
-            </article>
-          ))}
+          <div className="lg:col-span-7 grid gap-4 sm:gap-5">
+            {PAINS.map((pain, i) => (
+              <article key={pain.title} className="landing-feature-row">
+                <span className="landing-step-index" aria-hidden>
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <div className="min-w-0 pt-0.5">
+                  <h3 className="font-semibold text-lg lg:text-xl tracking-tight text-[var(--color-bg-dark)]">
+                    {pain.title}
+                  </h3>
+                  <p className="mt-2 landing-body text-[var(--color-text-secondary)]">
+                    {pain.description}
+                  </p>
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
       </div>
     </section>

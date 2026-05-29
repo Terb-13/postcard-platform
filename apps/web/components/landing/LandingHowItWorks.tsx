@@ -1,3 +1,5 @@
+import { LandingSectionHeader } from "./LandingSectionHeader";
+
 const STEPS = [
   {
     step: "01",
@@ -27,43 +29,58 @@ const STEPS = [
 
 export function LandingHowItWorks() {
   return (
-    <section id="how-it-works" className="section bg-white border-y border-[var(--color-border)] scroll-mt-20">
+    <section
+      id="how-it-works"
+      className="section section-rhythm bg-white border-b border-[var(--color-border)] scroll-mt-20"
+    >
       <div className="container">
-        <div className="max-w-2xl mx-auto text-center mb-12 sm:mb-16">
-          <p className="landing-eyebrow mb-3">How it works</p>
-          <h2 className="heading-lg text-[var(--color-bg-dark)] tracking-[-0.03em]">
-            From targeting to mailbox in four steps
-          </h2>
-          <p className="mt-4 body-lg text-[var(--color-text-secondary)]">
-            A guided flow designed for clarity — no agency hand-holding required.
-          </p>
-        </div>
+        <LandingSectionHeader
+          align="center"
+          className="lg:mb-16 mx-auto"
+          eyebrow="How it works"
+          title="From targeting to mailbox in four steps"
+          description="A guided flow designed for clarity — no agency hand-holding required."
+        />
 
-        <ol className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6 max-w-6xl mx-auto">
+        {/* Mobile / tablet: stacked steps */}
+        <ol className="grid gap-8 sm:grid-cols-2 lg:hidden">
+          {STEPS.map((item) => (
+            <li key={item.step}>
+              <StepCard {...item} />
+            </li>
+          ))}
+        </ol>
+
+        {/* Desktop: unified step rail */}
+        <ol className="hidden lg:grid lg:grid-cols-4 landing-steps-rail">
           {STEPS.map((item, index) => (
-            <li key={item.step} className="relative">
+            <li key={item.step} className="landing-step-cell">
               {index < STEPS.length - 1 && (
-                <div
-                  className="hidden lg:block absolute top-5 left-[calc(50%+1.5rem)] w-[calc(100%-3rem)] h-px bg-[var(--color-border)]"
-                  aria-hidden
-                />
+                <span className="landing-step-connector" aria-hidden />
               )}
-              <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
-                <span className="font-mono text-sm font-semibold text-[var(--color-accent)] tracking-wider">
-                  {item.step}
-                </span>
-                <div className="mt-4 h-px w-8 bg-[var(--color-bg-dark)] lg:hidden" aria-hidden />
-                <h3 className="mt-4 font-semibold text-lg tracking-tight text-[var(--color-bg-dark)]">
-                  {item.title}
-                </h3>
-                <p className="mt-2 text-[15px] text-[var(--color-text-secondary)] leading-relaxed max-w-xs mx-auto lg:mx-0">
-                  {item.description}
-                </p>
-              </div>
+              <StepCard {...item} />
             </li>
           ))}
         </ol>
       </div>
     </section>
+  );
+}
+
+function StepCard({
+  step,
+  title,
+  description,
+}: {
+  step: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="h-full flex flex-col">
+      <span className="landing-step-index">{step}</span>
+      <h3 className="mt-5 font-semibold text-lg tracking-tight text-[var(--color-bg-dark)]">{title}</h3>
+      <p className="mt-2 landing-body text-[var(--color-text-secondary)] flex-1">{description}</p>
+    </div>
   );
 }

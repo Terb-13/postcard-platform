@@ -10,13 +10,13 @@ const NAV_LINKS = [
 export function LandingNav() {
   return (
     <nav className="nav">
-      <div className="container flex h-14 sm:h-16 items-center justify-between gap-4">
+      <div className="container flex h-14 sm:h-16 lg:h-[4.25rem] items-center justify-between gap-4">
         <Link
           href="/"
-          className="flex items-center gap-2.5 font-semibold text-lg tracking-[-0.02em] shrink-0"
+          className="flex items-center gap-2.5 font-semibold text-lg lg:text-[1.125rem] tracking-[-0.02em] shrink-0"
         >
           <span
-            className="h-8 w-8 rounded-xl bg-[var(--color-bg-dark)] flex items-center justify-center"
+            className="h-8 w-8 lg:h-9 lg:w-9 rounded-xl bg-[var(--color-bg-dark)] flex items-center justify-center"
             aria-hidden
           >
             <span className="text-white text-xs font-bold">P</span>
@@ -24,7 +24,7 @@ export function LandingNav() {
           <span>Postcard</span>
         </Link>
 
-        <div className="hidden md:flex items-center gap-0.5">
+        <div className="hidden md:flex items-center gap-1 lg:gap-2">
           {NAV_LINKS.map((link) => (
             <a key={link.href} href={link.href} className="nav-link">
               {link.label}
