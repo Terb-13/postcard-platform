@@ -165,6 +165,14 @@ body {
     line-height: 1.5;
     letter-spacing: 0.02em;
   }
+
+  .landing-eyebrow {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+  }
 }
 
 /* ===== LAYOUT PRIMITIVES — Generous breathing room, truly mobile-first ===== */
@@ -175,8 +183,8 @@ body {
   }
   @media (min-width: 640px) {
     .section {
-      padding-top: var(--space-18);
-      padding-bottom: var(--space-18);
+      padding-top: var(--space-20);
+      padding-bottom: var(--space-20);
     }
   }
   @media (min-width: 1024px) {

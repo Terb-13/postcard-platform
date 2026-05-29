@@ -19,39 +19,32 @@ export function LandingTargetingDemo() {
   });
 
   return (
-    <div className="rounded-3xl border border-[var(--color-border)] bg-white shadow-xl overflow-hidden">
-      <div className="border-b border-[var(--color-border)] bg-[var(--color-bg-alt)] px-5 py-4 sm:px-8 sm:py-5">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold tracking-[2px] text-[var(--color-accent)] uppercase">
-              Live demo
-            </p>
-            <h3 className="text-lg sm:text-xl font-semibold tracking-tight mt-1">
-              Real Census data. Click ZIPs to explore.
-            </h3>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
-            <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            Census ACS · live estimates
-          </div>
+    <div className="rounded-2xl sm:rounded-3xl border border-[var(--color-border)] bg-white shadow-lg sm:shadow-xl">
+      <div className="flex items-center justify-between gap-3 border-b border-[var(--color-border)] bg-[var(--color-bg-alt)] px-4 py-3 sm:px-6 sm:py-4 rounded-t-2xl sm:rounded-t-3xl overflow-hidden">
+        <div className="flex items-center gap-2 text-sm text-[var(--color-text-muted)] min-w-0">
+          <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+          <span className="truncate">Census ACS · live estimates</span>
         </div>
+        <span className="text-micro font-medium text-[var(--color-accent)] shrink-0 hidden sm:inline">
+          No login required
+        </span>
       </div>
 
-      <div className="p-4 sm:p-6 lg:p-8">
+      <div className="p-3 sm:p-5 lg:p-6">
         <TargetingMap
           size="6x11"
           selection={selection}
           onSelectionChange={setSelection}
           demoMode
           readOnlySidebar
+          mobileStatsSheet
           initialViewState={DEMO_VIEW}
         />
       </div>
 
-      <div className="border-t border-[var(--color-border)] bg-[var(--color-accent-subtle)] px-5 py-5 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="border-t border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-4 sm:px-6 sm:py-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 rounded-b-2xl sm:rounded-b-3xl">
         <p className="text-sm text-[var(--color-text-secondary)] text-center sm:text-left">
-          Search any ZIP, click boundaries on the map, or draw a custom area — just like in the
-          campaign wizard.
+          Same map as the campaign wizard — search ZIPs, tap boundaries, or draw an area.
         </p>
         <AuthButtons variant="demo" />
       </div>
