@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { UploadButton } from "@/lib/uploadthing";
-import { ArtworkPreview } from "@/components/ArtworkPreview";
+import { ArtworkPreview, type PostcardSide } from "@/components/campaign-wizard/ArtworkPreview";
 import type { ArtworkFile } from "../useCampaignWizard";
 
 type Props = {
@@ -24,8 +24,13 @@ async function detectPageCount(fileUrl: string): Promise<number | undefined> {
 }
 
 export function CreativeStep({ size, artwork, onArtworkChange }: Props) {
+  const [activeSide, setActiveSide] = useState<PostcardSide>("front");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const frontSrc = artwork?.thumbnails?.[1] ?? artwork?.thumbnailUrl ?? null;
+  const backSrc = artwork?.thumbnails?.[2] ?? null;
+  const isPreviewLoading = Boolean(artwork?.fileUrl && !frontSrc && !isUploading);
 
   const handleUploadComplete = async (res: { url: string; name: string; size: number }[]) => {
     const file = res?.[0];
@@ -47,42 +52,16 @@ export function CreativeStep({ size, artwork, onArtworkChange }: Props) {
     <div className="space-y-6">
       <PostcardMockup size={size} />
 
+      <ArtworkPreview
+        frontSrc={frontSrc}
+        backSrc={backSrc}
+        activeSide={activeSide}
+        onActiveSideChange={setActiveSide}
+        isLoading={isUploading || isPreviewLoading}
+      />
+
       {artwork?.fileUrl ? (
         <div className="space-y-5">
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
-                Front
-              </p>
-              <ArtworkPreview
-                fileUrl={artwork.fileUrl}
-                thumbnailUrl={artwork.thumbnailUrl}
-                thumbnails={artwork.thumbnails}
-                pageNumber={1}
-                pageCount={artwork.pageCount}
-                className="max-h-[280px] w-full"
-              />
-            </div>
-            <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
-                Back
-              </p>
-              {(artwork.pageCount ?? 0) >= 2 ? (
-                <ArtworkPreview
-                  fileUrl={artwork.fileUrl}
-                  thumbnails={artwork.thumbnails}
-                  pageNumber={2}
-                  pageCount={artwork.pageCount}
-                  className="max-h-[280px] w-full"
-                />
-              ) : (
-                <div className="flex min-h-[220px] items-center justify-center rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-bg-alt)]/50 px-4 text-center text-sm text-[var(--color-text-muted)]">
-                  Upload a 2-page PDF to preview the back side.
-                </div>
-              )}
-            </div>
-          </div>
-
           <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-alt)]/40 px-4 py-3 text-sm">
             <p className="font-medium">{artwork.fileName}</p>
             {artwork.pageCount != null && (

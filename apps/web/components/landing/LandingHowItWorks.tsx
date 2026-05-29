@@ -1,5 +1,8 @@
+import { Visual } from "@/components/shared/Visual";
 import { LandingSectionHeader } from "./LandingSectionHeader";
-import { LandingVisual } from "./LandingVisual";
+
+/** Asset: apps/web/public/images/marketing/workflow.jpg (1408×768) */
+const WORKFLOW_IMAGE = "/images/marketing/workflow.jpg";
 
 const STEPS = [
   {
@@ -40,10 +43,12 @@ export function LandingHowItWorks() {
         />
 
         <div className="max-w-5xl mx-auto mb-10 lg:mb-14">
-          <LandingVisual
-            src="/images/workflow.jpg"
+          {/* How it works: four-step workflow diagram — process explainer */}
+          <Visual
+            treatment="feature"
+            aspectRatio="11/6"
+            src={WORKFLOW_IMAGE}
             alt="Four-step Postcard Platform workflow from targeting through delivery"
-            aspect="wide"
             sizes="(max-width: 1024px) 100vw, 72vw"
           />
         </div>

@@ -1,5 +1,10 @@
+import { Visual } from "@/components/shared/Visual";
 import { LandingSectionHeader } from "./LandingSectionHeader";
-import { LandingVisual } from "./LandingVisual";
+
+/** Asset: apps/web/public/images/marketing/solution.jpg (1408×768) */
+const SOLUTION_IMAGE = "/images/marketing/solution.jpg";
+/** Asset: apps/web/public/images/marketing/data.jpg (1280×896) */
+const DATA_IMAGE = "/images/marketing/data.jpg";
 
 const VALUES = [
   {
@@ -30,18 +35,22 @@ export function LandingSolution() {
 
         <div className="grid gap-5 lg:grid-cols-12 lg:gap-6 max-w-6xl mx-auto mb-12 lg:mb-16">
           <div className="lg:col-span-7">
-            <LandingVisual
-              src="/images/solution.jpg"
+            {/* Solution: targeted direct mail workflow — primary solution explainer */}
+            <Visual
+              treatment="feature"
+              aspectRatio="11/6"
+              src={SOLUTION_IMAGE}
               alt="Targeted direct mail powered by Postcard Platform software"
-              aspect="wide"
               sizes="(max-width: 1024px) 100vw, 56vw"
             />
           </div>
           <div className="lg:col-span-5">
-            <LandingVisual
-              src="/images/data.jpg"
+            {/* Solution: Census demographic data overlay — supporting data visual */}
+            <Visual
+              treatment="feature"
+              aspectRatio="10/7"
+              src={DATA_IMAGE}
               alt="Census demographic data applied to ZIP-level geographic targeting"
-              aspect="tall"
               sizes="(max-width: 1024px) 100vw, 40vw"
             />
           </div>

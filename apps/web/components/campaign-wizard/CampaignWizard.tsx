@@ -14,7 +14,7 @@ import { formatTrpcError } from "@/lib/utils";
 import type { RouterOutputs } from "@/lib/trpc/client";
 import type { TargetingSelection } from "@/components/targeting";
 import { ArtworkUpload } from "@/components/ArtworkUpload";
-import { ArtworkPreview } from "@/components/ArtworkPreview";
+import { ArtworkPreview, type PostcardSide } from "@/components/campaign-wizard/ArtworkPreview";
 import {
   WIZARD_STEPS,
   campaignBasicsSchema,
@@ -497,6 +497,23 @@ function CreativeStep({
   artworkRefetchKey: number;
   onUploadComplete: () => void;
 }) {
+  const [activeSide, setActiveSide] = useState<PostcardSide>("front");
+
+  const artworkThumbnails = campaign?.artwork?.thumbnails?.reduce(
+    (acc, t) => {
+      if (t.page != null && t.url) acc[t.page] = t.url;
+      return acc;
+    },
+    {} as Record<number, string>
+  );
+
+  const frontSrc =
+    artworkThumbnails?.[1] ?? campaign?.artwork?.thumbnailUrl ?? null;
+  const backSrc = artworkThumbnails?.[2] ?? null;
+  const isPreviewLoading = Boolean(
+    campaign?.artwork?.fileUrl && !frontSrc
+  );
+
   if (campaignLoading && !campaign) {
     return (
       <div className="space-y-6 animate-pulse">
@@ -518,24 +535,17 @@ function CreativeStep({
 
       <PostcardMockup size={size} />
 
+      <ArtworkPreview
+        key={artworkRefetchKey}
+        frontSrc={frontSrc}
+        backSrc={backSrc}
+        activeSide={activeSide}
+        onActiveSideChange={setActiveSide}
+        isLoading={isPreviewLoading}
+      />
+
       {campaign?.artwork?.fileUrl ? (
-        <div className="space-y-4">
-          <ArtworkPreview
-            key={artworkRefetchKey}
-            fileUrl={campaign.artwork.fileUrl}
-            thumbnailUrl={campaign.artwork.thumbnailUrl}
-            thumbnails={campaign.artwork.thumbnails?.reduce(
-              (acc, t) => {
-                if (t.page != null && t.url) acc[t.page] = t.url;
-                return acc;
-              },
-              {} as Record<number, string>
-            )}
-            pageCount={campaign.artwork.pageCount ?? undefined}
-            className="max-h-[400px] w-full"
-          />
-          <ArtworkUpload campaignId={campaignId} onUploadComplete={onUploadComplete} />
-        </div>
+        <ArtworkUpload campaignId={campaignId} onUploadComplete={onUploadComplete} />
       ) : (
         <div className="rounded-2xl border border-dashed border-[var(--color-border)] p-8 text-center bg-[var(--color-bg-alt)]/50">
           <div className="mx-auto h-12 w-12 rounded-2xl bg-white border border-[var(--color-border)] flex items-center justify-center text-[var(--color-text-muted)] mb-4">

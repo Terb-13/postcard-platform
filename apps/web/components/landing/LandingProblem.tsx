@@ -1,5 +1,8 @@
+import { Visual } from "@/components/shared/Visual";
 import { LandingSectionHeader } from "./LandingSectionHeader";
-import { LandingVisual } from "./LandingVisual";
+
+/** Asset: apps/web/public/images/marketing/problem.jpg (1280×896) */
+const PROBLEM_IMAGE = "/images/marketing/problem.jpg";
 
 const PAINS = [
   {
@@ -48,10 +51,12 @@ export function LandingProblem() {
             </ul>
           </div>
 
-          <LandingVisual
-            src="/images/problem.jpg"
+          {/* Problem: untargeted direct mail / wasted reach — problem section explainer */}
+          <Visual
+            treatment="feature"
+            aspectRatio="10/7"
+            src={PROBLEM_IMAGE}
             alt="Untargeted direct mail failing to reach the right households"
-            aspect="tall"
             sizes="(max-width: 1024px) 100vw, 44vw"
             className="mt-10 lg:mt-0"
           />

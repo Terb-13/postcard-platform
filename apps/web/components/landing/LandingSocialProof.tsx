@@ -1,5 +1,8 @@
+import { Visual } from "@/components/shared/Visual";
 import { LandingSectionHeader } from "./LandingSectionHeader";
-import { LandingVisual } from "./LandingVisual";
+
+/** Asset: apps/web/public/images/marketing/results.jpg (1280×896) */
+const RESULTS_IMAGE = "/images/marketing/results.jpg";
 
 const OUTCOMES = [
   { stat: "Minutes", label: "to quote a targeted campaign" },
@@ -47,20 +50,24 @@ export function LandingSocialProof() {
               ))}
             </ul>
 
-            <LandingVisual
-              src="/images/results.jpg"
+            {/* Social proof: campaign results photography — desktop sidebar placement */}
+            <Visual
+              treatment="socialProof"
+              aspectRatio="10/7"
+              src={RESULTS_IMAGE}
               alt="Targeted postcard campaign results and measurable outreach outcomes"
-              aspect="wide"
               sizes="(max-width: 1024px) 100vw, 44vw"
               className="hidden lg:block"
             />
           </div>
 
           <div className="mt-10 lg:mt-0 space-y-5">
-            <LandingVisual
-              src="/images/results.jpg"
+            {/* Social proof: campaign results photography — mobile stack above testimonials */}
+            <Visual
+              treatment="socialProof"
+              aspectRatio="10/7"
+              src={RESULTS_IMAGE}
               alt="Targeted postcard campaign results and measurable outreach outcomes"
-              aspect="wide"
               sizes="100vw"
               className="lg:hidden"
             />

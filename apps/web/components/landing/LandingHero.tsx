@@ -1,6 +1,9 @@
+import { Visual } from "@/components/shared/Visual";
 import { AuthButtons } from "./AuthButtons";
 import { LandingSectionHeader } from "./LandingSectionHeader";
-import { LandingVisual } from "./LandingVisual";
+
+/** Asset: apps/web/public/images/marketing/hero.jpg (1408×768) */
+const HERO_IMAGE = "/images/marketing/hero.jpg";
 
 export function LandingHero() {
   return (
@@ -34,13 +37,14 @@ export function LandingHero() {
           </div>
 
           <div className="mt-10 lg:mt-0">
-            <LandingVisual
-              src="/images/hero.jpg"
+            {/* Hero: Census-powered targeting map — primary value proposition visual */}
+            <Visual
+              treatment="hero"
+              aspectRatio="11/6"
+              src={HERO_IMAGE}
               alt="Postcard Platform map interface with Census-powered household and income targeting"
-              aspect="hero"
-              priority
+              priority={true}
               sizes="(max-width: 1024px) 100vw, 46vw"
-              overlay={false}
             />
           </div>
         </div>
