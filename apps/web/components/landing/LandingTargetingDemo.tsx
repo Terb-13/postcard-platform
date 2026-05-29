@@ -2,29 +2,20 @@
 
 import { useState } from "react";
 import { TargetingMap } from "@/components/targeting/TargetingMap";
-import type { SelectedZcta, TargetingSelection } from "@/components/targeting/types";
+import { createDefaultSelection, DEMO_VIEW } from "@/components/targeting/defaults";
+import type { TargetingSelection } from "@/components/targeting/types";
 import { AuthButtons } from "./AuthButtons";
 
-const DEMO_ZCTAS: SelectedZcta[] = [
-  { zcta: "90210", placeName: "Beverly Hills, CA", center: [-118.4065, 34.103] },
-  { zcta: "90212", placeName: "Beverly Hills, CA", center: [-118.399, 34.062] },
-  { zcta: "90024", placeName: "Los Angeles, CA", center: [-118.4395, 34.063] },
-];
-
-const DEMO_VIEW = { longitude: -118.415, latitude: 34.078, zoom: 11.5 };
-
 export function LandingTargetingDemo() {
-  const [selection, setSelection] = useState<TargetingSelection>({
-    zctas: DEMO_ZCTAS,
-  });
+  const [selection, setSelection] = useState<TargetingSelection>(() => createDefaultSelection());
 
   return (
     <div className="flex flex-col">
-      <div className="targeting-demo-header flex items-center justify-between gap-4 px-4 py-3.5 sm:px-6 sm:py-4">
+      <div className="targeting-demo-header flex items-center justify-between gap-4 px-4 py-3 sm:px-5 sm:py-3.5">
         <div className="flex items-center gap-3 min-w-0">
-          <span className="relative flex h-2.5 w-2.5 shrink-0">
+          <span className="relative flex h-2 w-2 shrink-0">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
           </span>
           <div className="min-w-0">
             <p className="text-sm font-semibold text-[var(--color-text)] truncate">
@@ -35,7 +26,7 @@ export function LandingTargetingDemo() {
             </p>
           </div>
         </div>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-accent-subtle)] px-3 py-1 text-[11px] font-semibold text-[var(--color-accent)] shrink-0">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-accent-subtle)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--color-accent)] shrink-0">
           <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
           </svg>
@@ -43,7 +34,7 @@ export function LandingTargetingDemo() {
         </span>
       </div>
 
-      <div className="p-3 sm:p-5 lg:p-6 bg-gradient-to-b from-white to-[var(--color-bg-alt)]/30">
+      <div className="p-3 sm:p-4 lg:p-5 bg-[var(--color-bg-alt)]/40">
         <TargetingMap
           size="6x11"
           selection={selection}
@@ -52,11 +43,10 @@ export function LandingTargetingDemo() {
           readOnlySidebar
           mobileStatsSheet
           initialViewState={DEMO_VIEW}
-          className="lg:min-h-[540px]"
         />
       </div>
 
-      <div className="border-t border-[var(--color-border)] px-4 py-4 sm:px-6 sm:py-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-[var(--color-surface)]">
+      <div className="border-t border-[var(--color-border)] px-4 py-4 sm:px-5 sm:py-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[var(--color-surface)]">
         <p className="text-sm text-[var(--color-text-secondary)] text-center sm:text-left leading-relaxed">
           <span className="font-medium text-[var(--color-text)]">Beverly Hills pre-loaded.</span>{" "}
           Search, tap ZIPs, or draw a custom area — then start your campaign.

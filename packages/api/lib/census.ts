@@ -1,21 +1,37 @@
 /**
- * US Census ACS 5-year estimates at ZCTA (ZIP) level.
- * Dataset: ACS 2023 5-year (acs/acs5).
+ * US Census ACS 5-year estimates at ZCTA (ZIP Code Tabulation Area) level.
+ *
+ * ## Getting a free Census API key
+ * 1. Visit https://api.census.gov/data/key_signup.html
+ * 2. Enter your name, organization, and email — keys are free and usually arrive instantly.
+ * 3. Add the key to your server environment as `CENSUS_API_KEY` (see `.env.example`).
+ *
+ * Without a key the Census API rate-limits aggressively and may return HTML error pages.
+ *
+ * ## Datasets used
+ * - `acs/acs5` — detail tables (population, income, households)
+ * - `acs/acs5/profile` — DP02 mobility profile (mover-related percentages)
+ *
  * @see https://www.census.gov/data/developers/data-sets/acs-5year.html
  */
 
 const ACS_YEAR = "2023";
 const ACS_DATASET = "acs/acs5";
+const ACS_PROFILE_DATASET = "acs/acs5/profile";
 
-/** Census variable codes */
+/** Detail-table variable codes (acs/acs5) */
 export const CENSUS_VARS = {
+  /** Total population */
   population: "B01003_001E",
+  /** Median household income */
   medianIncome: "B19013_001E",
   households: "B11001_001E",
-  /** Population 1 year and over */
-  mobilityTotal: "B07003_001E",
-  /** Same house 1 year ago */
-  sameHouse: "B07003_004E",
+} as const;
+
+/** Profile-table variable codes (acs/acs5/profile — DP02 mobility) */
+export const CENSUS_PROFILE_VARS = {
+  /** DP02: percent living in the same house 1 year ago; movers ≈ 100 − this value */
+  sameHousePercent: "DP02_0063PE",
 } as const;
 
 /** Suppressed / missing Census sentinel values */
@@ -35,7 +51,7 @@ export interface ZipDemographics {
   population: number;
   medianIncome: number | null;
   households: number;
-  /** Approximate % who did not live in the same house 1 year ago */
+  /** Approximate % who did not live in the same house 1 year ago (from DP02) */
   moverPercent: number | null;
 }
 
@@ -78,6 +94,16 @@ export class CensusConfigError extends Error {
   }
 }
 
+export class CensusApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status?: number
+  ) {
+    super(message);
+    this.name = "CensusApiError";
+  }
+}
+
 function requireApiKey(): string {
   const key = process.env.CENSUS_API_KEY?.trim();
   if (!key) {
@@ -102,6 +128,13 @@ function parseNumber(val: string | null | undefined): number | null {
   return Number.isFinite(n) && n >= 0 ? n : null;
 }
 
+function moverPercentFromSameHouse(sameHousePercent: number | null): number | null {
+  if (sameHousePercent == null || sameHousePercent < 0 || sameHousePercent > 100) {
+    return null;
+  }
+  return Math.round((100 - sameHousePercent) * 10) / 10;
+}
+
 function emptyZcta(zcta: string): ZipDemographics {
   return {
     zcta,
@@ -113,20 +146,13 @@ function emptyZcta(zcta: string): ZipDemographics {
   };
 }
 
-function parseRow(headers: string[], row: string[]): ZipDemographics {
+function parseDetailRow(headers: string[], row: string[], moverByZcta: Map<string, number | null>): ZipDemographics {
   const idx = (name: string) => headers.indexOf(name);
   const zcta = row[idx("zip code tabulation area")] ?? row[row.length - 1] ?? "";
 
   const pop = parseNumber(row[idx(CENSUS_VARS.population)]) ?? 0;
   const income = parseNumber(row[idx(CENSUS_VARS.medianIncome)]);
   const households = parseNumber(row[idx(CENSUS_VARS.households)]) ?? 0;
-  const mobTotal = parseNumber(row[idx(CENSUS_VARS.mobilityTotal)]);
-  const sameHouse = parseNumber(row[idx(CENSUS_VARS.sameHouse)]);
-
-  let moverPercent: number | null = null;
-  if (mobTotal != null && mobTotal > 0 && sameHouse != null) {
-    moverPercent = Math.round(((mobTotal - sameHouse) / mobTotal) * 1000) / 10;
-  }
 
   return {
     zcta,
@@ -134,7 +160,7 @@ function parseRow(headers: string[], row: string[]): ZipDemographics {
     population: pop,
     medianIncome: income,
     households,
-    moverPercent,
+    moverPercent: moverByZcta.get(zcta) ?? null,
   };
 }
 
@@ -162,15 +188,10 @@ function aggregateZctas(zctas: ZipDemographics[]): ACSStatsResult {
   };
 }
 
-async function fetchZctasFromApi(zctas: string[]): Promise<Map<string, ZipDemographics>> {
-  requireApiKey();
-
-  const key = process.env.CENSUS_API_KEY!.trim();
-  const vars = Object.values(CENSUS_VARS).join(",");
-  const base = `https://api.census.gov/data/${ACS_YEAR}/${ACS_DATASET}`;
-  // Census expects comma-separated ZCTAs in a single `for` param — multiple append() only returns one ZIP.
+async function fetchCensusJson(base: string, zctas: string[], getVars: string): Promise<string[][]> {
+  const key = requireApiKey();
   const params = new URLSearchParams({
-    get: `NAME,${vars}`,
+    get: getVars,
     key,
     for: `zip code tabulation area:${zctas.join(",")}`,
   });
@@ -181,8 +202,9 @@ async function fetchZctasFromApi(zctas: string[]): Promise<Map<string, ZipDemogr
   const bodyText = await res.text();
 
   if (!res.ok) {
-    throw new Error(
-      `Census API HTTP ${res.status} for ZCTAs ${zctas.join(", ")}: ${bodyText.slice(0, 200)}`
+    throw new CensusApiError(
+      `Census API HTTP ${res.status} for ZCTAs ${zctas.join(", ")}: ${bodyText.slice(0, 200)}`,
+      res.status
     );
   }
 
@@ -192,24 +214,70 @@ async function fetchZctasFromApi(zctas: string[]): Promise<Map<string, ZipDemogr
     );
   }
 
-  let json: string[][];
   try {
-    json = JSON.parse(bodyText) as string[][];
+    return JSON.parse(bodyText) as string[][];
   } catch {
-    throw new Error(
+    throw new CensusApiError(
       `Census API returned invalid JSON for ZCTAs ${zctas.join(", ")}: ${bodyText.slice(0, 120)}`
     );
   }
+}
 
+async function fetchProfileMoverPercents(zctas: string[]): Promise<Map<string, number | null>> {
+  const base = `https://api.census.gov/data/${ACS_YEAR}/${ACS_PROFILE_DATASET}`;
+  const getVars = `NAME,${CENSUS_PROFILE_VARS.sameHousePercent}`;
+
+  let json: string[][];
+  try {
+    json = await fetchCensusJson(base, zctas, getVars);
+  } catch {
+    // Profile fetch is best-effort — detail stats still return without mover data.
+    return new Map(zctas.map((z) => [z, null]));
+  }
+
+  const results = new Map<string, number | null>();
   if (!Array.isArray(json) || json.length < 2) {
-    return new Map(zctas.map((z) => [z, emptyZcta(z)]));
+    return new Map(zctas.map((z) => [z, null]));
   }
 
   const headers = json[0]!;
-  const results = new Map<string, ZipDemographics>();
+  const zctaIdx = headers.indexOf("zip code tabulation area");
+  const sameHouseIdx = headers.indexOf(CENSUS_PROFILE_VARS.sameHousePercent);
 
   for (let i = 1; i < json.length; i++) {
-    const parsed = parseRow(headers, json[i]!);
+    const row = json[i]!;
+    const zcta = row[zctaIdx] ?? "";
+    const sameHouse = parseNumber(row[sameHouseIdx]);
+    results.set(zcta, moverPercentFromSameHouse(sameHouse));
+  }
+
+  for (const z of zctas) {
+    if (!results.has(z)) {
+      results.set(z, null);
+    }
+  }
+
+  return results;
+}
+
+async function fetchZctasFromApi(zctas: string[]): Promise<Map<string, ZipDemographics>> {
+  const base = `https://api.census.gov/data/${ACS_YEAR}/${ACS_DATASET}`;
+  const vars = Object.values(CENSUS_VARS).join(",");
+
+  const [detailJson, moverByZcta] = await Promise.all([
+    fetchCensusJson(base, zctas, `NAME,${vars}`),
+    fetchProfileMoverPercents(zctas),
+  ]);
+
+  if (!Array.isArray(detailJson) || detailJson.length < 2) {
+    return new Map(zctas.map((z) => [z, emptyZcta(z)]));
+  }
+
+  const headers = detailJson[0]!;
+  const results = new Map<string, ZipDemographics>();
+
+  for (let i = 1; i < detailJson.length; i++) {
+    const parsed = parseDetailRow(headers, detailJson[i]!, moverByZcta);
     results.set(parsed.zcta, parsed);
   }
 
@@ -266,7 +334,8 @@ export async function getACSStats(zctas: string[]): Promise<ACSStatsResult> {
         memoryCache.set(z, { data, expiresAt: Date.now() + CACHE_TTL_MS });
         results.push(data);
       }
-    } catch {
+    } catch (err) {
+      // Fall back to per-ZCTA fetch so one bad batch doesn't drop the whole request.
       for (const z of batch) {
         try {
           const data = await getZctaStats(z);
@@ -274,6 +343,9 @@ export async function getACSStats(zctas: string[]): Promise<ACSStatsResult> {
         } catch {
           results.push(emptyZcta(z));
         }
+      }
+      if (results.every((r) => r.population === 0 && r.moverPercent == null)) {
+        throw err;
       }
     }
   }
@@ -297,6 +369,9 @@ const SIZE_MULTIPLIERS: Record<string, number> = {
 
 const MIN_QUANTITY = 100;
 
+/** Placeholder production rate — $0.35 per piece until partner pricing is wired in. */
+export const PLACEHOLDER_RATE_CENTS = 35;
+
 function resolveUnitPriceCents(size: string, baseRateCentsPerPiece?: number): number {
   const multiplier = SIZE_MULTIPLIERS[size] ?? 1;
   const base =
@@ -307,7 +382,7 @@ function resolveUnitPriceCents(size: string, baseRateCentsPerPiece?: number): nu
         const n = parseInt(env, 10);
         if (Number.isFinite(n) && n > 0) return n;
       }
-      return 12;
+      return PLACEHOLDER_RATE_CENTS;
     })();
   return Math.round(base * multiplier);
 }

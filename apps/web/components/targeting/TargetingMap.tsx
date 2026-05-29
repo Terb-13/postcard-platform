@@ -7,6 +7,7 @@ import { featureCollection } from "@turf/helpers";
 import type { Feature, FeatureCollection, Polygon } from "geojson";
 import "mapbox-gl/dist/mapbox-gl.css";
 
+import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc/client";
 import { cn, formatCurrency, formatNumber, formatTrpcError } from "@/lib/utils";
 import { ZipSearch } from "./ZipSearch";
@@ -69,12 +70,35 @@ export function TargetingMap({
   const selectedSet = useMemo(() => new Set(zctaCodes), [zctaCodes.join(",")]);
 
   const [debouncedZctas, setDebouncedZctas] = useState(zctaCodes);
+  const [debouncedQuantityOverride, setDebouncedQuantityOverride] = useState(
+    selection.quantityOverride
+  );
+  const filtersKey = JSON.stringify(selection.filters ?? {});
+  const [debouncedFilters, setDebouncedFilters] = useState(selection.filters);
+  const [debouncedFiltersKey, setDebouncedFiltersKey] = useState(filtersKey);
+
   useEffect(() => {
     const t = setTimeout(() => setDebouncedZctas(zctaCodes), 400);
     return () => clearTimeout(t);
   }, [zctaCodes.join(",")]);
 
-  const isEstimateStale = zctaCodes.join(",") !== debouncedZctas.join(",");
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuantityOverride(selection.quantityOverride), 400);
+    return () => clearTimeout(t);
+  }, [selection.quantityOverride]);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedFilters(selection.filters);
+      setDebouncedFiltersKey(filtersKey);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [filtersKey, selection.filters]);
+
+  const isEstimateStale =
+    zctaCodes.join(",") !== debouncedZctas.join(",") ||
+    selection.quantityOverride !== debouncedQuantityOverride ||
+    filtersKey !== debouncedFiltersKey;
   useEffect(() => {
     if (isEstimateStale && zctaCodes.length > 0) {
       setSelectionPulse(true);
@@ -97,8 +121,8 @@ export function TargetingMap({
     {
       zctas: debouncedZctas,
       size,
-      quantityOverride: selection.quantityOverride,
-      filters: selection.filters,
+      quantityOverride: debouncedQuantityOverride,
+      filters: debouncedFilters,
       geoJson: selection.geoJson,
     },
     {
@@ -108,12 +132,11 @@ export function TargetingMap({
     }
   );
 
-  const demoEstimateQuery = trpc.targeting.estimateAudienceFromZctas.useQuery(
+  const demoEstimateQuery = trpc.targeting.getCensusStatsForZctas.useQuery(
     {
       zctas: debouncedZctas,
       size,
-      quantityOverride: selection.quantityOverride,
-      filters: selection.filters,
+      filters: debouncedFilters,
     },
     {
       enabled: demoMode && debouncedZctas.length > 0,
@@ -397,14 +420,23 @@ export function TargetingMap({
 
   return (
     <div className={cn("flex flex-col lg:flex-row gap-5 lg:gap-6", className)}>
-      <div className="flex-1 min-h-[320px] sm:min-h-[440px] lg:min-h-[540px] flex flex-col gap-3">
+      <div
+        className={cn(
+          "flex-1 flex flex-col gap-3",
+          demoMode
+            ? "min-h-[220px] sm:min-h-[300px] lg:min-h-[380px]"
+            : "min-h-[320px] sm:min-h-[440px] lg:min-h-[540px]"
+        )}
+      >
         <div className="targeting-toolbar relative z-20">
           <ZipSearch onSelect={addZcta} className="flex-1 min-w-[200px]" />
           {!hideDrawControl && (
-            <button
+            <Button
               type="button"
+              variant={drawMode ? "primary" : "outline"}
+              size="sm"
               className={cn(
-                "targeting-draw-btn shrink-0",
+                "targeting-draw-btn shrink-0 h-10",
                 drawMode && "targeting-draw-btn-active"
               )}
               onClick={() => setDrawMode((d) => !d)}
@@ -414,7 +446,7 @@ export function TargetingMap({
                 <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Z" />
               </svg>
               {findInPolygon.isPending ? "Finding…" : drawMode ? "Drawing…" : "Draw area"}
-            </button>
+            </Button>
           )}
         </div>
 
@@ -429,7 +461,12 @@ export function TargetingMap({
           </p>
         )}
 
-        <div className="targeting-shell relative flex-1 min-h-[300px] sm:min-h-[380px]">
+        <div
+          className={cn(
+            "targeting-shell relative flex-1",
+            demoMode ? "min-h-[200px] sm:min-h-[260px]" : "min-h-[300px] sm:min-h-[380px]"
+          )}
+        >
           <div className="targeting-map-vignette" aria-hidden />
           <MapGL
             ref={mapRef}
@@ -549,6 +586,7 @@ export function TargetingMap({
             {...sidebarProps}
             isOpen={mobileStatsOpen}
             onToggle={() => setMobileStatsOpen((o) => !o)}
+            embedded={demoMode}
           />
           {mobileStatsOpen && (
             <>
@@ -593,6 +631,7 @@ function MobileStatsBar({
   isUpdating,
   isOpen,
   onToggle,
+  embedded = false,
 }: {
   estimate?: {
     reach?: number;
@@ -603,9 +642,18 @@ function MobileStatsBar({
   isUpdating?: boolean;
   isOpen: boolean;
   onToggle: () => void;
+  /** Keep the bar inside its container instead of fixed to the viewport (landing demo) */
+  embedded?: boolean;
 }) {
   return (
-    <div className="lg:hidden fixed inset-x-0 bottom-0 z-30 px-3 pb-3 pt-6 bg-gradient-to-t from-[var(--color-bg)] via-[var(--color-bg)]/95 to-transparent pointer-events-none">
+    <div
+      className={cn(
+        "lg:hidden z-30 px-3 pb-3 pt-2 pointer-events-none",
+        embedded
+          ? "relative mt-1"
+          : "fixed inset-x-0 bottom-0 pt-6 bg-gradient-to-t from-[var(--color-bg)] via-[var(--color-bg)]/95 to-transparent"
+      )}
+    >
       <button
         type="button"
         onClick={onToggle}
