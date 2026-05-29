@@ -6,17 +6,25 @@ export const mapRouter = router({
     .input(
       z.object({
         name: z.string(),
-        zip: z.string(),
-        routeIds: z.array(z.string()),
-        totalPieces: z.number(),
+        zip: z.string().optional(),
+        routeIds: z.array(z.string()).optional(),
+        totalPieces: z.number().optional(),
         demographics: z.any().optional(),
+        geoJson: z.any(), // Required by Prisma schema
       })
     )
     .mutation(async ({ input, ctx }) => {
       return ctx.prisma.savedMap.create({
         data: {
-          ...input,
+          name: input.name,
+          geoJson: input.geoJson,
           organizationId: ctx.user.organizationId,
+          metadata: {
+            zip: input.zip,
+            routeIds: input.routeIds,
+            totalPieces: input.totalPieces,
+            demographics: input.demographics,
+          },
         },
       });
     }),

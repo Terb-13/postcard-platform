@@ -1,6 +1,6 @@
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
-import { appRouter } from "../../../../packages/api/root";
-import { createTRPCContext } from "../../../../packages/api/trpc";
+import { appRouter } from "@postcard-platform/api/root";
+import { createTRPCContext } from "@postcard-platform/api/trpc";
 import { getCurrentUser } from "@/lib/auth";
 
 export const runtime = "nodejs";

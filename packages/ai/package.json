@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "main": "./xai.ts",
+  "scripts": {
+    "build": "echo 'Source package - transpiled by consumer (Next.js)'"
+  },
   "dependencies": {
     "openai": "^4.0.0"
   }

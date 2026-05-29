@@ -1,5 +1,8 @@
 "use client";
 
+// Force dynamic to avoid requiring Clerk keys during next build prerender without .env
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";

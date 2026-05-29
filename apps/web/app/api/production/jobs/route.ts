@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
+export const runtime = "nodejs";
+
 /**
  * Production Partner API
  * Auth: X-Production-Key header
@@ -54,7 +56,6 @@ export async function POST(req: NextRequest) {
       productionPartnerId: partner.id,
       status: "RECEIVED",
       payload: body.payload || {},
-      externalId: body.externalId,
     },
   });
 
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest) {
     data: {
       productionJobId: job.id,
       status: "RECEIVED",
-      message: "Job received by platform",
+      note: "Job received by platform",
     },
   });
 

@@ -37,7 +37,7 @@ export function OpsDashboard() {
   // Main queries
   const jobsQuery = trpc.admin.productionJobs.list.useQuery(
     { ...filters, cursor, limit: 25 },
-    { keepPreviousData: true }
+    { placeholderData: (prev) => prev }
   );
   const activityQuery = trpc.admin.activity.recent.useQuery({ limit: 15 });
   const statsQuery = trpc.admin.dashboard.stats.useQuery();
@@ -45,7 +45,7 @@ export function OpsDashboard() {
 
   const utils = trpc.useUtils();
 
-  const jobs = jobsQuery.data?.items ?? [];
+  const jobs = (jobsQuery.data?.items ?? []) as Job[];
   const nextCursor = jobsQuery.data?.nextCursor;
 
   const handleFilterChange = (newFilters: Partial<Filters>) => {

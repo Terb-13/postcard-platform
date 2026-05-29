@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { trpc } from "@/lib/trpc/client"; // We'll use this on client
 
 import { OpsDashboard } from "./components/OpsDashboard";
 

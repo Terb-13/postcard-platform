@@ -1,8 +1,7 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../trpc";
 import { TRPCError } from "@trpc/server";
-import { prisma } from "../db/client";
-import { requireRole } from "../lib/roles";
+import { prisma } from "@postcard-platform/db/client";
 
 const adminProcedure = protectedProcedure.use(async ({ ctx, next }) => {
   // Basic role guard - expand as needed
@@ -89,6 +88,7 @@ export const adminRouter = router({
             campaign: {
               include: {
                 organization: { select: { id: true, name: true } },
+                savedMap: { select: { id: true, name: true, metadata: true } },
                 artwork: {
                   include: { thumbnails: { orderBy: { page: "asc" } } },
                 },
@@ -376,6 +376,7 @@ export const adminRouter = router({
                 campaign: {
                   include: { organization: { select: { name: true } } },
                 },
+                productionPartner: { select: { name: true } },
               },
             },
           },

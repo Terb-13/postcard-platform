@@ -1,13 +1,12 @@
 import { inngest } from "../client";
-import { prisma } from "../../db/client";
+import { prisma } from "@postcard-platform/db/client";
 import { uploadToR2 } from "../../lib/r2";
 
 import * as pdfjsLib from "pdfjs-dist";
 import { createCanvas } from "@napi-rs/canvas";
 
-// Configure pdfjs for Node environment
-// @ts-ignore
-pdfjsLib.GlobalWorkerOptions.workerSrc = require.resolve("pdfjs-dist/build/pdf.worker.js");
+// Note: workerSrc intentionally disabled (was causing module resolution issues in Vercel/Next bundler).
+// pdfjs getDocument works server-side in Node with useWorkerFetch: false + isEvalSupported: false.
 
 const THUMBNAIL_WIDTH = 900;
 const MAX_PAGES = 6;
@@ -18,13 +17,13 @@ export const generateArtworkThumbnail = inngest.createFunction(
   async ({ event, step }) => {
     const { artworkId, fileUrl, maxPages = MAX_PAGES } = event.data;
 
-    const pdfBuffer = await step.run("download-pdf", async () => {
-      const res = await fetch(fileUrl);
-      if (!res.ok) throw new Error(`Failed to download PDF: ${res.status}`);
-      return Buffer.from(await res.arrayBuffer());
-    });
+    // Note: We re-fetch the PDF inside each step.run to avoid Inngest serialization issues with Buffer objects
+    // (Buffers get turned into {type:'Buffer', data:[]} plain objects across step boundaries).
 
     const { pageCount } = await step.run("inspect-pdf", async () => {
+      const res = await fetch(fileUrl);
+      if (!res.ok) throw new Error(`Failed to download PDF: ${res.status}`);
+      const pdfBuffer = Buffer.from(await res.arrayBuffer());
       const loadingTask = pdfjsLib.getDocument({
         data: new Uint8Array(pdfBuffer),
         useWorkerFetch: false,
@@ -38,7 +37,10 @@ export const generateArtworkThumbnail = inngest.createFunction(
     const thumbnailUrls: Record<number, string> = {};
 
     for (let pageNum = 1; pageNum <= pagesToGenerate; pageNum++) {
-      const pngBuffer = await step.run(`render-page-${pageNum}`, async () => {
+      const url = await step.run(`render-and-upload-page-${pageNum}`, async () => {
+        const res = await fetch(fileUrl);
+        if (!res.ok) throw new Error(`Failed to download PDF: ${res.status}`);
+        const pdfBuffer = Buffer.from(await res.arrayBuffer());
         const loadingTask = pdfjsLib.getDocument({
           data: new Uint8Array(pdfBuffer),
           useWorkerFetch: false,
@@ -56,12 +58,9 @@ export const generateArtworkThumbnail = inngest.createFunction(
 
         await page.render({ canvasContext: context as any, viewport: scaledViewport }).promise;
 
-        return canvas.toBuffer("image/png");
-      });
-
-      const key = `artwork-thumbnails/${artworkId}/p${pageNum}.png`;
-      const url = await step.run(`upload-page-${pageNum}`, async () => {
-        return uploadToR2(pngBuffer, key, "image/png");
+        const pngBuffer = canvas.toBuffer("image/png");
+        const key = `artwork-thumbnails/${artworkId}/p${pageNum}.png`;
+        return uploadToR2(pngBuffer as Buffer, key, "image/png");
       });
 
       thumbnailUrls[pageNum] = url;

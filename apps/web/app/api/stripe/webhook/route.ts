@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/db";
 import { sendEmail, emailTemplates } from "@/lib/email";
+import { targetingPayloadBlock } from "@/lib/targeting-summary";
+import type { Prisma } from "@prisma/client";
+
+export const runtime = "nodejs";
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
@@ -32,7 +36,7 @@ export async function POST(req: NextRequest) {
     try {
       const campaign = await prisma.campaign.findUnique({
         where: { id: campaignId },
-        include: { organization: true },
+        include: { organization: true, savedMap: true },
       });
 
       if (!campaign) {
@@ -67,19 +71,26 @@ export async function POST(req: NextRequest) {
         orderBy: { createdAt: "asc" },
       });
 
+      const targetingMeta = campaign.targetingMetadata ?? campaign.savedMap?.metadata;
+      const targeting = targetingPayloadBlock(targetingMeta);
+
+      const jobPayload = {
+        campaignName: campaign.name,
+        size: campaign.size,
+        quantity: campaign.quantity,
+        dropDate: campaign.dropDate?.toISOString() ?? null,
+        totalPriceCents: campaign.totalPriceCents,
+        notes: campaign.notes,
+        ...(targeting ? { targeting } : {}),
+      } satisfies Record<string, unknown>;
+
       // 3. Create the ProductionJob
       const productionJob = await prisma.productionJob.create({
         data: {
           campaignId: campaign.id,
           productionPartnerId: firstActivePartner?.id ?? null,
           status: "RECEIVED",
-          payload: {
-            campaignName: campaign.name,
-            size: campaign.size,
-            quantity: campaign.quantity,
-            dropDate: campaign.dropDate,
-            totalPriceCents: campaign.totalPriceCents,
-          },
+          payload: jobPayload as Prisma.InputJsonValue,
         },
       });
 

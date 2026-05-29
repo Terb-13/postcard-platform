@@ -1,5 +1,8 @@
 "use client";
 
+// Force dynamic to avoid requiring Clerk keys (and other envs) during next build prerender
+ export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc/client";
@@ -92,6 +95,7 @@ export default function MyCampaignsPage() {
                     {campaign.dropDate && (
                       <p className="text-sm text-gray-500 mt-1">Target drop: {new Date(campaign.dropDate).toLocaleDateString()}</p>
                     )}
+                    <TargetingSummary campaign={campaign} />
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -202,6 +206,47 @@ function getStatusBadge(status: string) {
   if (status === "COMPLETED") return "bg-green-100 text-green-700 border-green-200";
   if (status === "READY_FOR_PAYMENT") return "bg-amber-100 text-amber-700 border-amber-200";
   return "bg-gray-100 text-gray-600 border-gray-200";
+}
+
+function TargetingSummary({
+  campaign,
+}: {
+  campaign: {
+    targetingMetadata?: unknown;
+    savedMap?: { metadata?: unknown } | null;
+    quantity?: number;
+    totalPriceCents?: number | null;
+  };
+}) {
+  const meta = (campaign.targetingMetadata ?? campaign.savedMap?.metadata) as {
+    zctas?: string[];
+    estimate?: { reach?: number; avgMedianIncome?: number; zctaCount?: number };
+  } | null;
+
+  if (!meta?.zctas?.length && !meta?.estimate) return null;
+
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-600">
+      {meta.zctas?.slice(0, 5).map((z) => (
+        <span key={z} className="rounded-full bg-blue-50 text-blue-700 px-2 py-0.5 border border-blue-100">
+          {z}
+        </span>
+      ))}
+      {(meta.zctas?.length ?? 0) > 5 && (
+        <span className="text-gray-400">+{meta.zctas!.length - 5} more</span>
+      )}
+      {meta.estimate?.reach != null && (
+        <span className="text-gray-500">
+          · ~{meta.estimate.reach.toLocaleString()} households
+        </span>
+      )}
+      {campaign.totalPriceCents != null && (
+        <span className="text-gray-500">
+          · Est. ${(campaign.totalPriceCents / 100).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+        </span>
+      )}
+    </div>
+  );
 }
 
 function getArtworkStatusBadge(status: string) {

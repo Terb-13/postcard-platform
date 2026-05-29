@@ -1,35 +1,214 @@
 import { z } from "zod";
+import type { Prisma } from "@prisma/client";
 import { protectedProcedure, router } from "../trpc";
 import { TRPCError } from "@trpc/server";
 import { inngest } from "../inngest/client";
 import { stripe } from "../lib/stripe";
+import { getStatsForZctas } from "../lib/census";
+import { calculateCampaignPricing } from "../lib/pricing";
+
+const targetingInputSchema = z
+  .object({
+    zctas: z.array(z.string()).min(1).max(50),
+    geoJson: z.any().optional(),
+    filters: z
+      .object({
+        minIncome: z.number().optional(),
+        maxIncome: z.number().optional(),
+        minMoverPercent: z.number().optional(),
+      })
+      .optional(),
+    quantityOverride: z.number().int().min(100).optional(),
+    savedMapName: z.string().optional(),
+  })
+  .optional();
 
 export const campaignRouter = router({
-  // Create a new draft campaign
+  // Create a new draft campaign (optionally with Census targeting)
   create: protectedProcedure
     .input(
       z.object({
         name: z.string().min(1),
         size: z.string(),
-        quantity: z.number().int().min(100),
+        quantity: z.number().int().min(100).optional(),
         dropDate: z.string().optional(), // ISO date string
+        notes: z.string().optional(),
+        targeting: targetingInputSchema,
       })
     )
     .mutation(async ({ input, ctx }) => {
       const dropDate = input.dropDate ? new Date(input.dropDate) : null;
+
+      let quantity = input.quantity ?? 500;
+      let unitPriceCents: number | undefined;
+      let totalPriceCents: number | undefined;
+      let targetingMetadata: Prisma.InputJsonValue | undefined;
+      let savedMapId: string | undefined;
+
+      if (input.targeting?.zctas?.length) {
+        const stats = await getStatsForZctas(input.targeting.zctas);
+        const reach = stats.households > 0 ? stats.households : stats.population;
+        const pricing = calculateCampaignPricing({
+          size: input.size,
+          estimatedReach: reach,
+          quantityOverride: input.targeting.quantityOverride,
+        });
+
+        quantity = pricing.quantity;
+        unitPriceCents = pricing.unitPriceCents;
+        totalPriceCents = pricing.totalPriceCents;
+
+        targetingMetadata = {
+          zctas: input.targeting.zctas,
+          filters: input.targeting.filters,
+          estimate: {
+            reach,
+            households: stats.households,
+            population: stats.population,
+            avgMedianIncome: stats.avgMedianIncome,
+            avgMoverPercent: stats.avgMoverPercent,
+            zctaCount: stats.zctaCount,
+          },
+          pricing,
+        };
+
+        const geoJson = input.targeting.geoJson ?? {
+          type: "FeatureCollection",
+          features: input.targeting.zctas.map((z) => ({
+            type: "Feature",
+            properties: { zcta: z },
+            geometry: null,
+          })),
+        };
+
+        const savedMap = await ctx.prisma.savedMap.create({
+          data: {
+            organizationId: ctx.user.organizationId,
+            name: input.targeting.savedMapName ?? `${input.name} targeting`,
+            geoJson,
+            metadata: targetingMetadata,
+          },
+        });
+        savedMapId = savedMap.id;
+      }
 
       const campaign = await ctx.prisma.campaign.create({
         data: {
           organizationId: ctx.user.organizationId,
           name: input.name,
           size: input.size,
-          quantity: input.quantity,
-          dropDate: dropDate,
+          quantity,
+          dropDate,
+          notes: input.notes,
           status: "DRAFT",
+          savedMapId,
+          targetingMetadata,
+          unitPriceCents,
+          totalPriceCents,
         },
       });
 
       return campaign;
+    }),
+
+  // Update draft campaign during wizard (before payment)
+  updateDraft: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        name: z.string().min(1).optional(),
+        size: z.string().optional(),
+        quantity: z.number().int().min(100).optional(),
+        dropDate: z.string().nullable().optional(),
+        notes: z.string().nullable().optional(),
+        targeting: targetingInputSchema,
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const existing = await ctx.prisma.campaign.findUnique({
+        where: { id: input.id },
+      });
+
+      if (!existing || existing.organizationId !== ctx.user.organizationId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Campaign not found" });
+      }
+      if (existing.status !== "DRAFT") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Only draft campaigns can be updated",
+        });
+      }
+
+      const data: Prisma.CampaignUpdateInput = {};
+      if (input.name != null) data.name = input.name;
+      if (input.size != null) data.size = input.size;
+      if (input.quantity != null) data.quantity = input.quantity;
+      if (input.dropDate !== undefined) {
+        data.dropDate = input.dropDate ? new Date(input.dropDate) : null;
+      }
+      if (input.notes !== undefined) data.notes = input.notes;
+
+      if (input.targeting?.zctas?.length) {
+        const stats = await getStatsForZctas(input.targeting.zctas);
+        const reach = stats.households > 0 ? stats.households : stats.population;
+        const pricing = calculateCampaignPricing({
+          size: (input.size ?? existing.size) as string,
+          estimatedReach: reach,
+          quantityOverride: input.targeting.quantityOverride,
+        });
+
+        data.quantity = pricing.quantity;
+        data.unitPriceCents = pricing.unitPriceCents;
+        data.totalPriceCents = pricing.totalPriceCents;
+        const targetingMeta: Prisma.InputJsonValue = {
+          zctas: input.targeting.zctas,
+          filters: input.targeting.filters,
+          estimate: {
+            reach,
+            households: stats.households,
+            population: stats.population,
+            avgMedianIncome: stats.avgMedianIncome,
+            avgMoverPercent: stats.avgMoverPercent,
+            zctaCount: stats.zctaCount,
+          },
+          pricing,
+        };
+        data.targetingMetadata = targetingMeta;
+
+        const geoJson = (input.targeting.geoJson ?? {
+          type: "FeatureCollection",
+          features: input.targeting.zctas.map((z) => ({
+            type: "Feature",
+            properties: { zcta: z },
+            geometry: null,
+          })),
+        }) as Prisma.InputJsonValue;
+
+        if (existing.savedMapId) {
+          await ctx.prisma.savedMap.update({
+            where: { id: existing.savedMapId },
+            data: {
+              geoJson,
+              metadata: targetingMeta,
+            },
+          });
+        } else {
+          const savedMap = await ctx.prisma.savedMap.create({
+            data: {
+              organizationId: ctx.user.organizationId,
+              name: input.targeting.savedMapName ?? `${existing.name} targeting`,
+              geoJson,
+              metadata: targetingMeta,
+            },
+          });
+          data.savedMap = { connect: { id: savedMap.id } };
+        }
+      }
+
+      return ctx.prisma.campaign.update({
+        where: { id: input.id },
+        data,
+      });
     }),
 
   // List my campaigns with artwork (incl. thumbnails) + production job info for timeline/preview
@@ -40,6 +219,7 @@ export const campaignRouter = router({
       },
       orderBy: { createdAt: "desc" },
       include: {
+        savedMap: true,
         artwork: {
           include: {
             thumbnails: {
@@ -136,9 +316,14 @@ export const campaignRouter = router({
         });
       }
 
-      // Simple pricing example (in real app pull from config or calc)
-      const unitPriceCents = 0.12 * 100; // $0.12 base example for EDDM
-      const totalCents = Math.round(unitPriceCents * campaign.quantity);
+      const unitPriceCents =
+        campaign.unitPriceCents ??
+        calculateCampaignPricing({
+          size: campaign.size,
+          estimatedReach: campaign.quantity,
+        }).unitPriceCents;
+      const totalCents =
+        campaign.totalPriceCents ?? Math.round(unitPriceCents * campaign.quantity);
 
       const session = await stripe.checkout.sessions.create({
         mode: "payment",
@@ -204,6 +389,7 @@ export const campaignRouter = router({
       const campaign = await ctx.prisma.campaign.findUnique({
         where: { id: input.id },
         include: {
+          savedMap: true,
           artwork: { include: { thumbnails: { orderBy: { page: "asc" } } } },
           productionJobs: true,
         },

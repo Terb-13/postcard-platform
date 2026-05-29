@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
+export const runtime = "nodejs";
+
 /**
  * Production Partner uploads proof for a job
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { jobId: string } }
+  { params }: { params: Promise<{ jobId: string }> }
 ) {
+  const { jobId } = await params;
   const apiKey = req.headers.get("x-production-key");
 
   if (!apiKey) {
@@ -29,7 +32,7 @@ export async function POST(
   }
 
   const job = await prisma.productionJob.findUnique({
-    where: { id: params.jobId },
+    where: { id: jobId },
   });
 
   if (!job || job.productionPartnerId !== partner.id) {
@@ -37,15 +40,15 @@ export async function POST(
   }
 
   await prisma.productionJob.update({
-    where: { id: params.jobId },
+    where: { id: jobId },
     data: { proofUrl },
   });
 
   await prisma.jobEvent.create({
     data: {
-      productionJobId: params.jobId,
+      productionJobId: jobId,
       status: job.status,
-      message: "Proof uploaded by partner",
+      note: "Proof uploaded by partner",
       metadata: { proofUrl },
     },
   });
@@ -64,7 +67,7 @@ export async function POST(
     : null;
 
   if (user?.email) {
-    const { sendEmail } = await import("@/packages/api/lib/email");
+    const { sendEmail } = await import("@postcard-platform/api/lib/email");
     await sendEmail({
       to: user.email,
       subject: `Proof uploaded for ${campaign!.name}`,

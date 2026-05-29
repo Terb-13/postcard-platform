@@ -78,7 +78,7 @@ export function JobDetailModal({
                   .map((event) => (
                     <div key={event.id} className="border-l-2 border-gray-300 pl-3 text-sm">
                       <div className="font-medium">{event.status}</div>
-                      <div className="text-gray-600">{event.message}</div>
+                      <div className="text-gray-600">{event.note}</div>
                       <div className="text-xs text-gray-500 mt-0.5">
                         {new Date(event.createdAt).toLocaleString()}
                       </div>

@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
+export const runtime = "nodejs";
+
 // Allowed statuses from print partners
 const ALLOWED_PARTNER_STATUSES = ["SENT_TO_PROVIDER", "SHIPPED", "DELIVERED"] as const;
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { jobId: string } }
+  { params }: { params: Promise<{ jobId: string }> }
 ) {
+  const { jobId } = await params;
   const apiKey = req.headers.get("x-production-key");
 
   if (!apiKey) {
@@ -23,7 +26,7 @@ export async function GET(
   }
 
   const job = await prisma.productionJob.findUnique({
-    where: { id: params.jobId },
+    where: { id: jobId },
     include: {
       campaign: { select: { name: true, size: true, quantity: true } },
       events: { orderBy: { createdAt: "desc" }, take: 10 },
@@ -39,8 +42,9 @@ export async function GET(
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { jobId: string } }
+  { params }: { params: Promise<{ jobId: string }> }
 ) {
+  const { jobId } = await params;
   const apiKey = req.headers.get("x-production-key");
 
   if (!apiKey) {
@@ -62,7 +66,7 @@ export async function POST(
   }
 
   const job = await prisma.productionJob.findUnique({
-    where: { id: params.jobId },
+    where: { id: jobId },
   });
 
   if (!job || job.productionPartnerId !== partner.id) {
@@ -76,15 +80,15 @@ export async function POST(
   }
 
   const updated = await prisma.productionJob.update({
-    where: { id: params.jobId },
+    where: { id: jobId },
     data: updateData,
   });
 
   await prisma.jobEvent.create({
     data: {
-      productionJobId: params.jobId,
+      productionJobId: jobId,
       status,
-      message: message || `Status updated to ${status}`,
+      note: message || `Status updated to ${status}`,
       metadata: trackingNumber ? { trackingNumber } : undefined,
     },
   });

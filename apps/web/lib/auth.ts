@@ -8,7 +8,7 @@ import type { User } from "@prisma/client";
  * Returns null if not authenticated or no matching record.
  */
 export async function getCurrentUser(): Promise<User | null> {
-  const { userId } = auth();
+  const { userId } = await auth();
 
   if (!userId) return null;
 

@@ -5,6 +5,7 @@
   "main": "./client.ts",
   "types": "./client.ts",
   "scripts": {
+    "build": "echo 'Source package - Prisma client generated via postinstall'",
     "db:generate": "prisma generate --schema=./prisma/schema.prisma",
     "db:push": "prisma db push --schema=./prisma/schema.prisma"
   },

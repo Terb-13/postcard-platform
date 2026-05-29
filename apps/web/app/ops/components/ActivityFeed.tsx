@@ -36,8 +36,8 @@ export function ActivityFeed({ events, isLoading }: ActivityFeedProps) {
             <div className="text-xs text-gray-500">
               {job?.productionPartner?.name} • {new Date(event.createdAt).toLocaleString()}
             </div>
-            {event.message && (
-              <div className="mt-0.5 text-xs italic text-gray-500">{event.message}</div>
+            {event.note && (
+              <div className="mt-0.5 text-xs italic text-gray-500">{event.note}</div>
             )}
           </div>
         );

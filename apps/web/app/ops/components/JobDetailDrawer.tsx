@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc/client";
 import { ArtworkPreview } from "@/components/ArtworkPreview";
+import { TargetingSummaryDisplay } from "@/components/targeting";
 import type { RouterOutputs } from "@/lib/trpc/client";
 
 type Job = RouterOutputs["admin"]["productionJobs"]["list"]["items"][number];
@@ -45,6 +46,27 @@ export function JobDetailDrawer({
   const reviewProof = trpc.admin.productionJobs.reviewProof.useMutation({
     onSuccess: () => onRefresh?.(),
   });
+
+  const updateStatusMutation = trpc.admin.productionJobs.updateStatus.useMutation({
+    onSuccess: () => {
+      onRefresh?.();
+    },
+  });
+
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const handleQuickStatus = async (status: string) => {
+    if (!job) return;
+    setIsUpdating(true);
+    try {
+      await updateStatusMutation.mutateAsync({
+        jobId: job.id,
+        status: status as "SENT_TO_PROVIDER" | "SHIPPED" | "DELIVERED",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   if (!job) return null;
 
@@ -93,6 +115,21 @@ export function JobDetailDrawer({
               <div>Tracking: <span className="font-mono">{job.trackingNumber || "—"}</span></div>
               <div>Created: {new Date(job.createdAt).toLocaleDateString()}</div>
             </div>
+
+            {/* Geo-targeting summary */}
+            {(job.campaign.targetingMetadata || job.campaign.savedMap?.metadata) && (
+              <div>
+                <div className="text-sm font-medium text-gray-700 mb-2">Targeting</div>
+                <TargetingSummaryDisplay
+                  metadata={job.campaign.targetingMetadata ?? job.campaign.savedMap?.metadata}
+                  fallback={{
+                    quantity: job.campaign.quantity,
+                    totalPriceCents: job.campaign.totalPriceCents,
+                  }}
+                  variant="full"
+                />
+              </div>
+            )}
 
             {/* Artwork with Multi-Page + Server Thumbnails */}
             <div>

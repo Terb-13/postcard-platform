@@ -1,5 +1,8 @@
 "use client";
 
+// Force dynamic to avoid requiring Clerk keys (and other envs) during next build prerender
+ export const dynamic = "force-dynamic";
+
 import { useState, useEffect } from "react";
 import { UploadButton } from "@/lib/uploadthing";
 

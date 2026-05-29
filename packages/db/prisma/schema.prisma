@@ -18,8 +18,9 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users    User[]
+  users     User[]
   campaigns Campaign[]
+  savedMaps SavedMap[]
 }
 
 model User {
@@ -38,14 +39,19 @@ model User {
   @@index([organizationId])
 }
 
-// Maps (future use for EDDM map tool)
+// Geo-targeting selections (ZCTAs, polygons, Census snapshot)
 model SavedMap {
   id             String   @id @default(cuid())
   organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
   name           String
   geoJson        Json
   metadata       Json?
   createdAt      DateTime @default(now())
+
+  campaigns Campaign[]
+
+  @@index([organizationId])
 }
 
 // Campaign (customer order)
@@ -58,7 +64,13 @@ model Campaign {
   size                  String   // e.g. "6x11", "4x6"
   quantity              Int
   dropDate              DateTime?
+  notes                 String?
   status                String   @default("DRAFT") // DRAFT | READY_FOR_PAYMENT | PAID | IN_PRODUCTION | COMPLETED
+
+  // Geo-targeting
+  savedMapId            String?
+  savedMap              SavedMap? @relation(fields: [savedMapId], references: [id])
+  targetingMetadata     Json?    // zctas, filters, Census estimate snapshot
 
   // Pricing snapshot
   unitPriceCents        Int?

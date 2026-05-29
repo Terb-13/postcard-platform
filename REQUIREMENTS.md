@@ -52,6 +52,14 @@ INNGEST_SIGNING_KEY=...
 # AI (xAI)
 XAI_API_KEY=xai-...
 
+# Geo-targeting (US Census ACS + Mapbox)
+CENSUS_API_KEY=...          # https://api.census.gov/data/key_signup.html (optional but recommended)
+NEXT_PUBLIC_MAPBOX_TOKEN=pk....  # Interactive map + zip search
+MAPBOX_ACCESS_TOKEN=pk....       # Server-side geocoding (can match public token)
+
+# Pricing (optional)
+POSTCARD_BASE_RATE_CENTS=12
+
 # App
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```

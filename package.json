@@ -2,16 +2,22 @@
   "name": "postcard-platform",
   "private": true,
   "packageManager": "npm@10.8.2",
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "turbo run dev",
-    "build": "turbo run build",
-    "db:generate": "turbo run db:generate",
-    "db:push": "turbo run db:push",
+    "dev": "npx turbo run dev",
+    "build": "npx turbo run build",
+    "db:generate": "npx turbo run db:generate",
+    "db:push": "npx turbo run db:push",
     "db:studio": "prisma studio --schema=packages/db/prisma/schema.prisma"
   },
   "devDependencies": {
     "turbo": "^2.3.0",
     "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "ai": "^6.0.191"
   }
 }

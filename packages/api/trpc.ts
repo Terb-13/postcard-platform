@@ -1,7 +1,6 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
-import { prisma } from "../db/client";
-import { getCurrentUser } from "../../apps/web/lib/auth"; // note: cross-package import - consider moving auth helpers to packages later
+import { prisma } from "@postcard-platform/db/client";
 
 import type { User } from "@prisma/client";
 

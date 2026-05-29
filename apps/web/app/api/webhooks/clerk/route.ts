@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Webhook } from "svix";
-import { prisma } from "@/lib/db"; // TODO: create this file
+import { prisma } from "@/lib/db";
+
+export const runtime = "nodejs";
 
 const webhookSecret = process.env.CLERK_WEBHOOK_SECRET!;
 
@@ -44,8 +46,6 @@ export async function POST(req: NextRequest) {
       },
     });
   }
-
-  // @cursor: Add handlers for organization.created, user.updated, etc.
 
   return NextResponse.json({ success: true });
 }
