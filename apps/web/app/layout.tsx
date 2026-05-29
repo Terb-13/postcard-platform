@@ -18,8 +18,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Postcard | Smart, Trackable Postcard Marketing for Local Businesses",
-  description: "Design beautiful postcards, target the right neighborhoods, and know exactly what works. The modern platform built for local business owners who want results — not guesses.",
+  title: "Postcard | Targeted Postcards Powered by Real Census Data",
+  description:
+    "Reach the right homes by income, population, and recent movers. Census-powered targeting, simple campaign wizard, and fast fulfillment via Drummond.",
   icons: {
     icon: "/favicon.ico",
   },

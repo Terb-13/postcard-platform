@@ -172,7 +172,7 @@ export const targetingRouter = router({
     }),
 
   /** Geocode zip suggestions via Mapbox (server-side to keep token optional on client) */
-  searchZips: protectedProcedure
+  searchZips: publicProcedure
     .input(z.object({ query: z.string().min(2).max(20) }))
     .query(async ({ input }) => {
       const token = process.env.MAPBOX_ACCESS_TOKEN ?? process.env.NEXT_PUBLIC_MAPBOX_TOKEN;

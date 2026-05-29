@@ -1,7 +1,6 @@
 "use client";
 
-// Force dynamic to avoid requiring Clerk keys (and other envs) during next build prerender
- export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { useState } from "react";
@@ -9,9 +8,11 @@ import { trpc } from "@/lib/trpc/client";
 import { ArtworkPreview } from "@/components/ArtworkPreview";
 import { ArtworkUpload } from "@/components/ArtworkUpload";
 import { ProductionTimeline } from "@/components/ProductionTimeline";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export default function MyCampaignsPage() {
-  const utils = trpc.useUtils();
   const { data: campaigns, isLoading, refetch } = trpc.campaign.getMine.useQuery();
 
   const createCheckout = trpc.campaign.createCheckoutSession.useMutation({
@@ -21,14 +22,11 @@ export default function MyCampaignsPage() {
     onError: (e) => alert(e.message),
   });
 
-  // Track local generating state per campaign for instant grid feedback
   const [generatingFor, setGeneratingFor] = useState<Record<string, boolean>>({});
   const [pageCounts, setPageCounts] = useState<Record<string, number>>({});
 
   const handleUploadComplete = (campaignId: string) => {
-    // Immediately show "generating" state + wait for thumbnails
     setGeneratingFor((prev) => ({ ...prev, [campaignId]: true }));
-    // Refetch will bring the new artwork + later the thumbnails from Inngest
     setTimeout(() => {
       refetch();
       setGeneratingFor((prev) => ({ ...prev, [campaignId]: false }));
@@ -40,172 +38,214 @@ export default function MyCampaignsPage() {
   };
 
   if (isLoading) {
-    return <div className="max-w-5xl mx-auto p-8">Loading your campaigns...</div>;
+    return (
+      <div className="min-h-screen bg-[var(--color-bg)]">
+        <div className="container max-w-5xl py-10 space-y-6">
+          <div className="h-10 w-64 bg-[var(--color-border)] rounded-xl animate-pulse" />
+          <div className="h-48 bg-[var(--color-border)] rounded-2xl animate-pulse" />
+          <div className="h-48 bg-[var(--color-border)] rounded-2xl animate-pulse" />
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-8">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-semibold">My Campaigns</h1>
-          <p className="text-gray-600 mt-1">Upload artwork, get it reviewed, pay, and track production.</p>
+    <div className="min-h-screen bg-[var(--color-bg)]">
+      <header className="border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+        <div className="container max-w-5xl py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="heading-md">My Campaigns</h1>
+            <p className="text-small text-[var(--color-text-muted)] mt-1">
+              Upload artwork, get it reviewed, pay, and track production.
+            </p>
+          </div>
+          <Link href="/campaigns/new">
+            <Button>+ New Campaign</Button>
+          </Link>
         </div>
-        <Link
-          href="/campaigns/new"
-          className="inline-flex items-center rounded-lg bg-black px-4 py-2 text-white text-sm font-medium hover:bg-gray-800"
-        >
-          + New Campaign
-        </Link>
-      </div>
+      </header>
 
-      {!campaigns || campaigns.length === 0 ? (
-        <div className="rounded-xl border bg-white p-12 text-center">
-          <p className="text-gray-600 mb-4">No campaigns yet.</p>
-          <Link href="/campaigns/new" className="text-blue-600 underline">Create your first postcard campaign →</Link>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {campaigns.map((campaign) => {
-            const artwork = campaign.artwork;
-            const job = campaign.productionJobs?.[0];
-            const isGenerating = generatingFor[campaign.id] ?? false;
-            const knownPageCount = pageCounts[campaign.id] ?? artwork?.pageCount ?? undefined;
+      <main className="container max-w-5xl py-8">
+        {!campaigns || campaigns.length === 0 ? (
+          <EmptyCampaignsState />
+        ) : (
+          <div className="space-y-6">
+            {campaigns.map((campaign) => {
+              const artwork = campaign.artwork;
+              const job = campaign.productionJobs?.[0];
+              const isGenerating = generatingFor[campaign.id] ?? false;
+              const knownPageCount = pageCounts[campaign.id] ?? artwork?.pageCount ?? undefined;
 
-            const thumbnailsMap = artwork?.thumbnails?.reduce((acc: Record<number, string>, t) => {
-              acc[t.page] = t.url;
-              return acc;
-            }, {} as Record<number, string>);
+              const thumbnailsMap = artwork?.thumbnails?.reduce(
+                (acc: Record<number, string>, t) => {
+                  acc[t.page] = t.url;
+                  return acc;
+                },
+                {} as Record<number, string>
+              );
 
-            const canPay = artwork?.status === "APPROVED" && campaign.status !== "PAID" && !job;
-            const isRejected = artwork?.status === "REJECTED";
+              const canPay =
+                artwork?.status === "APPROVED" && campaign.status !== "PAID" && !job;
+              const isRejected = artwork?.status === "REJECTED";
 
-            return (
-              <div key={campaign.id} className="rounded-xl border bg-white p-6">
-                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                  <div>
-                    <div className="flex items-center gap-3">
-                      <h2 className="text-xl font-semibold">{campaign.name}</h2>
-                      <span className="text-xs rounded-full border px-2 py-0.5 text-gray-600">
-                        {campaign.size} • {campaign.quantity.toLocaleString()}
-                      </span>
-                      <span className={`text-xs rounded px-2 py-0.5 ${getStatusBadge(campaign.status)}`}>
-                        {campaign.status.replace(/_/g, " ")}
-                      </span>
+              return (
+                <Card key={campaign.id} className="p-6 hover:translate-y-0">
+                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                        <h2 className="text-xl font-semibold">{campaign.name}</h2>
+                        <Badge>
+                          {campaign.size} · {campaign.quantity.toLocaleString()}
+                        </Badge>
+                        <Badge variant="accent">{campaign.status.replace(/_/g, " ")}</Badge>
+                      </div>
+                      {campaign.dropDate && (
+                        <p className="text-sm text-[var(--color-text-muted)] mt-1">
+                          Target drop:{" "}
+                          {new Date(campaign.dropDate).toLocaleDateString()}
+                        </p>
+                      )}
+                      <TargetingSummary campaign={campaign} />
                     </div>
-                    {campaign.dropDate && (
-                      <p className="text-sm text-gray-500 mt-1">Target drop: {new Date(campaign.dropDate).toLocaleDateString()}</p>
-                    )}
-                    <TargetingSummary campaign={campaign} />
-                  </div>
 
-                  <div className="flex items-center gap-2">
-                    {canPay && (
-                      <button
-                        onClick={() => createCheckout.mutate({ campaignId: campaign.id })}
-                        disabled={createCheckout.isPending}
-                        className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+                    <div className="flex flex-wrap items-center gap-2">
+                      {canPay && (
+                        <Button
+                          onClick={() => createCheckout.mutate({ campaignId: campaign.id })}
+                          disabled={createCheckout.isPending}
+                          className="bg-[var(--color-success)] hover:bg-[var(--color-success)]/90"
+                        >
+                          {createCheckout.isPending ? "Redirecting…" : "Pay & Send to Production"}
+                        </Button>
+                      )}
+                      <Link
+                        href={`/production?campaign=${campaign.id}`}
+                        className="text-sm text-[var(--color-accent)] hover:underline px-3 py-2"
                       >
-                        {createCheckout.isPending ? "Redirecting..." : "Pay & Send to Production"}
-                      </button>
-                    )}
-                    <Link href={`/production?campaign=${campaign.id}`} className="text-sm text-blue-600 hover:underline px-3 py-2">
-                      View in Production →
-                    </Link>
-                  </div>
-                </div>
-
-                {/* Artwork Section - The polished preview experience */}
-                <div className="mt-5 border-t pt-5">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="text-sm font-medium text-gray-700">Artwork</div>
-                    {artwork && (
-                      <div className="text-xs text-gray-500">
-                        {artwork.fileName} {knownPageCount ? `• ${knownPageCount} page${knownPageCount > 1 ? "s" : ""}` : ""}
-                      </div>
-                    )}
+                        View in Production →
+                      </Link>
+                    </div>
                   </div>
 
-                  {artwork ? (
-                    <div className="space-y-3">
-                      <ArtworkPreview
-                        fileUrl={artwork.fileUrl!}
-                        thumbnailUrl={artwork.thumbnailUrl}
-                        thumbnails={thumbnailsMap}
-                        pageCount={knownPageCount}
-                        isGeneratingThumbnails={isGenerating || (!artwork.thumbnails?.length && !!artwork.fileUrl)}
-                        rejectionNotes={isRejected ? artwork.notes : null}
-                        className="max-h-[320px] w-full"
-                        onPageCountChange={(c) => handlePageCount(campaign.id, c)}
-                      />
-
-                      {/* Status + actions */}
-                      <div className="flex flex-wrap items-center gap-3 text-sm">
-                        <span className={`rounded px-2 py-0.5 text-xs ${getArtworkStatusBadge(artwork.status)}`}>
-                          {artwork.status}
-                        </span>
-
-                        {isRejected && (
-                          <span className="text-red-600 text-xs">Re-upload corrected artwork below</span>
-                        )}
-
-                        {/* Re-upload always available for rejected or to replace */}
-                        <div className="ml-auto">
-                          <ArtworkUpload
-                            campaignId={campaign.id}
-                            onUploadComplete={() => {
-                              handleUploadComplete(campaign.id);
-                              refetch();
-                            }}
-                          />
-                        </div>
-                      </div>
-
-                      {artwork.notes && !isRejected && (
-                        <div className="text-xs bg-gray-50 border rounded p-2 text-gray-600">
-                          Ops notes: {artwork.notes}
+                  <div className="mt-5 border-t border-[var(--color-border)] pt-5">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-sm font-medium">Artwork</div>
+                      {artwork && (
+                        <div className="text-xs text-[var(--color-text-muted)]">
+                          {artwork.fileName}{" "}
+                          {knownPageCount
+                            ? `· ${knownPageCount} page${knownPageCount > 1 ? "s" : ""}`
+                            : ""}
                         </div>
                       )}
                     </div>
-                  ) : (
-                    <div className="rounded border border-dashed p-6 text-center">
-                      <p className="text-sm text-gray-600 mb-3">No artwork uploaded yet.</p>
-                      <ArtworkUpload
-                        campaignId={campaign.id}
-                        onUploadComplete={() => {
-                          handleUploadComplete(campaign.id);
-                          refetch();
-                        }}
-                      />
-                      <p className="mt-2 text-[10px] text-gray-400">PDF • max 4MB • we will review within a few hours</p>
+
+                    {artwork ? (
+                      <div className="space-y-3">
+                        <ArtworkPreview
+                          fileUrl={artwork.fileUrl!}
+                          thumbnailUrl={artwork.thumbnailUrl}
+                          thumbnails={thumbnailsMap}
+                          pageCount={knownPageCount}
+                          isGeneratingThumbnails={
+                            isGenerating ||
+                            (!artwork.thumbnails?.length && !!artwork.fileUrl)
+                          }
+                          rejectionNotes={isRejected ? artwork.notes : null}
+                          className="max-h-[320px] w-full"
+                          onPageCountChange={(c) => handlePageCount(campaign.id, c)}
+                        />
+
+                        <div className="flex flex-wrap items-center gap-3 text-sm">
+                          <Badge variant={artwork.status === "APPROVED" ? "accent" : undefined}>
+                            {artwork.status}
+                          </Badge>
+                          {isRejected && (
+                            <span className="text-red-600 text-xs">
+                              Re-upload corrected artwork below
+                            </span>
+                          )}
+                          <div className="ml-auto">
+                            <ArtworkUpload
+                              campaignId={campaign.id}
+                              onUploadComplete={() => {
+                                handleUploadComplete(campaign.id);
+                                refetch();
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        {artwork.notes && !isRejected && (
+                          <div className="text-xs bg-[var(--color-bg-alt)] border border-[var(--color-border)] rounded-xl p-3 text-[var(--color-text-secondary)]">
+                            Ops notes: {artwork.notes}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl border border-dashed border-[var(--color-border)] p-6 text-center bg-[var(--color-bg-alt)]/40">
+                        <p className="text-sm text-[var(--color-text-muted)] mb-3">
+                          No artwork uploaded yet.
+                        </p>
+                        <ArtworkUpload
+                          campaignId={campaign.id}
+                          onUploadComplete={() => {
+                            handleUploadComplete(campaign.id);
+                            refetch();
+                          }}
+                        />
+                        <p className="mt-2 text-micro text-[var(--color-text-muted)]">
+                          PDF · max 4MB · reviewed within a few hours
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {(campaign.status === "PAID" ||
+                    campaign.status === "IN_PRODUCTION" ||
+                    job) && (
+                    <div className="mt-5 border-t border-[var(--color-border)] pt-5">
+                      <div className="text-sm font-medium mb-3">Production Timeline</div>
+                      <ProductionTimeline campaign={campaign} />
                     </div>
                   )}
-                </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
 
-                {/* Timeline when paid or in production */}
-                {(campaign.status === "PAID" || campaign.status === "IN_PRODUCTION" || job) && (
-                  <div className="mt-5 border-t pt-5">
-                    <div className="text-sm font-medium text-gray-700 mb-3">Production Timeline</div>
-                    <ProductionTimeline campaign={campaign as any} />
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      <div className="mt-10 text-xs text-gray-500">
-        Tip: Upload your PDF. We generate fast per-page previews. You will be notified by email when artwork is approved or needs changes.
-      </div>
+        <p className="mt-10 text-micro text-[var(--color-text-muted)]">
+          Tip: Upload your PDF and we&apos;ll generate fast per-page previews. You&apos;ll be
+          notified by email when artwork is approved or needs changes.
+        </p>
+      </main>
     </div>
   );
 }
 
-function getStatusBadge(status: string) {
-  if (status === "PAID" || status === "IN_PRODUCTION") return "bg-blue-100 text-blue-700 border-blue-200";
-  if (status === "COMPLETED") return "bg-green-100 text-green-700 border-green-200";
-  if (status === "READY_FOR_PAYMENT") return "bg-amber-100 text-amber-700 border-amber-200";
-  return "bg-gray-100 text-gray-600 border-gray-200";
+function EmptyCampaignsState() {
+  return (
+    <div className="rounded-3xl border border-[var(--color-border)] bg-white p-10 sm:p-14 text-center max-w-lg mx-auto">
+      <div className="mx-auto h-14 w-14 rounded-2xl bg-[var(--color-accent-subtle)] flex items-center justify-center text-[var(--color-accent)] mb-5">
+        <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"
+          />
+        </svg>
+      </div>
+      <h2 className="heading-sm mb-2">No campaigns yet</h2>
+      <p className="text-[var(--color-text-secondary)] mb-6">
+        Create your first targeted postcard campaign. Pick ZIP codes on the map, upload artwork,
+        and send when you&apos;re ready.
+      </p>
+      <Link href="/campaigns/new">
+        <Button size="lg">Create your first campaign</Button>
+      </Link>
+    </div>
+  );
 }
 
 function TargetingSummary({
@@ -226,32 +266,26 @@ function TargetingSummary({
   if (!meta?.zctas?.length && !meta?.estimate) return null;
 
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-600">
+    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[var(--color-text-muted)]">
       {meta.zctas?.slice(0, 5).map((z) => (
-        <span key={z} className="rounded-full bg-blue-50 text-blue-700 px-2 py-0.5 border border-blue-100">
+        <Badge key={z} variant="accent">
           {z}
-        </span>
+        </Badge>
       ))}
       {(meta.zctas?.length ?? 0) > 5 && (
-        <span className="text-gray-400">+{meta.zctas!.length - 5} more</span>
+        <span>+{meta.zctas!.length - 5} more</span>
       )}
       {meta.estimate?.reach != null && (
-        <span className="text-gray-500">
-          · ~{meta.estimate.reach.toLocaleString()} households
-        </span>
+        <span>· ~{meta.estimate.reach.toLocaleString()} households</span>
       )}
       {campaign.totalPriceCents != null && (
-        <span className="text-gray-500">
-          · Est. ${(campaign.totalPriceCents / 100).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+        <span>
+          · Est. $
+          {(campaign.totalPriceCents / 100).toLocaleString(undefined, {
+            maximumFractionDigits: 0,
+          })}
         </span>
       )}
     </div>
   );
-}
-
-function getArtworkStatusBadge(status: string) {
-  if (status === "APPROVED") return "bg-green-100 text-green-700 border-green-200";
-  if (status === "REJECTED") return "bg-red-100 text-red-700 border-red-200";
-  if (status === "UNDER_REVIEW") return "bg-amber-100 text-amber-700 border-amber-200";
-  return "bg-gray-100 text-gray-600 border-gray-200";
 }

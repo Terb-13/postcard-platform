@@ -7,7 +7,6 @@ const isProtectedRoute = createRouteMatcher([
   "/campaigns(.*)",
   "/maps(.*)",
   "/ops(.*)",
-  "/api/trpc(.*)",
 ]);
 
 const hasClerkKeys =

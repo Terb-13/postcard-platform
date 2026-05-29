@@ -15,6 +15,8 @@ type Props = {
     avgMedianIncome?: number | null;
     pricing?: { quantity?: number; totalPriceCents?: number; unitPriceCents?: number };
   } | null;
+  isEstimateLoading?: boolean;
+  isEstimateError?: boolean;
   dropDate: string;
   onDropDateChange: (v: string) => void;
   notes: string;
@@ -35,6 +37,8 @@ export function ReviewStep({
   basics,
   targeting,
   estimate,
+  isEstimateLoading,
+  isEstimateError,
   dropDate,
   onDropDateChange,
   notes,
@@ -78,6 +82,11 @@ export function ReviewStep({
         <h3 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide">
           Targeting
         </h3>
+        {isEstimateError && (
+          <div className="rounded-xl bg-amber-50 border border-amber-100 px-3 py-2 text-sm text-amber-900">
+            Live estimate unavailable — showing last saved values.
+          </div>
+        )}
         <div className="flex flex-wrap gap-1.5">
           {zctas.map((z) => (
             <Badge key={z} variant="accent">
@@ -89,12 +98,16 @@ export function ReviewStep({
           <div>
             <dt className="text-[var(--color-text-muted)]">Reach</dt>
             <dd className="font-medium">
-              {formatNumber(
-                estimate?.reach ??
-                  targetingSummary?.estimate?.reach ??
-                  0
-              )}{" "}
-              households
+              {isEstimateLoading && !estimate ? (
+                <span className="inline-block h-4 w-20 bg-[var(--color-border)] rounded animate-pulse" />
+              ) : (
+                <>
+                  {formatNumber(
+                    estimate?.reach ?? targetingSummary?.estimate?.reach ?? 0
+                  )}{" "}
+                  households
+                </>
+              )}
             </dd>
           </div>
           <div>

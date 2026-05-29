@@ -547,6 +547,30 @@ body {
   outline-offset: 3px;
 }
 
+/* Wizard & targeting micro-animations */
+@keyframes wizard-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes wizard-slide-in-right {
+  from { opacity: 0; transform: translateX(10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes wizard-slide-in-bottom {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes wizard-slide-in-top {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-in { animation-fill-mode: both; }
+.fade-in { animation-name: wizard-fade-in; animation-duration: 0.25s; animation-timing-function: ease-out; }
+.slide-in-from-right-2 { animation-name: wizard-slide-in-right; animation-duration: 0.3s; animation-timing-function: ease-out; }
+.slide-in-from-bottom { animation-name: wizard-slide-in-bottom; animation-duration: 0.3s; animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1); }
+.slide-in-from-top-1 { animation-name: wizard-slide-in-top; animation-duration: 0.2s; animation-timing-function: ease-out; }
+
 /* Subtle scroll progress indicator on journey (optional visual) */
 .progress-bar {
   height: 3px;
