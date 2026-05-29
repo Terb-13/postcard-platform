@@ -87,9 +87,25 @@ model Campaign {
 
   artwork          Artwork?
   productionJobs   ProductionJob[]
+  targetingCriteria TargetingCriteria?
 
   @@index([organizationId, status])
   @@index([status])
+}
+
+// Census-backed geo-targeting snapshot (optional 1:1 with Campaign)
+model TargetingCriteria {
+  id             String   @id @default(cuid())
+  geoJson        Json
+  filters        Json?
+  estimatedReach Int      @default(0)
+  estimatedCost  Decimal  @default(0) @db.Decimal(12, 2)
+  campaignId     String?  @unique
+  campaign       Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([campaignId])
 }
 
 // Artwork uploads + review lifecycle

@@ -19,7 +19,7 @@ function baseRateCents(): number {
     const n = parseInt(env, 10);
     if (Number.isFinite(n) && n > 0) return n;
   }
-  return 12; // $0.12 default
+  return 35; // $0.35 placeholder until partner pricing is wired in
 }
 
 export type PricingInput = {

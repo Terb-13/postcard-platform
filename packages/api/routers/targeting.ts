@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import type { Feature, Polygon } from "geojson";
 import { publicProcedure, protectedProcedure, router } from "../trpc";
-import { audienceEstimateFromStats, getACSStats } from "../lib/census";
+import { audienceEstimateFromStats, getACSStats, PLACEHOLDER_RATE_CENTS } from "../lib/census";
 import { mapCensusError } from "../lib/census-errors";
 import { calculateCampaignPricing } from "../lib/pricing";
 import {
@@ -21,10 +22,20 @@ const filtersSchema = z
 
 const zctaArraySchema = z.array(z.string().min(5).max(10)).max(50);
 
-function applyFilters(
-  stats: Awaited<ReturnType<typeof getACSStats>>,
-  filters?: z.infer<typeof filtersSchema>
-) {
+const geoJsonPolygonSchema = z
+  .object({
+    type: z.literal("Feature"),
+    geometry: z.object({
+      type: z.literal("Polygon"),
+      coordinates: z.array(z.array(z.tuple([z.number(), z.number()]))),
+    }),
+    properties: z.record(z.unknown()).optional(),
+  })
+  .optional();
+
+type ACSStats = Awaited<ReturnType<typeof getACSStats>>;
+
+function applyFilters(stats: ACSStats, filters?: z.infer<typeof filtersSchema>): ACSStats {
   if (!filters) return stats;
 
   const filtered = stats.zctas.filter((z) => {
@@ -62,7 +73,70 @@ function applyFilters(
   };
 }
 
+function reachFromStats(stats: ACSStats): number {
+  return stats.households > 0 ? stats.households : stats.population;
+}
+
+/** Shared response shape: demographics + reach + $0.35/piece cost preview */
+function censusStatsResponse(
+  stats: ACSStats,
+  options: { size?: string; quantityOverride?: number } = {}
+) {
+  const reach = reachFromStats(stats);
+  const pricing = calculateCampaignPricing({
+    size: options.size ?? "6x11",
+    estimatedReach: reach,
+    quantityOverride: options.quantityOverride,
+  });
+
+  return {
+    reach,
+    population: stats.population,
+    households: stats.households,
+    avgMedianIncome: stats.avgMedianIncome,
+    avgMoverPercent: stats.avgMoverPercent,
+    zctaCount: stats.zctaCount,
+    zctas: stats.zctas,
+    pricing,
+    /** Placeholder unit rate used when POSTCARD_BASE_RATE_CENTS is unset */
+    placeholderRateCents: PLACEHOLDER_RATE_CENTS,
+  };
+}
+
+async function resolveZctasFromGeoJson(geoJson: unknown): Promise<string[]> {
+  const parsed = geoJsonPolygonSchema.safeParse(geoJson);
+  if (!parsed.success) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "geoJson must be a GeoJSON Feature with Polygon geometry when zctas are omitted",
+    });
+  }
+
+  const result = await findZctasInPolygon(parsed.data as Feature<Polygon>);
+  return result.zctas;
+}
+
 export const targetingRouter = router({
+  /** ACS demographics + reach + cost preview for a list of ZCTAs */
+  getCensusStatsForZctas: publicProcedure
+    .input(
+      z.object({
+        zctas: zctaArraySchema,
+        filters: filtersSchema,
+        size: z.string().default("6x11"),
+      })
+    )
+    .query(async ({ input }) => {
+      try {
+        const rawStats = await getACSStats(input.zctas);
+        const stats = applyFilters(rawStats, input.filters);
+        return censusStatsResponse(stats, { size: input.size });
+      } catch (err) {
+        mapCensusError(err);
+      }
+    }),
+
+  /** @deprecated Prefer getCensusStatsForZctas */
   getStatsForZctas: publicProcedure
     .input(
       z.object({
@@ -103,7 +177,7 @@ export const targetingRouter = router({
       }
     }),
 
-  /** Campaign wizard — authenticated audience + pricing preview */
+  /** Campaign wizard — authenticated audience + pricing preview from ZCTAs and/or drawn geoJson */
   estimateAudience: protectedProcedure
     .input(
       z.object({
@@ -115,22 +189,30 @@ export const targetingRouter = router({
       })
     )
     .query(async ({ input }) => {
-      const zctas = input.zctas ?? [];
+      let zctas = input.zctas ?? [];
+
+      if (zctas.length === 0 && input.geoJson) {
+        try {
+          zctas = await resolveZctasFromGeoJson(input.geoJson);
+        } catch (err) {
+          if (err instanceof TRPCError) throw err;
+          mapCensusError(err);
+        }
+      }
 
       if (zctas.length === 0) {
         return {
-          reach: 0,
-          households: 0,
-          population: 0,
-          avgMedianIncome: null,
-          avgMoverPercent: null,
-          zctaCount: 0,
-          zctas: [] as Awaited<ReturnType<typeof getACSStats>>["zctas"],
-          pricing: calculateCampaignPricing({
-            size: input.size,
-            estimatedReach: 0,
-            quantityOverride: input.quantityOverride,
-          }),
+          ...censusStatsResponse(
+            {
+              zctaCount: 0,
+              population: 0,
+              households: 0,
+              avgMedianIncome: null,
+              avgMoverPercent: null,
+              zctas: [],
+            },
+            { size: input.size, quantityOverride: input.quantityOverride }
+          ),
           geoJson: input.geoJson ?? null,
         };
       }
@@ -138,22 +220,11 @@ export const targetingRouter = router({
       try {
         const rawStats = await getACSStats(zctas);
         const stats = applyFilters(rawStats, input.filters);
-        const reach = stats.households > 0 ? stats.households : stats.population;
-        const pricing = calculateCampaignPricing({
-          size: input.size,
-          estimatedReach: reach,
-          quantityOverride: input.quantityOverride,
-        });
-
         return {
-          reach,
-          households: stats.households,
-          population: stats.population,
-          avgMedianIncome: stats.avgMedianIncome,
-          avgMoverPercent: stats.avgMoverPercent,
-          zctaCount: stats.zctaCount,
-          zctas: stats.zctas,
-          pricing,
+          ...censusStatsResponse(stats, {
+            size: input.size,
+            quantityOverride: input.quantityOverride,
+          }),
           geoJson: input.geoJson ?? null,
         };
       } catch (err) {
