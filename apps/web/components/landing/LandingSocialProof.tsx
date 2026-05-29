@@ -1,6 +1,12 @@
 import { LandingSectionHeader } from "./LandingSectionHeader";
 import { LandingVisual } from "./LandingVisual";
 
+const OUTCOMES = [
+  { stat: "Minutes", label: "to quote a targeted campaign" },
+  { stat: "ZIP-level", label: "Census income & mover data" },
+  { stat: "Full", label: "visibility before you print" },
+] as const;
+
 const QUOTES = [
   {
     quote: "We finally know exactly who we're mailing — and what it costs before we commit.",
@@ -18,50 +24,62 @@ const QUOTES = [
 
 export function LandingSocialProof() {
   return (
-    <section className="section section-rhythm bg-white border-b border-[var(--color-border)]">
+    <section id="results" className="section section-rhythm bg-[var(--color-bg)] border-b border-[var(--color-border)] scroll-mt-24">
       <div className="container">
-        <div className="lg:grid lg:grid-cols-12 lg:gap-14 xl:gap-16 lg:items-start">
-          <div className="lg:col-span-5 lg:sticky lg:top-28 lg:self-start space-y-8">
+        <div className="lg:grid lg:grid-cols-2 lg:gap-16 xl:gap-20 lg:items-start">
+          <div>
             <LandingSectionHeader
-              eyebrow="Results"
-              title="Built for operators who need precision"
-              description="Reach the neighborhoods that match your offer — with data-backed targeting and clear campaign economics."
+              eyebrow="Results & trust"
+              title="Real businesses. Real results."
+              description="Operators use Postcard to reach neighborhoods that match their offer — with data-backed targeting and transparent campaign economics."
+              className="mb-8"
             />
+
+            <ul className="grid grid-cols-3 gap-3 mb-8">
+              {OUTCOMES.map((o) => (
+                <li
+                  key={o.label}
+                  className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-4 text-center"
+                >
+                  <p className="text-sm font-bold text-[var(--color-bg-dark)]">{o.stat}</p>
+                  <p className="mt-1 text-micro text-[var(--color-text-muted)] leading-snug">{o.label}</p>
+                </li>
+              ))}
+            </ul>
+
             <LandingVisual
               src="/images/results.jpg"
-              alt="Campaign results and performance visibility for targeted postcard mailings"
-              aspect="tall"
-              sizes="(max-width: 1024px) 100vw, 40vw"
-              caption="Measurable reach and cost before you print"
-              className="hidden sm:block"
+              alt="Targeted postcard campaign results and measurable outreach outcomes"
+              aspect="wide"
+              sizes="(max-width: 1024px) 100vw, 44vw"
+              className="hidden lg:block"
             />
           </div>
 
-          <div className="lg:col-span-7 mt-8 lg:mt-0 space-y-5">
+          <div className="mt-10 lg:mt-0 space-y-5">
             <LandingVisual
               src="/images/results.jpg"
-              alt="Campaign results and performance visibility for targeted postcard mailings"
+              alt="Targeted postcard campaign results and measurable outreach outcomes"
               aspect="wide"
               sizes="100vw"
-              className="sm:hidden"
+              className="lg:hidden"
             />
 
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-1 lg:gap-6">
+            <div className="space-y-5">
               {QUOTES.map((item) => (
-                <blockquote key={item.role} className="landing-quote-card">
-                  <p className="landing-body text-[var(--color-text-secondary)] leading-relaxed">
-                    {item.quote}
+                <blockquote
+                  key={item.role}
+                  className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6"
+                >
+                  <p className="text-[15px] leading-relaxed text-[var(--color-text-secondary)]">
+                    &ldquo;{item.quote}&rdquo;
                   </p>
-                  <footer className="mt-6 pt-5 border-t border-[var(--color-border)] text-sm font-medium text-[var(--color-text-muted)]">
-                    {item.role}
+                  <footer className="mt-4 text-sm font-medium text-[var(--color-text-muted)]">
+                    — {item.role}
                   </footer>
                 </blockquote>
               ))}
             </div>
-
-            <p className="text-center lg:text-left text-micro text-[var(--color-text-muted)] pt-2">
-              Customer stories — placeholders for launch testimonials
-            </p>
           </div>
         </div>
       </div>

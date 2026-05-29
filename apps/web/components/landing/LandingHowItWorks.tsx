@@ -3,28 +3,24 @@ import { LandingVisual } from "./LandingVisual";
 
 const STEPS = [
   {
-    step: "01",
+    step: "1",
     title: "Target with Census data",
-    description:
-      "Search ZIPs, click boundaries on the map, or draw a custom area. Filter by income and mover rates.",
+    description: "Select ZIPs on the map or draw an area. Filter by income and mover rates.",
   },
   {
-    step: "02",
+    step: "2",
     title: "Upload your artwork",
-    description:
-      "Drop in your postcard design. We handle sizing, proofing, and print-ready preparation.",
+    description: "Add your postcard design. We prep print-ready files and proofs.",
   },
   {
-    step: "03",
-    title: "Review reach & pay",
-    description:
-      "See household count, audience breakdown, and per-piece cost before you commit.",
+    step: "3",
+    title: "Review & pay",
+    description: "Confirm reach, audience breakdown, and per-piece cost before you commit.",
   },
   {
-    step: "04",
-    title: "Drummond prints & ships",
-    description:
-      "Your campaign goes to production. Track status from proof through delivery.",
+    step: "4",
+    title: "Print & deliver",
+    description: "Drummond handles production and mailing. Track status end to end.",
   },
 ] as const;
 
@@ -32,57 +28,42 @@ export function LandingHowItWorks() {
   return (
     <section
       id="how-it-works"
-      className="section section-rhythm bg-[var(--color-bg)] border-b border-[var(--color-border)] scroll-mt-20"
+      className="section section-rhythm bg-[var(--color-surface)] scroll-mt-24"
     >
       <div className="container">
         <LandingSectionHeader
           align="center"
-          className="lg:mb-14 mx-auto"
           eyebrow="How it works"
-          title="From targeting to mailbox in four steps"
-          description="A software-guided workflow — the same engine you&apos;ll use in the live demo below."
+          title="From targeting to mailbox in four steps."
+          description="A clear, software-guided path from audience selection to delivery — built for operators, not agencies."
+          className="mx-auto mb-10 lg:mb-14"
         />
 
-        <div className="lg:grid lg:grid-cols-12 lg:gap-14 xl:gap-16 lg:items-start">
-          <div className="lg:col-span-7 mb-10 lg:mb-0">
-            <LandingVisual
-              src="/images/workflow.jpg"
-              alt="Postcard Platform campaign workflow from targeting through fulfillment"
-              aspect="wide"
-              sizes="(max-width: 1024px) 100vw, 55vw"
-              caption="End-to-end workflow — built into the product"
-            />
-          </div>
-
-          <ol className="lg:col-span-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-1 lg:gap-7">
-            {STEPS.map((item) => (
-              <li key={item.step}>
-                <StepCard {...item} />
-              </li>
-            ))}
-          </ol>
+        <div className="max-w-5xl mx-auto mb-10 lg:mb-14">
+          <LandingVisual
+            src="/images/workflow.jpg"
+            alt="Four-step Postcard Platform workflow from targeting through delivery"
+            aspect="wide"
+            sizes="(max-width: 1024px) 100vw, 72vw"
+          />
         </div>
+
+        <ol className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 max-w-6xl mx-auto">
+          {STEPS.map((item) => (
+            <li key={item.step} className="text-center lg:text-left">
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border-2 border-[var(--color-accent)] text-sm font-bold text-[var(--color-accent)]">
+                {item.step}
+              </span>
+              <h3 className="mt-4 font-semibold text-lg text-[var(--color-bg-dark)] tracking-tight">
+                {item.title}
+              </h3>
+              <p className="mt-2 text-[15px] leading-relaxed text-[var(--color-text-secondary)]">
+                {item.description}
+              </p>
+            </li>
+          ))}
+        </ol>
       </div>
     </section>
-  );
-}
-
-function StepCard({
-  step,
-  title,
-  description,
-}: {
-  step: string;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="landing-feature-row h-full lg:border-0 lg:shadow-none lg:bg-transparent lg:p-0 lg:hover:shadow-none lg:hover:border-transparent">
-      <span className="landing-step-index lg:w-auto">{step}</span>
-      <div className="min-w-0">
-        <h3 className="font-semibold text-lg tracking-tight text-[var(--color-bg-dark)]">{title}</h3>
-        <p className="mt-2 landing-body text-[var(--color-text-secondary)]">{description}</p>
-      </div>
-    </div>
   );
 }

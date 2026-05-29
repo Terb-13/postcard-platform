@@ -18,9 +18,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Postcard | Targeted Postcards Powered by Real Census Data",
+  title: "Postcard | Target the right homes with real Census data",
   description:
-    "Reach the right homes by income, population, and recent movers. Census-powered targeting, simple campaign wizard, and fast fulfillment via Drummond.",
+    "Precision direct mail powered by Census data — simple, modern, and effective. See who you can reach before you send.",
   icons: {
     icon: "/favicon.ico",
   },

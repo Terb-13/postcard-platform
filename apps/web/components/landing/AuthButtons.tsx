@@ -11,7 +11,13 @@ import {
 
 const hasClerk = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
 
-type Variant = "nav" | "hero" | "final" | "demo";
+type Variant = "nav" | "nav-mobile" | "hero" | "final" | "demo";
+
+type AuthButtonsProps = {
+  variant?: Variant;
+  /** Called after a navigation/auth action (e.g. close mobile drawer) */
+  onAction?: () => void;
+};
 
 function FallbackButton({
   label,
@@ -48,14 +54,27 @@ function StartTargetingLink({ className }: { className?: string }) {
   );
 }
 
-export function AuthButtons({ variant = "nav" }: { variant?: Variant }) {
+export function AuthButtons({ variant = "nav", onAction }: AuthButtonsProps) {
   if (!hasClerk) {
-    if (variant === "nav") {
+    if (variant === "nav" || variant === "nav-mobile") {
+      const stack = variant === "nav-mobile";
       return (
-        <FallbackButton
-          label="Start free"
-          className="btn-primary auth-button text-sm px-6 py-2.5 sm:px-7 opacity-70 cursor-not-allowed"
-        />
+        <div className={stack ? "flex flex-col gap-3 w-full" : "flex items-center gap-2.5"}>
+          <Link
+            href="/sign-in"
+            className={stack ? "btn-nav-secondary w-full justify-center" : "btn-nav-secondary"}
+            onClick={onAction}
+          >
+            Sign in
+          </Link>
+          <Link
+            href="/sign-up"
+            className={stack ? "btn-nav-primary w-full justify-center" : "btn-nav-primary"}
+            onClick={onAction}
+          >
+            Start Targeting
+          </Link>
+        </div>
       );
     }
     if (variant === "demo") {
@@ -82,28 +101,50 @@ export function AuthButtons({ variant = "nav" }: { variant?: Variant }) {
     );
   }
 
-  if (variant === "nav") {
+  if (variant === "nav" || variant === "nav-mobile") {
+    const stack = variant === "nav-mobile";
     return (
-      <>
+      <div className={stack ? "flex flex-col gap-3 w-full" : "flex items-center gap-2.5"}>
         <SignedOut>
           <SignInButton mode="modal" fallbackRedirectUrl="/campaigns">
-            <button className="nav-link hidden sm:block">Sign in</button>
+            <button
+              type="button"
+              className={stack ? "btn-nav-secondary w-full" : "btn-nav-secondary"}
+              onClick={onAction}
+            >
+              Sign in
+            </button>
           </SignInButton>
-          <SignUpButton mode="modal" fallbackRedirectUrl="/campaigns">
-            <button className="btn-primary auth-button text-sm px-6 py-2.5 sm:px-7">
-              Start free
+          <SignUpButton mode="modal" fallbackRedirectUrl="/campaigns/new">
+            <button
+              type="button"
+              className={stack ? "btn-nav-primary w-full" : "btn-nav-primary"}
+              onClick={onAction}
+            >
+              Start Targeting
             </button>
           </SignUpButton>
         </SignedOut>
         <SignedIn>
-          <Link href="/campaigns" className="nav-link hidden md:block">
+          <Link
+            href="/campaigns"
+            className={stack ? "btn-nav-secondary w-full justify-center" : "btn-nav-secondary"}
+            onClick={onAction}
+          >
             My Campaigns
           </Link>
-          <div className="ml-1">
+          <Link
+            href="/campaigns/new"
+            className={stack ? "btn-nav-primary w-full justify-center" : "btn-nav-primary"}
+            onClick={onAction}
+          >
+            Start Targeting
+          </Link>
+          <div className={stack ? "flex justify-center pt-1" : ""}>
             <UserButton afterSignOutUrl="/" />
           </div>
         </SignedIn>
-      </>
+      </div>
     );
   }
 
