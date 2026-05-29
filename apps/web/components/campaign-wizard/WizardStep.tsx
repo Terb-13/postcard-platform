@@ -78,13 +78,14 @@ export function WizardStep({
       <div className="min-h-0">{children}</div>
 
       {(showBack || showNext) && (
-        <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-between pt-2 border-t border-[var(--color-border-subtle)]">
+        <div className="flex flex-col-reverse gap-2 border-t border-[var(--color-border-subtle)] pt-4 sm:flex-row sm:justify-between sm:gap-3">
           {showBack ? (
             <Button
               type="button"
               variant="secondary"
               onClick={onBack}
               disabled={isBackDisabled || isLoading}
+              className="min-h-[48px] w-full sm:w-auto"
             >
               {backLabel}
             </Button>
@@ -96,7 +97,7 @@ export function WizardStep({
               type="button"
               onClick={onNext}
               disabled={isNextDisabled || isLoading}
-              className="sm:ml-auto"
+              className="min-h-[48px] w-full sm:ml-auto sm:w-auto"
             >
               {isLoading ? "Please wait…" : nextLabel}
             </Button>

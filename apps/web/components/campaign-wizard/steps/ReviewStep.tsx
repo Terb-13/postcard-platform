@@ -54,19 +54,19 @@ export function ReviewStep({
     campaign?.unitPriceCents ?? estimate?.pricing?.unitPriceCents ?? 0;
 
   return (
-    <div className="space-y-8 max-w-2xl">
+    <div className="max-w-none space-y-6 md:max-w-2xl md:space-y-8">
       <div>
         <h2 className="heading-sm">Review & schedule</h2>
-        <p className="text-small text-[var(--color-text-muted)] mt-1">
+        <p className="text-small mt-1 text-[var(--color-text-muted)]">
           Confirm everything looks right before checkout.
         </p>
       </div>
 
-      <section className="space-y-3">
-        <h3 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide">
+      <section className="space-y-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 sm:p-5">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">
           Campaign
         </h3>
-        <dl className="grid grid-cols-2 gap-3 text-sm">
+        <dl className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
           <div>
             <dt className="text-[var(--color-text-muted)]">Name</dt>
             <dd className="font-medium">{basics.name}</dd>
@@ -78,12 +78,12 @@ export function ReviewStep({
         </dl>
       </section>
 
-      <section className="space-y-3">
-        <h3 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide">
+      <section className="space-y-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 sm:p-5">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">
           Targeting
         </h3>
         {isEstimateError && (
-          <div className="rounded-xl bg-amber-50 border border-amber-100 px-3 py-2 text-sm text-amber-900">
+          <div className="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-sm text-amber-900">
             Live estimate unavailable — showing last saved values.
           </div>
         )}
@@ -94,7 +94,7 @@ export function ReviewStep({
             </Badge>
           ))}
         </div>
-        <dl className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+        <dl className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-3">
           <div>
             <dt className="text-[var(--color-text-muted)]">Reach</dt>
             <dd className="font-medium">
@@ -127,8 +127,8 @@ export function ReviewStep({
         </dl>
       </section>
 
-      <section className="space-y-3">
-        <h3 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide">
+      <section className="space-y-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 sm:p-5">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-[var(--color-text-secondary)]">
           Creative
         </h3>
         <p className="text-sm">
@@ -143,8 +143,8 @@ export function ReviewStep({
         </p>
       </section>
 
-      <section className="rounded-2xl bg-[var(--color-bg-alt)] p-5 space-y-4">
-        <div className="flex justify-between items-baseline">
+      <section className="space-y-4 rounded-2xl bg-[var(--color-bg-alt)] p-4 sm:p-5">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
           <span className="font-semibold">Estimated total</span>
           <span className="text-2xl font-bold">{formatCurrency(totalCents)}</span>
         </div>
@@ -153,8 +153,8 @@ export function ReviewStep({
         </p>
       </section>
 
-      <div className="grid sm:grid-cols-2 gap-4">
-        <div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
           <Label htmlFor="dropDate">Target drop date</Label>
           <Input
             id="dropDate"
@@ -163,14 +163,14 @@ export function ReviewStep({
             onChange={(e) => onDropDateChange(e.target.value)}
           />
         </div>
-        <div className="sm:col-span-2">
+        <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="notes">Notes for our team (optional)</Label>
           <textarea
             id="notes"
             value={notes}
             onChange={(e) => onNotesChange(e.target.value)}
             rows={3}
-            className="flex w-full rounded-xl border border-[var(--color-border)] bg-white px-4 py-3 text-[15px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/25"
+            className="flex min-h-[120px] w-full rounded-xl border border-[var(--color-border)] bg-white px-4 py-3 text-[15px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/25"
             placeholder="Special instructions, timing, etc."
           />
         </div>

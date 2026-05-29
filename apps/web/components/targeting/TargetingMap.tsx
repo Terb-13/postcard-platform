@@ -8,6 +8,13 @@ import type { Feature, FeatureCollection, Polygon } from "geojson";
 import "mapbox-gl/dist/mapbox-gl.css";
 
 import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { trpc } from "@/lib/trpc/client";
 import { cn, formatCurrency, formatNumber, formatTrpcError } from "@/lib/utils";
 import { ZipSearch } from "./ZipSearch";
@@ -419,24 +426,25 @@ export function TargetingMap({
   }
 
   return (
-    <div className={cn("flex flex-col lg:flex-row gap-5 lg:gap-6", className)}>
+    <div className={cn("relative flex flex-col md:flex-row gap-4 md:gap-6", className)}>
       <div
         className={cn(
-          "flex-1 flex flex-col gap-3",
+          "flex min-w-0 flex-1 flex-col gap-3",
           demoMode
-            ? "min-h-[220px] sm:min-h-[300px] lg:min-h-[380px]"
-            : "min-h-[320px] sm:min-h-[440px] lg:min-h-[540px]"
+            ? "min-h-[220px] sm:min-h-[300px] md:min-h-[380px]"
+            : "min-h-[320px] sm:min-h-[400px] md:min-h-[540px]",
+          mobileStatsSheet && "pb-2 md:pb-0"
         )}
       >
         <div className="targeting-toolbar relative z-20">
-          <ZipSearch onSelect={addZcta} className="flex-1 min-w-[200px]" />
+          <ZipSearch onSelect={addZcta} className="min-w-0 flex-1 sm:min-w-[200px]" />
           {!hideDrawControl && (
             <Button
               type="button"
               variant={drawMode ? "primary" : "outline"}
               size="sm"
               className={cn(
-                "targeting-draw-btn shrink-0 h-10",
+                "targeting-draw-btn h-10 w-full shrink-0 sm:w-auto",
                 drawMode && "targeting-draw-btn-active"
               )}
               onClick={() => setDrawMode((d) => !d)}
@@ -576,129 +584,121 @@ export function TargetingMap({
         </p>
       </div>
 
-      {/* Desktop sidebar */}
-      <StatsSidebar className="hidden lg:flex lg:w-[340px] shrink-0" {...sidebarProps} />
+      {/* Desktop sidebar — unchanged layout from md breakpoint up */}
+      <StatsSidebar className="hidden md:flex md:w-[340px] shrink-0" {...sidebarProps} />
 
-      {/* Mobile: sticky summary bar + bottom sheet */}
+      {/* Mobile: FAB + bottom sheet (wizard + demo) */}
       {mobileStatsSheet && (
         <>
-          <MobileStatsBar
-            {...sidebarProps}
-            isOpen={mobileStatsOpen}
-            onToggle={() => setMobileStatsOpen((o) => !o)}
-            embedded={demoMode}
-          />
-          {mobileStatsOpen && (
-            <>
-              <button
-                type="button"
-                aria-label="Close stats panel"
-                className="lg:hidden fixed inset-0 z-40 bg-[#0a2540]/25 backdrop-blur-sm"
-                onClick={() => setMobileStatsOpen(false)}
-              />
-              <div className="lg:hidden fixed inset-x-0 bottom-0 z-50 max-h-[82vh] flex flex-col targeting-mobile-sheet animate-in slide-in-from-bottom duration-300">
-                <div className="targeting-sheet-handle shrink-0" aria-hidden />
-                <div className="sticky top-0 bg-[var(--color-surface)] px-5 py-3 flex items-center justify-between border-b border-[var(--color-border-subtle)] shrink-0">
-                  <span className="font-semibold text-sm tracking-tight">Audience intelligence</span>
-                  <button
-                    type="button"
-                    onClick={() => setMobileStatsOpen(false)}
-                    className="text-xs font-semibold text-[var(--color-accent)] px-2 py-1"
-                  >
-                    Done
-                  </button>
-                </div>
-                <div className="overflow-y-auto flex-1 overscroll-contain">
-                  <StatsSidebar {...sidebarProps} compact className="targeting-sidebar-flat border-0 shadow-none rounded-none" />
-                </div>
-              </div>
-            </>
+          {!mobileStatsOpen && (
+            <MobileStatsFab
+              estimate={estimateQuery.data ?? null}
+              selectedCount={selection.zctas.length}
+              isLoading={isInitialLoading}
+              isUpdating={isUpdating}
+              onOpen={() => setMobileStatsOpen(true)}
+              embedded={demoMode}
+            />
           )}
+
+          <Sheet open={mobileStatsOpen} onOpenChange={setMobileStatsOpen}>
+            <SheetContent
+              side="bottom"
+              className="flex h-[min(88vh,720px)] max-h-[88vh] flex-col gap-0 overflow-hidden p-0 md:hidden"
+            >
+              <SheetHeader className="shrink-0 border-b border-[var(--color-border-subtle)] px-5 pb-4 pt-1 text-left">
+                <SheetTitle>Audience intelligence</SheetTitle>
+                <SheetDescription>US Census ACS · live reach and pricing</SheetDescription>
+              </SheetHeader>
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+                <StatsSidebar
+                  {...sidebarProps}
+                  compact
+                  className="targeting-sidebar-flat h-auto min-h-0 border-0 shadow-none rounded-none"
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
         </>
       )}
 
       {!mobileStatsSheet && (
-        <StatsSidebar className="lg:w-80 shrink-0 flex lg:hidden" {...sidebarProps} />
+        <StatsSidebar className="flex shrink-0 md:w-80 md:hidden" {...sidebarProps} />
       )}
     </div>
   );
 }
 
-function MobileStatsBar({
+function MobileStatsFab({
   estimate,
   selectedCount,
   isLoading,
   isUpdating,
-  isOpen,
-  onToggle,
+  onOpen,
   embedded = false,
 }: {
   estimate?: {
     reach?: number;
-    pricing?: { totalPriceCents?: number; quantity?: number };
+    pricing?: { totalPriceCents?: number };
   } | null;
   selectedCount: number;
   isLoading?: boolean;
   isUpdating?: boolean;
-  isOpen: boolean;
-  onToggle: () => void;
-  /** Keep the bar inside its container instead of fixed to the viewport (landing demo) */
+  onOpen: () => void;
+  /** Position inside demo container instead of fixed to viewport */
   embedded?: boolean;
 }) {
+  const hasSelection = selectedCount > 0;
+  const summary =
+    hasSelection && !isLoading && estimate?.reach != null
+      ? `${formatNumber(estimate.reach)} households`
+      : null;
+
   return (
     <div
       className={cn(
-        "lg:hidden z-30 px-3 pb-3 pt-2 pointer-events-none",
-        embedded
-          ? "relative mt-1"
-          : "fixed inset-x-0 bottom-0 pt-6 bg-gradient-to-t from-[var(--color-bg)] via-[var(--color-bg)]/95 to-transparent"
+        "pointer-events-none z-30 md:hidden",
+        embedded ? "absolute bottom-3 right-3" : "fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] right-4"
       )}
     >
       <button
         type="button"
-        onClick={onToggle}
-        className="targeting-mobile-bar pointer-events-auto w-full px-4 py-3.5 flex items-center justify-between gap-3 active:scale-[0.99] transition-transform"
+        onClick={onOpen}
+        className="targeting-stats-fab pointer-events-auto inline-flex max-w-[min(100vw-2rem,20rem)] items-center gap-2.5 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-left shadow-[var(--shadow-lg)] transition-transform active:scale-[0.98]"
+        aria-label="View targeting stats"
       >
-        <div className="text-left min-w-0 flex-1">
-          {selectedCount === 0 ? (
-            <p className="text-sm font-medium text-[var(--color-text-muted)]">
-              Tap the map to build your audience
-            </p>
-          ) : (
-            <>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
-                {selectedCount} ZIP{selectedCount === 1 ? "" : "s"}
-                {isUpdating && " · updating"}
-              </p>
-              <p className="text-base font-bold tabular-nums truncate tracking-tight mt-0.5">
-                {isLoading && !estimate ? (
-                  <span className="animate-pulse text-[var(--color-text-muted)]">Calculating…</span>
-                ) : (
-                  <>
-                    {formatNumber(estimate?.reach ?? 0)}{" "}
-                    <span className="text-sm font-medium text-[var(--color-text-muted)]">households</span>
-                    {estimate?.pricing?.totalPriceCents != null && (
-                      <span className="text-sm font-semibold text-[var(--color-accent)] ml-1.5">
-                        {formatCurrency(estimate.pricing.totalPriceCents)}
-                      </span>
-                    )}
-                  </>
-                )}
-              </p>
-            </>
-          )}
-        </div>
-        <span className="flex items-center gap-1 text-xs font-bold text-[var(--color-accent)] shrink-0">
-          {isOpen ? "Close" : "Details"}
-          <svg
-            className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")}
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2.5}
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" />
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent-subtle)] text-[var(--color-accent)]">
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z"
+            />
           </svg>
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-xs font-semibold text-[var(--color-text)]">
+            View targeting stats
+          </span>
+          {hasSelection ? (
+            <span className="mt-0.5 block truncate text-[11px] text-[var(--color-text-muted)]">
+              {isLoading && !estimate ? (
+                "Calculating…"
+              ) : (
+                <>
+                  {selectedCount} ZIP{selectedCount === 1 ? "" : "s"}
+                  {summary ? ` · ${summary}` : ""}
+                  {isUpdating ? " · updating" : ""}
+                  {estimate?.pricing?.totalPriceCents != null &&
+                    ` · ${formatCurrency(estimate.pricing.totalPriceCents)}`}
+                </>
+              )}
+            </span>
+          ) : (
+            <span className="mt-0.5 block text-[11px] text-[var(--color-text-muted)]">
+              Tap the map to build your audience
+            </span>
+          )}
         </span>
       </button>
     </div>

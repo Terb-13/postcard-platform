@@ -21,8 +21,8 @@ export function TargetingStep({
   isEstimateLoading,
 }: Props) {
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="max-w-xl">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-accent)] mb-1.5">
             Step 2 · Targeting
@@ -35,7 +35,7 @@ export function TargetingStep({
             live from US Census data.
           </p>
         </div>
-        <div className="hidden sm:flex items-center gap-2 rounded-xl bg-[var(--color-bg-alt)] border border-[var(--color-border-subtle)] px-3 py-2 text-xs text-[var(--color-text-muted)] shrink-0">
+        <div className="inline-flex w-fit items-center gap-2 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-alt)] px-3 py-2 text-xs text-[var(--color-text-muted)] shrink-0">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
           Census ACS · live
         </div>
@@ -70,12 +70,13 @@ export function TargetingStep({
         </p>
       )}
 
-      <div className="rounded-2xl border border-[var(--color-border)] bg-gradient-to-b from-[var(--color-surface)] to-[var(--color-bg-alt)]/40 p-3 sm:p-5 shadow-sm">
+      <div className="-mx-1 overflow-hidden rounded-xl border border-[var(--color-border)] bg-gradient-to-b from-[var(--color-surface)] to-[var(--color-bg-alt)]/40 p-2 shadow-sm sm:mx-0 sm:rounded-2xl sm:p-4 md:p-5">
         <TargetingMap
           size={size}
           selection={targeting}
           onSelectionChange={onTargetingChange}
           mobileStatsSheet
+          className="w-full"
         />
       </div>
     </div>

@@ -74,7 +74,8 @@ export function StatsSidebar({
   return (
     <aside
       className={cn(
-        "targeting-sidebar flex flex-col h-full transition-opacity duration-200",
+        "targeting-sidebar flex flex-col transition-opacity duration-200",
+        compact ? "h-auto min-h-0" : "h-full",
         compact && "targeting-sidebar-flat border-0 shadow-none rounded-none",
         className
       )}

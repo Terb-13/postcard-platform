@@ -22,15 +22,15 @@ export function BasicsStep({ form }: { form: UseFormReturn<CampaignBasics> }) {
   const selectedSize = watch("size");
 
   return (
-    <div className="space-y-8 max-w-lg">
+    <div className="max-w-none space-y-6 md:max-w-lg md:space-y-8">
       <div>
         <h2 className="heading-sm">Campaign basics</h2>
-        <p className="text-small text-[var(--color-text-muted)] mt-1">
+        <p className="text-small mt-1 text-[var(--color-text-muted)]">
           Name your campaign and choose a postcard size.
         </p>
       </div>
 
-      <div>
+      <div className="space-y-2">
         <Label htmlFor="name">Campaign name</Label>
         <Input
           id="name"
@@ -38,19 +38,19 @@ export function BasicsStep({ form }: { form: UseFormReturn<CampaignBasics> }) {
           {...register("name")}
         />
         {errors.name && (
-          <p className="text-sm text-red-600 mt-1">{errors.name.message}</p>
+          <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
         )}
       </div>
 
-      <div>
+      <div className="space-y-2">
         <Label>Postcard size</Label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+        <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {SIZES.map((s) => (
             <button
               key={s.value}
               type="button"
               onClick={() => setValue("size", s.value)}
-              className={`text-left rounded-2xl border p-4 transition-all ${
+              className={`min-h-[72px] rounded-2xl border p-4 text-left transition-all ${
                 selectedSize === s.value
                   ? "border-[var(--color-accent)] bg-[var(--color-accent-subtle)] ring-2 ring-[var(--color-accent)]/20"
                   : "border-[var(--color-border)] hover:border-[var(--color-border-strong)]"

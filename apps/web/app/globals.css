@@ -1272,6 +1272,10 @@ body {
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
 }
+@keyframes wizard-step-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 @keyframes wizard-slide-in-top {
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }
@@ -1282,6 +1286,7 @@ body {
 .slide-in-from-right-2 { animation-name: wizard-slide-in-right; animation-duration: 0.3s; animation-timing-function: ease-out; }
 .slide-in-from-bottom { animation-name: wizard-slide-in-bottom; animation-duration: 0.3s; animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1); }
 .slide-in-from-top-1 { animation-name: wizard-slide-in-top; animation-duration: 0.2s; animation-timing-function: ease-out; }
+.wizard-step-enter { animation-name: wizard-step-enter; animation-duration: 0.32s; animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
 
 /* Subtle scroll progress indicator on journey (optional visual) */
 .progress-bar {

@@ -26,6 +26,7 @@ import { TargetingStep } from "./steps/TargetingStep";
 import { ReviewStep } from "./steps/ReviewStep";
 import { CheckoutStep } from "./steps/CheckoutStep";
 import { WizardFeedback } from "./WizardFeedback";
+import { WizardMobileNav } from "./WizardMobileNav";
 
 const STEP_IDS = WIZARD_STEPS.map((s) => s.id);
 
@@ -329,21 +330,21 @@ export function CampaignWizard() {
   const isSaving = createCampaign.isPending || updateDraft.isPending || saveStatus === "saving";
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg)] pb-24 lg:pb-0">
-      <header className="border-b border-[var(--color-border)] bg-[var(--color-surface)]/90 backdrop-blur sticky top-0 z-40">
-        <div className="container max-w-5xl py-4 flex items-center justify-between gap-4">
-          <div>
+    <div className="min-h-screen bg-[var(--color-bg)] pb-[calc(6.5rem+env(safe-area-inset-bottom))] md:pb-10">
+      <header className="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-surface)]/90 backdrop-blur">
+        <div className="container flex max-w-5xl items-center justify-between gap-3 py-3 sm:gap-4 sm:py-4">
+          <div className="min-w-0">
             <Link
               href="/campaigns"
-              className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
+              className="text-sm text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text)]"
             >
               ← Campaigns
             </Link>
-            <h1 className="heading-md mt-1">New campaign</h1>
+            <h1 className="heading-md mt-0.5 truncate sm:mt-1">New campaign</h1>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             {saveStatus === "saved" && (
-              <span className="text-xs font-medium text-[var(--color-success)] animate-in fade-in">
+              <span className="animate-in fade-in text-xs font-medium text-[var(--color-success)]">
                 Draft saved
               </span>
             )}
@@ -351,7 +352,7 @@ export function CampaignWizard() {
               <span className="text-xs text-[var(--color-text-muted)]">Saving…</span>
             )}
             {campaignId && saveStatus === "idle" && (
-              <span className="text-micro text-[var(--color-text-muted)] hidden sm:inline">
+              <span className="text-micro hidden max-w-[8rem] truncate text-[var(--color-text-muted)] sm:inline md:max-w-none">
                 Draft · {basicsForm.watch("name") || "Untitled"}
               </span>
             )}
@@ -359,12 +360,19 @@ export function CampaignWizard() {
         </div>
       </header>
 
-      <main className="container max-w-5xl py-6 sm:py-10">
+      <main className="container max-w-5xl py-5 sm:py-8 md:py-10">
         <Stepper
           steps={[...WIZARD_STEPS]}
           currentStep={stepIndex}
           onStepClick={handleStepClick}
-          className="mb-8 sm:mb-10"
+          className="mb-8 hidden md:block sm:mb-10"
+        />
+
+        <WizardMobileNav
+          steps={WIZARD_STEPS}
+          currentStep={stepIndex}
+          onStepClick={handleStepClick}
+          className="mb-5"
         />
 
         {stepError && stepError.step === currentStepId && (
@@ -376,11 +384,11 @@ export function CampaignWizard() {
           />
         )}
 
-        <Card className="mb-6 overflow-hidden">
-          <CardContent className="p-4 sm:p-8">
+        <Card className="mb-5 overflow-hidden md:mb-6">
+          <CardContent className="p-4 sm:p-6 md:p-8">
             <div
               key={currentStepId}
-              className="animate-in fade-in slide-in-from-right-2 duration-300"
+              className="animate-in wizard-step-enter"
             >
               {currentStepId === "basics" && <BasicsStep form={basicsForm} />}
 
@@ -450,31 +458,40 @@ export function CampaignWizard() {
           </CardContent>
         </Card>
 
-        <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-between">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={handleBack}
-            disabled={stepIndex === 0 || isSaving}
-          >
-            Back
-          </Button>
-          <div className="flex gap-3">
-            {currentStepId !== "checkout" && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleSaveDraft}
-                disabled={isSaving}
-              >
-                {saveStatus === "saving" ? "Saving…" : "Save draft"}
-              </Button>
-            )}
-            {currentStepId !== "checkout" && (
-              <Button type="button" onClick={handleNext} disabled={isSaving}>
-                {isSaving ? "Saving…" : "Continue"}
-              </Button>
-            )}
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--color-border)] bg-[var(--color-surface)]/95 backdrop-blur md:static md:z-auto md:border-0 md:bg-transparent md:backdrop-blur-none">
+          <div className="container flex max-w-5xl flex-col gap-2 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:flex-row sm:justify-between md:px-0 md:py-0">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleBack}
+              disabled={stepIndex === 0 || isSaving}
+              className="min-h-[48px] w-full sm:w-auto"
+            >
+              Back
+            </Button>
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:gap-3">
+              {currentStepId !== "checkout" && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleSaveDraft}
+                  disabled={isSaving}
+                  className="min-h-[48px] w-full sm:w-auto"
+                >
+                  {saveStatus === "saving" ? "Saving…" : "Save draft"}
+                </Button>
+              )}
+              {currentStepId !== "checkout" && (
+                <Button
+                  type="button"
+                  onClick={handleNext}
+                  disabled={isSaving}
+                  className="min-h-[48px] w-full sm:w-auto"
+                >
+                  {isSaving ? "Saving…" : "Continue"}
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </main>
@@ -525,10 +542,10 @@ function CreativeStep({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 md:space-y-6">
       <div>
         <h2 className="heading-sm">Upload your postcard design</h2>
-        <p className="text-small text-[var(--color-text-muted)] mt-1">
+        <p className="text-small mt-1 text-[var(--color-text-muted)]">
           PDF only. Our team reviews within a few hours before you can pay.
         </p>
       </div>
@@ -547,7 +564,7 @@ function CreativeStep({
       {campaign?.artwork?.fileUrl ? (
         <ArtworkUpload campaignId={campaignId} onUploadComplete={onUploadComplete} />
       ) : (
-        <div className="rounded-2xl border border-dashed border-[var(--color-border)] p-8 text-center bg-[var(--color-bg-alt)]/50">
+        <div className="rounded-2xl border border-dashed border-[var(--color-border)] bg-[var(--color-bg-alt)]/50 p-6 text-center sm:p-8">
           <div className="mx-auto h-12 w-12 rounded-2xl bg-white border border-[var(--color-border)] flex items-center justify-center text-[var(--color-text-muted)] mb-4">
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m6.75 12H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />

@@ -22,16 +22,16 @@ export function CheckoutStep({ campaign, onPay, isPaying }: Props) {
   const canPay = artworkApproved && campaign?.status !== "PAID";
 
   return (
-    <div className="space-y-6 max-w-lg mx-auto text-center">
+    <div className="mx-auto max-w-lg space-y-6 text-center md:space-y-6">
       <div>
         <h2 className="heading-sm">Checkout</h2>
-        <p className="text-small text-[var(--color-text-muted)] mt-2">
+        <p className="text-small mt-2 text-[var(--color-text-muted)]">
           Secure payment via Stripe. Production starts after our team approves your artwork.
         </p>
       </div>
 
       {campaign && (
-        <div className="rounded-2xl border border-[var(--color-border)] p-6 text-left space-y-3">
+        <div className="space-y-3 rounded-2xl border border-[var(--color-border)] p-5 text-left sm:p-6">
           <p className="font-semibold">{campaign.name}</p>
           <p className="text-sm text-[var(--color-text-muted)]">
             {campaign.quantity.toLocaleString()} postcards
@@ -61,7 +61,7 @@ export function CheckoutStep({ campaign, onPay, isPaying }: Props) {
           </p>
         </div>
       ) : canPay ? (
-        <Button size="lg" className="w-full" onClick={onPay} disabled={isPaying}>
+        <Button size="lg" className="min-h-[52px] w-full" onClick={onPay} disabled={isPaying}>
           {isPaying ? "Redirecting to Stripe…" : "Pay with Stripe"}
         </Button>
       ) : (
