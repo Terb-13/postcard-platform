@@ -431,9 +431,9 @@ export function TargetingMap({
         className={cn(
           "flex min-w-0 flex-1 flex-col gap-3",
           demoMode
-            ? "min-h-[220px] sm:min-h-[300px] md:min-h-[380px]"
+            ? "min-h-[180px] sm:min-h-[240px] md:min-h-[300px]"
             : "min-h-[320px] sm:min-h-[400px] md:min-h-[540px]",
-          mobileStatsSheet && "pb-2 md:pb-0"
+          mobileStatsSheet && (demoMode ? "pb-14 md:pb-0" : "pb-2 md:pb-0")
         )}
       >
         <div className="targeting-toolbar relative z-20">
@@ -472,7 +472,7 @@ export function TargetingMap({
         <div
           className={cn(
             "targeting-shell relative flex-1",
-            demoMode ? "min-h-[200px] sm:min-h-[260px]" : "min-h-[300px] sm:min-h-[380px]"
+            demoMode ? "min-h-[160px] sm:min-h-[200px]" : "min-h-[300px] sm:min-h-[380px]"
           )}
         >
           <div className="targeting-map-vignette" aria-hidden />
@@ -486,7 +486,7 @@ export function TargetingMap({
             interactiveLayerIds={drawMode ? [] : ["zcta-fill"]}
             onClick={onMapClick}
             cursor={drawMode ? "crosshair" : "pointer"}
-            style={{ width: "100%", height: "100%", minHeight: 300 }}
+            style={{ width: "100%", height: "100%", minHeight: demoMode ? 220 : 300 }}
           >
             <NavigationControl position="top-right" visualizePitch={false} showCompass={false} />
             <DrawControl drawMode={drawMode} onPolygonComplete={handlePolygonComplete} />

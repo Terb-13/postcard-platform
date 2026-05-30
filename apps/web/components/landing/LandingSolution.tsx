@@ -28,10 +28,10 @@ export function LandingSolution() {
           eyebrow="The solution"
           title="Reach the right people. Not everyone."
           description="Postcard Platform combines real Census geo data with a simple, modern workflow — so you mail with precision, not hope."
-          className="mx-auto mb-10 lg:mb-12"
+          className="mx-auto mb-8 lg:mb-10"
         />
 
-        <div className="max-w-5xl mx-auto mb-10 lg:mb-12">
+        <div className="max-w-5xl mx-auto mb-8 lg:mb-10">
           <Visual
             treatment="feature"
             aspectRatio="11/6"

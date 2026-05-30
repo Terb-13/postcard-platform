@@ -43,6 +43,7 @@ export function LandingTargetingDemo() {
           readOnlySidebar
           mobileStatsSheet
           initialViewState={DEMO_VIEW}
+          className="w-full"
         />
       </div>
 

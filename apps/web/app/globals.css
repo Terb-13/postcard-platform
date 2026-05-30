@@ -183,15 +183,15 @@ body {
   }
 
   .landing-section-desc {
-    margin-top: 1rem;
-    font-size: 1.125rem;
-    line-height: 1.68;
+    margin-top: 0.875rem;
+    font-size: 1.0625rem;
+    line-height: 1.65;
     color: var(--color-text-secondary);
   }
 
   .display-hero + .landing-section-desc,
   .landing-section-title + .landing-section-desc {
-    margin-top: 1.25rem;
+    margin-top: 1rem;
   }
 
   .landing-hero-lead {
@@ -237,7 +237,7 @@ body {
   }
 }
 
-/* ===== LAYOUT PRIMITIVES — Generous breathing room, truly mobile-first ===== */
+/* ===== LAYOUT PRIMITIVES — mobile-first section rhythm (3rem → 4rem → 5rem) ===== */
 @layer components {
   .section {
     padding-top: var(--space-12);

@@ -39,10 +39,10 @@ export function LandingHowItWorks() {
           eyebrow="How it works"
           title="From targeting to mailbox in four steps."
           description="A clear, software-guided path from audience selection to delivery — built for operators, not agencies."
-          className="mx-auto mb-10 lg:mb-14"
+          className="mx-auto mb-8 lg:mb-10"
         />
 
-        <div className="max-w-5xl mx-auto mb-10 lg:mb-14">
+        <div className="max-w-5xl mx-auto mb-8 lg:mb-10">
           {/* How it works: four-step workflow diagram — process explainer */}
           <Visual
             treatment="feature"
