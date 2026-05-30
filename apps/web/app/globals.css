@@ -183,10 +183,11 @@ body {
   }
 
   .landing-section-desc {
-    margin-top: 0.875rem;
+    margin-top: 1rem;
     font-size: 1.0625rem;
     line-height: 1.65;
     color: var(--color-text-secondary);
+    max-width: 38rem;
   }
 
   .display-hero + .landing-section-desc,
@@ -534,6 +535,61 @@ body {
         0 25px 50px -12px rgb(10 37 64 / 0.12),
         0 12px 24px -8px rgb(15 23 42 / 0.06);
     }
+  }
+
+  /* Wizard — calm review panels & postcard preview stage */
+  .wizard-review-card {
+    padding: 1.25rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    transition: border-color var(--transition-fast);
+  }
+  @media (min-width: 640px) {
+    .wizard-review-card {
+      padding: 1.5rem;
+      border-radius: var(--radius-2xl);
+    }
+  }
+
+  .wizard-review-card-title {
+    margin-bottom: 1rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+
+  .wizard-review-pricing {
+    padding: 1.25rem;
+    background: var(--color-bg-dark);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-lg);
+  }
+  @media (min-width: 640px) {
+    .wizard-review-pricing {
+      padding: 1.75rem;
+    }
+  }
+
+  .postcard-preview-stage {
+    position: relative;
+    padding: 1.25rem;
+    background: linear-gradient(165deg, var(--color-bg-alt) 0%, var(--color-bg-subtle) 100%);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-2xl);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.6);
+  }
+  .postcard-preview-stage::before {
+    content: "";
+    position: absolute;
+    inset: 0.75rem;
+    border-radius: calc(var(--radius-xl) - 0.25rem);
+    box-shadow:
+      0 20px 40px -12px rgb(10 37 64 / 0.18),
+      0 8px 16px -8px rgb(15 23 42 / 0.1);
+    pointer-events: none;
   }
 
   /* ── Targeting / map experience (premium SaaS) ── */

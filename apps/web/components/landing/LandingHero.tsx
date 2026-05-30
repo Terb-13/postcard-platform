@@ -47,11 +47,11 @@ export function LandingHero() {
               fulfillment.
             </p>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
               <AuthButtons variant="hero" />
               <a
                 href="#demo"
-                className="btn-secondary w-full justify-center text-[15px] sm:w-auto lg:px-8"
+                className="btn-secondary w-full justify-center text-[15px] sm:w-auto sm:min-w-[11rem] lg:px-8"
               >
                 Try the live map
               </a>
@@ -82,6 +82,7 @@ export function LandingHero() {
               priority
               overlay
               sizes="(max-width: 1024px) 100vw, 46vw"
+              containerClassName="shadow-[var(--shadow-xl)]"
             />
           </div>
         </div>

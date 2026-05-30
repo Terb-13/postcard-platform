@@ -135,7 +135,7 @@ export function ArtworkPreview({
   return (
     <section
       className={cn(
-        "rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-alt)]/40 p-4 sm:p-6",
+        "rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-alt)]/50 p-4 shadow-[var(--shadow-sm)] sm:p-6",
         className
       )}
       aria-label="Postcard artwork preview"
@@ -192,18 +192,20 @@ export function ArtworkPreview({
         {isLoading ? (
           <PreviewSkeleton />
         ) : activeSrc ? (
-          <Visual
-            treatment="artwork"
-            isUserContent
-            src={activeSrc}
-            alt={activeAlt}
-            width={activeDimensions?.width}
-            height={activeDimensions?.height}
-            containerClassName="w-full max-w-md bg-white"
-            imageClassName="max-h-[min(32rem,70vh)] w-auto max-w-full"
-            onLoad={handleImageLoad(activeSide)}
-            onError={handleImageError(activeSide)}
-          />
+          <div className="postcard-preview-stage w-full max-w-md">
+            <Visual
+              treatment="artwork"
+              isUserContent
+              src={activeSrc}
+              alt={activeAlt}
+              width={activeDimensions?.width}
+              height={activeDimensions?.height}
+              containerClassName="w-full bg-white"
+              imageClassName="max-h-[min(32rem,70vh)] w-auto max-w-full"
+              onLoad={handleImageLoad(activeSide)}
+              onError={handleImageError(activeSide)}
+            />
+          </div>
         ) : (
           <EmptyPreviewState
             title={hasAnyArtwork ? emptyTitle : "Upload your artwork or choose a template"}

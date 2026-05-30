@@ -94,7 +94,7 @@ const TREATMENT_CONFIG: Record<VisualTreatment, TreatmentConfig> = {
     description: "User-uploaded creative — white canvas, native img, original proportions.",
     useNativeImg: true,
     container:
-      "relative overflow-hidden rounded-xl border border-[var(--color-border)] bg-white shadow-[var(--shadow-sm)]",
+      "relative overflow-hidden rounded-xl border border-[var(--color-border-strong)] bg-white shadow-[var(--shadow-md)] ring-1 ring-black/[0.04]",
     image: "object-contain object-center w-full h-full",
     defaultAspectRatio: undefined,
   },
@@ -216,7 +216,7 @@ export function Visual({
 
   const userContentFrame =
     isUserContent && treatment === "artwork"
-      ? "shadow-[var(--shadow-md)] ring-1 ring-black/[0.04]"
+      ? "shadow-[var(--shadow-xl)] ring-1 ring-black/[0.06]"
       : undefined;
 
   const figureClassName = cn("m-0", className);

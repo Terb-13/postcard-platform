@@ -50,9 +50,9 @@ export function BasicsStep({ form }: { form: UseFormReturn<CampaignBasics> }) {
               key={s.value}
               type="button"
               onClick={() => setValue("size", s.value)}
-              className={`min-h-[72px] rounded-2xl border p-4 text-left transition-all ${
+              className={`min-h-[72px] rounded-2xl border p-4 text-left transition-all duration-200 hover:shadow-[var(--shadow-sm)] ${
                 selectedSize === s.value
-                  ? "border-[var(--color-accent)] bg-[var(--color-accent-subtle)] ring-2 ring-[var(--color-accent)]/20"
+                  ? "border-[var(--color-accent)] bg-[var(--color-accent-subtle)] shadow-[var(--shadow-sm)] ring-2 ring-[var(--color-accent)]/20"
                   : "border-[var(--color-border)] hover:border-[var(--color-border-strong)]"
               }`}
             >

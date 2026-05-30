@@ -23,7 +23,7 @@ export function LandingSectionHeader({
   return (
     <header
       className={cn(
-        align === "center" && "text-center mx-auto max-w-2xl",
+        align === "center" && "text-center mx-auto max-w-3xl",
         align === "left" && "text-left max-w-2xl lg:max-w-[36rem]",
         className
       )}

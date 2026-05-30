@@ -40,16 +40,11 @@ export function LandingSocialProof() {
           className="mx-auto mb-8 lg:mb-12"
         />
 
-        <ul className="mx-auto mb-10 grid max-w-4xl grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-5 lg:mb-12">
+        <ul className="mx-auto mb-10 grid max-w-5xl grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-5 lg:mb-12">
           {TRUST_SIGNALS.map((signal) => (
-            <li
-              key={signal.label}
-              className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-5 text-center"
-            >
-              <p className="font-mono text-sm font-bold tracking-wide text-[var(--color-accent)]">
-                {signal.value}
-              </p>
-              <p className="mt-2 text-micro leading-snug text-[var(--color-text-muted)]">
+            <li key={signal.label} className="landing-pillar-card text-center">
+              <p className="landing-pillar-metric">{signal.value}</p>
+              <p className="mt-3 text-sm leading-snug text-[var(--color-text-secondary)]">
                 {signal.label}
               </p>
             </li>

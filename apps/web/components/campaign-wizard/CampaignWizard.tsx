@@ -384,8 +384,8 @@ export function CampaignWizard() {
           />
         )}
 
-        <Card className="mb-5 overflow-hidden md:mb-6">
-          <CardContent className="p-4 sm:p-6 md:p-8">
+        <Card className="mb-5 overflow-hidden border-[var(--color-border)] shadow-[var(--shadow-md)] md:mb-6 md:shadow-[var(--shadow-lg)]">
+          <CardContent className="p-5 sm:p-6 md:p-8 lg:p-10">
             <div
               key={currentStepId}
               className="animate-in wizard-step-enter"
