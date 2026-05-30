@@ -44,6 +44,7 @@ type Props = {
   compact?: boolean;
   showFilters?: boolean;
   showLegend?: boolean;
+  footerSlot?: React.ReactNode;
 };
 
 export function StatsSidebar({
@@ -65,6 +66,7 @@ export function StatsSidebar({
   compact = false,
   showFilters = true,
   showLegend = true,
+  footerSlot,
 }: Props) {
   const recommendedQty =
     estimate?.pricing?.estimatedReach ??
@@ -279,6 +281,12 @@ export function StatsSidebar({
             style={{ background: INCOME_LEGEND_GRADIENT }}
             aria-hidden
           />
+        </footer>
+      )}
+
+      {footerSlot && (
+        <footer className="targeting-selection-summary shrink-0 border-t border-[var(--color-border)] p-4">
+          {footerSlot}
         </footer>
       )}
     </aside>

@@ -16,8 +16,8 @@ export function LandingDemoSection() {
           className="mx-auto mb-8 lg:mb-10"
         />
 
-        <div className="mx-auto max-w-5xl">
-          <div className="demo-stage">
+        <div className="mx-auto max-w-7xl">
+          <div className="demo-stage demo-stage-map overflow-hidden">
             <LandingTargetingDemo />
           </div>
         </div>

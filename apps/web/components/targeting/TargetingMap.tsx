@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import MapGL, { Layer, NavigationControl, Source } from "react-map-gl/mapbox";
 import type { MapMouseEvent, MapRef } from "react-map-gl/mapbox";
 import { featureCollection } from "@turf/helpers";
@@ -64,6 +64,17 @@ type Props = {
   hideDrawControl?: boolean;
   /** Collapsible bottom sheet for stats on mobile (wizard mode) */
   mobileStatsSheet?: boolean;
+  /** Sticky footer inside sidebar (static node or render from live estimate) */
+  sidebarFooter?:
+    | ReactNode
+    | ((ctx: {
+        estimate: {
+          reach?: number;
+          pricing?: { totalPriceCents?: number };
+        } | null;
+        isLoading: boolean;
+        selectedCount: number;
+      }) => ReactNode);
 };
 
 export function TargetingMap({
@@ -76,6 +87,7 @@ export function TargetingMap({
   initialViewState,
   hideDrawControl = false,
   mobileStatsSheet = false,
+  sidebarFooter,
 }: Props) {
   const mapRef = useRef<MapRef>(null);
   const [viewState, setViewState] = useState<ViewState>(initialViewState ?? DEFAULT_CENTER);
@@ -404,6 +416,15 @@ export function TargetingMap({
     [drawMode, toggleZcta]
   );
 
+  const resolvedSidebarFooter =
+    typeof sidebarFooter === "function"
+      ? sidebarFooter({
+          estimate: estimateQuery.data ?? null,
+          isLoading: isInitialLoading,
+          selectedCount: selection.zctas.length,
+        })
+      : sidebarFooter;
+
   const sidebarProps = {
     selectedCount: selection.zctas.length,
     estimate: estimateQuery.data ?? null,
@@ -423,6 +444,7 @@ export function TargetingMap({
     readOnly: readOnlySidebar,
     showFilters: !demoMode,
     showLegend: !demoMode,
+    footerSlot: resolvedSidebarFooter,
   };
 
   if (!MAPBOX_TOKEN) {
@@ -445,39 +467,87 @@ export function TargetingMap({
   }
 
   return (
-    <div className={cn("relative flex flex-col md:flex-row gap-4 md:gap-6", className)}>
+    <div
+      className={cn(
+        "relative",
+        demoMode ? "targeting-workspace" : "flex flex-col md:flex-row gap-4 md:gap-6",
+        className
+      )}
+    >
+      {demoMode && (
+        <aside className="targeting-workspace-panel hidden lg:flex lg:flex-col">
+          <div className="shrink-0 space-y-3 border-b border-[var(--color-border-subtle)] p-4">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+                Current selection
+              </p>
+              <p className="mt-1 text-sm font-medium text-[var(--color-text)]">
+                {selection.zctas.length > 0
+                  ? `${selection.zctas.length} ZIP${selection.zctas.length === 1 ? "" : "s"} selected`
+                  : "None selected"}
+              </p>
+            </div>
+            <ZipSearch onSelect={addZcta} />
+            <SelectedChips zctas={selection.zctas} onRemove={removeZcta} />
+          </div>
+          <StatsSidebar
+            className="min-h-0 flex-1 rounded-none border-0 shadow-none targeting-sidebar-flat"
+            {...sidebarProps}
+          />
+        </aside>
+      )}
+
       <div
         className={cn(
           "flex min-w-0 flex-1 flex-col gap-3",
           demoMode
-            ? "min-h-[180px] sm:min-h-[240px] md:min-h-[300px]"
+            ? "targeting-workspace-main min-h-[320px] lg:min-h-[520px]"
             : "min-h-[320px] sm:min-h-[400px] md:min-h-[540px]",
-          mobileStatsSheet && (demoMode ? "pb-14 md:pb-0" : "pb-2 md:pb-0")
+          mobileStatsSheet && (demoMode ? "pb-14 lg:pb-0" : "pb-2 md:pb-0")
         )}
       >
-        <div className="targeting-toolbar relative z-20">
-          <ZipSearch onSelect={addZcta} className="min-w-0 flex-1 sm:min-w-[200px]" />
-          {!hideDrawControl && (
-            <Button
-              type="button"
-              variant={drawMode ? "primary" : "outline"}
-              size="sm"
-              className={cn(
-                "targeting-draw-btn h-10 w-full shrink-0 sm:w-auto",
-                drawMode && "targeting-draw-btn-active"
-              )}
-              onClick={() => setDrawMode((d) => !d)}
-              disabled={findInPolygon.isPending}
-            >
-              <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Z" />
-              </svg>
-              {findInPolygon.isPending ? "Finding…" : drawMode ? "Drawing…" : "Draw area"}
-            </Button>
-          )}
-        </div>
+        {!demoMode && (
+          <div className="targeting-toolbar relative z-20">
+            <ZipSearch onSelect={addZcta} className="min-w-0 flex-1 sm:min-w-[200px]" />
+            {!hideDrawControl && (
+              <Button
+                type="button"
+                variant={drawMode ? "primary" : "outline"}
+                size="sm"
+                className={cn(
+                  "targeting-draw-btn h-10 w-full shrink-0 sm:w-auto",
+                  drawMode && "targeting-draw-btn-active"
+                )}
+                onClick={() => setDrawMode((d) => !d)}
+                disabled={findInPolygon.isPending}
+              >
+                <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Z" />
+                </svg>
+                {findInPolygon.isPending ? "Finding…" : drawMode ? "Drawing…" : "Draw area"}
+              </Button>
+            )}
+          </div>
+        )}
 
-        <SelectedChips zctas={selection.zctas} onRemove={removeZcta} />
+        {demoMode && (
+          <>
+            <div className="space-y-3 lg:hidden">
+              <ZipSearch onSelect={addZcta} />
+              <SelectedChips zctas={selection.zctas} onRemove={removeZcta} />
+            </div>
+            <div className="targeting-map-toolbar hidden shrink-0 items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface)] px-4 py-2 lg:flex">
+              <div className="flex items-center gap-2">
+                <span className="targeting-map-tab targeting-map-tab-active">Map</span>
+              </div>
+              <p className="text-xs text-[var(--color-text-muted)]">
+                Click ZIP boundaries · Census ACS data
+              </p>
+            </div>
+          </>
+        )}
+
+        {!demoMode && <SelectedChips zctas={selection.zctas} onRemove={removeZcta} />}
 
         {mapNotice && (
           <p
@@ -492,7 +562,7 @@ export function TargetingMap({
           className={cn(
             "targeting-shell relative flex-1",
             demoMode && "targeting-shell-demo",
-            demoMode ? "min-h-[160px] sm:min-h-[200px]" : "min-h-[300px] sm:min-h-[380px]"
+            demoMode ? "min-h-[240px] sm:min-h-[280px] lg:min-h-0 lg:flex-1" : "min-h-[300px] sm:min-h-[380px]"
           )}
         >
           {!demoMode && <div className="targeting-map-vignette" aria-hidden />}
@@ -506,7 +576,11 @@ export function TargetingMap({
             interactiveLayerIds={drawMode ? [] : ["zcta-fill"]}
             onClick={onMapClick}
             cursor={drawMode ? "crosshair" : "pointer"}
-            style={{ width: "100%", height: "100%", minHeight: demoMode ? 220 : 300 }}
+            style={{
+              width: "100%",
+              height: "100%",
+              minHeight: demoMode ? 280 : 300,
+            }}
           >
             <NavigationControl position="top-right" visualizePitch={false} showCompass={false} />
             <DrawControl drawMode={drawMode} onPolygonComplete={handlePolygonComplete} />
@@ -598,8 +672,9 @@ export function TargetingMap({
         )}
       </div>
 
-      {/* Desktop sidebar — unchanged layout from md breakpoint up */}
-      <StatsSidebar className="hidden md:flex md:w-[340px] shrink-0" {...sidebarProps} />
+      {!demoMode && (
+        <StatsSidebar className="hidden md:flex md:w-[340px] shrink-0" {...sidebarProps} />
+      )}
 
       {/* Mobile: FAB + bottom sheet (wizard + demo) */}
       {mobileStatsSheet && (
@@ -631,6 +706,11 @@ export function TargetingMap({
                   className="targeting-sidebar-flat h-auto min-h-0 border-0 shadow-none rounded-none"
                 />
               </div>
+              {resolvedSidebarFooter && (
+                <div className="shrink-0 border-t border-[var(--color-border-subtle)] p-4">
+                  {resolvedSidebarFooter}
+                </div>
+              )}
             </SheetContent>
           </Sheet>
         </>

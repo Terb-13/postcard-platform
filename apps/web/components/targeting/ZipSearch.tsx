@@ -134,7 +134,7 @@ export function ZipSearch({ onSelect, className }: Props) {
     <div ref={containerRef} className={cn("relative targeting-search z-20", className)}>
       <div className="relative">
         <svg
-          className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-text-muted)] pointer-events-none"
+          className="targeting-search-icon"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
