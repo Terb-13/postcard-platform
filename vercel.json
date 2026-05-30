@@ -2,14 +2,5 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "turbo run build --filter=web",
   "installCommand": "npm install --prefer-offline --no-audit",
-  "devCommand": "turbo run dev --filter=web",
-  "regions": ["iad1"],
-  "env": {
-    "SKIP_ENV_VALIDATION": "true"
-  },
-  "functions": {
-    "app/api/inngest/**": { "memory": 1536, "maxDuration": 60 },
-    "app/api/trpc/**": { "memory": 1024 },
-    "app/api/production/**": { "memory": 512 }
-  }
+  "devCommand": "turbo run dev --filter=web"
 }
