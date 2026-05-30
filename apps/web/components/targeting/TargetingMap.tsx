@@ -223,7 +223,7 @@ export function TargetingMap({
       const stats = statsByZcta.get(zcta);
       const fillColor = selected
         ? incomeToColor(stats?.medianIncome)
-        : "#e8edf4";
+        : "#e2e8f0";
       return {
         ...f,
         properties: {
@@ -421,6 +421,8 @@ export function TargetingMap({
     onFiltersChange: (filters: TargetingSelection["filters"]) =>
       onSelectionChange({ ...selection, filters }),
     readOnly: readOnlySidebar,
+    showFilters: !demoMode,
+    showLegend: !demoMode,
   };
 
   if (!MAPBOX_TOKEN) {
@@ -489,10 +491,11 @@ export function TargetingMap({
         <div
           className={cn(
             "targeting-shell relative flex-1",
+            demoMode && "targeting-shell-demo",
             demoMode ? "min-h-[160px] sm:min-h-[200px]" : "min-h-[300px] sm:min-h-[380px]"
           )}
         >
-          <div className="targeting-map-vignette" aria-hidden />
+          {!demoMode && <div className="targeting-map-vignette" aria-hidden />}
           <MapGL
             ref={mapRef}
             {...viewState}
@@ -514,33 +517,23 @@ export function TargetingMap({
                   type="fill"
                   paint={{
                     "fill-color": ["get", "fillColor"],
-                    "fill-opacity": ["case", ["get", "selected"], 0.78, 0.42],
-                  }}
-                />
-                <Layer
-                  id="zcta-outline-glow"
-                  type="line"
-                  filter={["==", ["get", "selected"], true]}
-                  paint={{
-                    "line-color": "#0A66C2",
-                    "line-width": 6,
-                    "line-blur": 4,
-                    "line-opacity": 0.35,
+                    "fill-opacity": ["case", ["get", "selected"], 0.72, 0.35],
                   }}
                 />
                 <Layer
                   id="zcta-outline"
                   type="line"
                   paint={{
-                    "line-color": ["case", ["get", "selected"], "#0A2540", "#cbd5e1"],
-                    "line-width": ["case", ["get", "selected"], 2.5, 1],
+                    "line-color": ["case", ["get", "selected"], "#0A2540", "#94a3b8"],
+                    "line-width": ["case", ["get", "selected"], 2, 0.75],
+                    "line-opacity": ["case", ["get", "selected"], 1, 0.6],
                   }}
                 />
               </Source>
             )}
           </MapGL>
 
-          {selection.zctas.length > 0 && (
+          {selection.zctas.length > 0 && !demoMode && (
             <div className="absolute top-3 left-3 z-10">
               <span
                 className={cn(
@@ -554,7 +547,7 @@ export function TargetingMap({
             </div>
           )}
 
-          {isUpdating && selection.zctas.length > 0 && (
+          {isUpdating && selection.zctas.length > 0 && !demoMode && (
             <div className="absolute top-3 right-12 z-10">
               <span className="targeting-glass inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold text-[var(--color-accent)]">
                 <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-accent)] animate-pulse" />
@@ -579,26 +572,30 @@ export function TargetingMap({
             </div>
           )}
 
-          <div className="absolute bottom-3 left-3 z-10 targeting-glass rounded-xl p-3 max-w-[220px] hidden sm:block">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-2">
-              Median income
-            </p>
-            <div
-              className="targeting-legend-bar mb-2"
-              style={{ background: INCOME_LEGEND_GRADIENT }}
-            />
-            <div className="flex justify-between text-[10px] text-[var(--color-text-muted)]">
-              <span>Lower</span>
-              <span>Higher</span>
+          {!demoMode && (
+            <div className="absolute bottom-3 left-3 z-10 targeting-glass hidden max-w-[220px] rounded-xl p-3 sm:block">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-2">
+                Median income
+              </p>
+              <div
+                className="targeting-legend-bar mb-2"
+                style={{ background: INCOME_LEGEND_GRADIENT }}
+              />
+              <div className="flex justify-between text-[10px] text-[var(--color-text-muted)]">
+                <span>Lower</span>
+                <span>Higher</span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
-        <p className="text-[11px] text-[var(--color-text-muted)] hidden sm:block leading-relaxed">
-          {drawMode
-            ? "Draw a boundary around neighborhoods you want to reach — matching ZIPs are added automatically."
-            : "Click ZIP boundaries to toggle selection. Zoom in to explore more areas."}
-        </p>
+        {!demoMode && (
+          <p className="hidden text-[11px] leading-relaxed text-[var(--color-text-muted)] sm:block">
+            {drawMode
+              ? "Draw a boundary around neighborhoods you want to reach — matching ZIPs are added automatically."
+              : "Click ZIP boundaries to toggle selection. Zoom in to explore more areas."}
+          </p>
+        )}
       </div>
 
       {/* Desktop sidebar — unchanged layout from md breakpoint up */}
@@ -681,18 +678,9 @@ function MobileStatsFab({
       <button
         type="button"
         onClick={onOpen}
-        className="targeting-stats-fab pointer-events-auto inline-flex max-w-[min(100vw-2rem,20rem)] items-center gap-2.5 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-left shadow-[var(--shadow-lg)] transition-transform active:scale-[0.98]"
+        className="targeting-stats-fab pointer-events-auto inline-flex max-w-[min(100vw-2rem,20rem)] items-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 text-left shadow-[var(--shadow-md)] transition-transform active:scale-[0.98]"
         aria-label="View targeting stats"
       >
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent-subtle)] text-[var(--color-accent)]">
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z"
-            />
-          </svg>
-        </span>
         <span className="min-w-0 flex-1">
           <span className="block text-xs font-semibold text-[var(--color-text)]">
             View targeting stats

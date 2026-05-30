@@ -30,37 +30,13 @@ export function LandingHero() {
             </a>
           </div>
 
-          <ul className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-[var(--color-text-muted)]">
-            <li className="flex items-center gap-2">
-              <CheckIcon />
-              US Census ACS
-            </li>
-            <li className="flex items-center gap-2">
-              <CheckIcon />
-              Live reach &amp; cost
-            </li>
-            <li className="flex items-center gap-2">
-              <CheckIcon />
-              Pay when you send
-            </li>
+          <ul className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-[var(--color-text-muted)]">
+            <li>US Census ACS</li>
+            <li className="hidden sm:list-item">Live reach &amp; cost</li>
+            <li className="hidden md:list-item">Pay when you send</li>
           </ul>
         </div>
       </div>
     </section>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg
-      className="h-4 w-4 shrink-0 text-emerald-600"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={2}
-      aria-hidden
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-    </svg>
   );
 }

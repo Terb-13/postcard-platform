@@ -1,28 +1,26 @@
 /**
- * Premium sequential palette for median-income choropleth.
- * Cool slate → teal → blue → indigo → deep navy (brand-aligned).
+ * Refined income choropleth — cohesive blue scale aligned with brand navy.
  */
 
 export function incomeToColor(income: number | null | undefined): string {
-  if (income == null) return "#cbd5e1";
-  if (income < 40000) return "#94a3b8";
-  if (income < 55000) return "#5eead4";
-  if (income < 75000) return "#38bdf8";
-  if (income < 100000) return "#6366f1";
+  if (income == null) return "#e2e8f0";
+  if (income < 45000) return "#cbd5e1";
+  if (income < 65000) return "#94a3b8";
+  if (income < 85000) return "#60a5fa";
+  if (income < 110000) return "#2563eb";
   return "#0A2540";
 }
 
 export const INCOME_LEGEND = [
-  { label: "< $40k", color: "#94a3b8" },
-  { label: "$40–55k", color: "#5eead4" },
-  { label: "$55–75k", color: "#38bdf8" },
-  { label: "$75–100k", color: "#6366f1" },
-  { label: "$100k+", color: "#0A2540" },
+  { label: "< $45k", color: "#cbd5e1" },
+  { label: "$45–65k", color: "#94a3b8" },
+  { label: "$65–85k", color: "#60a5fa" },
+  { label: "$85–110k", color: "#2563eb" },
+  { label: "$110k+", color: "#0A2540" },
 ] as const;
 
-/** CSS linear-gradient for horizontal legend bar */
 export const INCOME_LEGEND_GRADIENT =
-  "linear-gradient(90deg, #94a3b8 0%, #5eead4 25%, #38bdf8 50%, #6366f1 75%, #0A2540 100%)";
+  "linear-gradient(90deg, #cbd5e1 0%, #94a3b8 25%, #60a5fa 50%, #2563eb 75%, #0A2540 100%)";
 
 export type IncomePreset = {
   id: string;

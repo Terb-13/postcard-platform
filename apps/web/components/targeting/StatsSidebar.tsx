@@ -43,6 +43,7 @@ type Props = {
   readOnly?: boolean;
   compact?: boolean;
   showFilters?: boolean;
+  showLegend?: boolean;
 };
 
 export function StatsSidebar({
@@ -63,6 +64,7 @@ export function StatsSidebar({
   readOnly = false,
   compact = false,
   showFilters = true,
+  showLegend = true,
 }: Props) {
   const recommendedQty =
     estimate?.pricing?.estimatedReach ??
@@ -135,14 +137,12 @@ export function StatsSidebar({
               <StatCard
                 label="ZIP codes"
                 value={String(selectedCount)}
-                icon="pin"
                 loading={isLoading && !estimate}
               />
               <StatCard
                 label="Est. reach"
                 value={estimate ? formatNumber(estimate.reach) : "—"}
                 sub="households"
-                icon="users"
                 loading={isLoading && !estimate}
                 highlight
               />
@@ -153,7 +153,6 @@ export function StatsSidebar({
                     ? `$${formatNumber(estimate.avgMedianIncome)}`
                     : "—"
                 }
-                icon="income"
                 loading={isLoading && !estimate}
               />
               <StatCard
@@ -162,7 +161,6 @@ export function StatsSidebar({
                   estimate?.avgMoverPercent != null ? `${estimate.avgMoverPercent}%` : "—"
                 }
                 sub="1-yr proxy"
-                icon="move"
                 loading={isLoading && !estimate}
               />
             </div>
@@ -269,7 +267,7 @@ export function StatsSidebar({
         )}
       </div>
 
-      {!compact && selectedCount > 0 && (
+      {!compact && selectedCount > 0 && showLegend && (
         <footer className="px-5 pb-4 pt-2 border-t border-[var(--color-border-subtle)]">
           <div className="flex items-center gap-2 mb-1.5">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
@@ -293,30 +291,16 @@ function StatCard({
   sub,
   loading,
   highlight,
-  icon,
 }: {
   label: string;
   value: string;
   sub?: string;
   loading?: boolean;
   highlight?: boolean;
-  icon: "pin" | "users" | "income" | "move";
 }) {
-  const icons = {
-    pin: "M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z",
-    users: "M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z",
-    income: "M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z",
-    move: "M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5",
-  };
-
   return (
-    <div className={cn("targeting-stat-card", highlight && "ring-1 ring-[var(--color-accent)]/20")}>
-      <div className="flex items-start justify-between gap-1">
-        <p className="targeting-stat-label">{label}</p>
-        <svg className="h-3.5 w-3.5 text-[var(--color-accent)]/60 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d={icons[icon]} />
-        </svg>
-      </div>
+    <div className={cn("targeting-stat-card", highlight && "ring-1 ring-[var(--color-accent)]/15")}>
+      <p className="targeting-stat-label">{label}</p>
       {loading ? (
         <div className="h-7 w-20 bg-[var(--color-border)] rounded-md animate-pulse mt-2" />
       ) : (
@@ -331,18 +315,11 @@ function StatCard({
 
 function EmptyState() {
   return (
-    <div className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-bg-alt)]/50 p-6 text-center space-y-4">
-      <div className="mx-auto h-14 w-14 rounded-2xl bg-gradient-to-br from-[var(--color-accent-subtle)] to-white flex items-center justify-center shadow-sm border border-[var(--color-border-subtle)]">
-        <svg className="h-7 w-7 text-[var(--color-accent)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.25}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0Z" />
-        </svg>
-      </div>
-      <div>
-        <p className="text-sm font-semibold text-[var(--color-text)]">Build your audience</p>
-        <p className="text-xs text-[var(--color-text-muted)] mt-1.5 leading-relaxed max-w-[240px] mx-auto">
-          Search a ZIP, tap the map, or draw a custom boundary to see live Census reach and pricing.
-        </p>
-      </div>
+    <div className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-bg-alt)]/40 px-5 py-6 text-center">
+      <p className="text-sm font-medium text-[var(--color-text)]">Select ZIPs on the map</p>
+      <p className="mx-auto mt-1.5 max-w-[240px] text-xs leading-relaxed text-[var(--color-text-muted)]">
+        Search a ZIP or click boundaries to see live Census reach and pricing.
+      </p>
     </div>
   );
 }

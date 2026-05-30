@@ -34,7 +34,7 @@ export function LandingProblem() {
           <div className="mt-8 grid gap-4 lg:col-span-7 lg:mt-0">
             {PAINS.map((pain, i) => (
               <article key={pain.title} className="landing-feature-row">
-                <span className="landing-step-index" aria-hidden>
+                <span className="landing-index-badge" aria-hidden>
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <div className="min-w-0 pt-0.5">

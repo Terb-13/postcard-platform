@@ -73,7 +73,7 @@ function StepCard({
 }) {
   return (
     <div className="flex h-full flex-col">
-      <span className="landing-step-index">{step}</span>
+      <span className="landing-index-badge">{step}</span>
       <h3 className="mt-4 text-lg font-semibold tracking-tight text-[var(--color-bg-dark)]">
         {title}
       </h3>
