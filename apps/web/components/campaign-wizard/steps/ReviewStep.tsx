@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 import type { TargetingSelection } from "@/components/targeting";
+import { WizardStepHeader } from "../WizardStepHeader";
 import type { CampaignBasics } from "../schema";
 
 type Props = {
@@ -77,12 +78,11 @@ export function ReviewStep({
 
   return (
     <div className="max-w-none space-y-6 md:max-w-2xl md:space-y-8">
-      <div>
-        <h2 className="heading-sm">Review & schedule</h2>
-        <p className="text-small mt-2 text-[var(--color-text-muted)]">
-          Confirm your audience, creative, and cost before checkout.
-        </p>
-      </div>
+      <WizardStepHeader
+        step="Step 4 · Review"
+        title="Review & schedule"
+        description="Confirm your audience, creative, and cost before checkout."
+      />
 
       <div className="wizard-review-pricing">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
@@ -165,28 +165,30 @@ export function ReviewStep({
         )}
       </ReviewCard>
 
-      <div className="grid grid-cols-1 gap-5 sm:gap-6">
-        <div className="space-y-2">
-          <Label htmlFor="dropDate">Target drop date</Label>
-          <Input
-            id="dropDate"
-            type="date"
-            value={dropDate}
-            onChange={(e) => onDropDateChange(e.target.value)}
-          />
+      <ReviewCard title="Schedule">
+        <div className="grid grid-cols-1 gap-5">
+          <div className="space-y-2">
+            <Label htmlFor="dropDate">Target drop date</Label>
+            <Input
+              id="dropDate"
+              type="date"
+              value={dropDate}
+              onChange={(e) => onDropDateChange(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="notes">Notes for our team (optional)</Label>
+            <textarea
+              id="notes"
+              value={notes}
+              onChange={(e) => onNotesChange(e.target.value)}
+              rows={3}
+              className="flex min-h-[120px] w-full rounded-xl border border-[var(--color-border)] bg-white px-4 py-3 text-[15px] transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/25"
+              placeholder="Special instructions, timing, etc."
+            />
+          </div>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="notes">Notes for our team (optional)</Label>
-          <textarea
-            id="notes"
-            value={notes}
-            onChange={(e) => onNotesChange(e.target.value)}
-            rows={3}
-            className="flex min-h-[120px] w-full rounded-xl border border-[var(--color-border)] bg-white px-4 py-3 text-[15px] transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]/25"
-            placeholder="Special instructions, timing, etc."
-          />
-        </div>
-      </div>
+      </ReviewCard>
     </div>
   );
 }

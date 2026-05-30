@@ -1,8 +1,11 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { formatCurrency } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { formatCurrency, formatNumber } from "@/lib/utils";
+import { WizardStepHeader } from "../WizardStepHeader";
 
 type Props = {
   campaign?: {
@@ -11,6 +14,7 @@ type Props = {
     status?: string;
     quantity?: number;
     totalPriceCents?: number | null;
+    unitPriceCents?: number | null;
     artwork?: { status?: string } | null;
   } | null;
   onPay: () => void;
@@ -20,41 +24,52 @@ type Props = {
 export function CheckoutStep({ campaign, onPay, isPaying }: Props) {
   const artworkApproved = campaign?.artwork?.status === "APPROVED";
   const canPay = artworkApproved && campaign?.status !== "PAID";
+  const quantity = campaign?.quantity ?? 0;
+  const totalCents = campaign?.totalPriceCents ?? 0;
+  const unitCents = campaign?.unitPriceCents ?? 0;
 
   return (
-    <div className="mx-auto max-w-lg space-y-6 text-center md:space-y-6">
-      <div>
-        <h2 className="heading-sm">Checkout</h2>
-        <p className="text-small mt-2 text-[var(--color-text-muted)]">
-          Secure payment via Stripe. Production starts after our team approves your artwork.
-        </p>
-      </div>
+    <div className="mx-auto max-w-lg space-y-6 md:space-y-8">
+      <WizardStepHeader
+        step="Step 5 · Checkout"
+        title="Complete your campaign"
+        description="Secure payment via Stripe. Production starts after our team approves your artwork."
+        className="text-center sm:text-left [&_.wizard-step-eyebrow]:sm:mx-0 [&_.heading-sm]:sm:mx-0"
+      />
 
       {campaign && (
-        <div className="space-y-3 rounded-2xl border border-[var(--color-border)] p-5 text-left sm:p-6">
-          <p className="font-semibold">{campaign.name}</p>
-          <p className="text-sm text-[var(--color-text-muted)]">
-            {campaign.quantity.toLocaleString()} postcards
-          </p>
-          <p className="text-2xl font-bold">
-            {campaign.totalPriceCents != null
-              ? formatCurrency(campaign.totalPriceCents)
-              : "—"}
-          </p>
-          <p className="text-xs text-[var(--color-text-muted)]">
-            Artwork status:{" "}
-            <span className="font-medium">{campaign.artwork?.status ?? "Not uploaded"}</span>
-          </p>
-        </div>
+        <>
+          <div className="wizard-review-pricing text-left">
+            <p className="text-micro font-semibold uppercase tracking-wide text-white/55">
+              Campaign total
+            </p>
+            <p className="mt-1 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+              {totalCents != null ? formatCurrency(totalCents) : "—"}
+            </p>
+            <p className="mt-2 text-sm text-white/60">
+              {formatNumber(quantity)} postcards
+              {unitCents ? ` × ${formatCurrency(unitCents)} each` : ""}
+            </p>
+            <p className="mt-4 border-t border-white/10 pt-4 text-sm font-medium text-white">
+              {campaign.name}
+            </p>
+          </div>
+
+          <CheckoutDetail label="Artwork status">
+            <Badge variant={artworkApproved ? "success" : "default"}>
+              {campaign.artwork?.status ?? "Not uploaded"}
+            </Badge>
+          </CheckoutDetail>
+        </>
       )}
 
       {!artworkApproved ? (
-        <div className="rounded-xl bg-amber-50 border border-amber-100 p-4 text-sm text-amber-900">
-          <p className="font-medium">Artwork review required</p>
-          <p className="mt-1 opacity-90">
+        <div className="rounded-2xl border border-amber-100 bg-amber-50 p-5 text-sm text-amber-900">
+          <p className="font-semibold">Artwork review required</p>
+          <p className="mt-2 leading-relaxed opacity-90">
             Our ops team will review your PDF within a few hours. You&apos;ll receive an email when
             it&apos;s approved — then return here or go to{" "}
-            <Link href="/campaigns" className="underline font-medium">
+            <Link href="/campaigns" className="font-medium underline">
               My Campaigns
             </Link>{" "}
             to pay.
@@ -65,14 +80,28 @@ export function CheckoutStep({ campaign, onPay, isPaying }: Props) {
           {isPaying ? "Redirecting to Stripe…" : "Pay with Stripe"}
         </Button>
       ) : (
-        <p className="text-sm text-[var(--color-text-muted)]">
+        <p className="text-center text-sm text-[var(--color-text-muted)]">
           This campaign has already been paid or is in production.
         </p>
       )}
 
-      <Link href="/campaigns" className="text-sm text-[var(--color-accent)] hover:underline inline-block">
-        View all campaigns →
-      </Link>
+      <div className="text-center">
+        <Link
+          href="/campaigns"
+          className="text-sm text-[var(--color-accent)] hover:underline"
+        >
+          View all campaigns →
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function CheckoutDetail({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="wizard-review-card flex items-center justify-between gap-4">
+      <span className="text-sm text-[var(--color-text-muted)]">{label}</span>
+      {children}
     </div>
   );
 }

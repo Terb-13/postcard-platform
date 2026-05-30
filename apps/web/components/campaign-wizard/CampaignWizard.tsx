@@ -26,6 +26,7 @@ import { TargetingStep } from "./steps/TargetingStep";
 import { ReviewStep } from "./steps/ReviewStep";
 import { CheckoutStep } from "./steps/CheckoutStep";
 import { WizardFeedback } from "./WizardFeedback";
+import { WizardStepHeader } from "./WizardStepHeader";
 import { WizardMobileNav } from "./WizardMobileNav";
 
 const STEP_IDS = WIZARD_STEPS.map((s) => s.id);
@@ -398,6 +399,14 @@ export function CampaignWizard() {
                   targeting={targeting}
                   onTargetingChange={setTargeting}
                   validationError={targetingValidationError}
+                  isEstimateLoading={
+                    estimateQuery.isFetching && targeting.zctas.length > 0
+                  }
+                  censusError={
+                    estimateQuery.isError && targeting.zctas.length > 0
+                      ? formatTrpcError(estimateQuery.error)
+                      : null
+                  }
                 />
               )}
 
@@ -458,7 +467,7 @@ export function CampaignWizard() {
           </CardContent>
         </Card>
 
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--color-border)] bg-[var(--color-surface)]/95 backdrop-blur md:static md:z-auto md:border-0 md:bg-transparent md:backdrop-blur-none">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--color-border)] bg-[var(--color-surface)]/95 shadow-[0_-4px_24px_-4px_rgb(15_23_42_/_0.08)] backdrop-blur md:static md:z-auto md:border-0 md:bg-transparent md:shadow-none md:backdrop-blur-none">
           <div className="container flex max-w-5xl flex-col gap-2 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:flex-row sm:justify-between md:px-0 md:py-0">
             <Button
               type="button"
@@ -542,15 +551,12 @@ function CreativeStep({
   }
 
   return (
-    <div className="space-y-5 md:space-y-6">
-      <div>
-        <h2 className="heading-sm">Upload your postcard design</h2>
-        <p className="text-small mt-1 text-[var(--color-text-muted)]">
-          PDF only. Our team reviews within a few hours before you can pay.
-        </p>
-      </div>
-
-      <PostcardMockup size={size} />
+    <div className="space-y-6 md:space-y-8">
+      <WizardStepHeader
+        step="Step 3 · Creative"
+        title="Upload your postcard design"
+        description="PDF only — front and back as separate pages. Our team reviews within a few hours before you can pay."
+      />
 
       <ArtworkPreview
         key={artworkRefetchKey}
@@ -559,39 +565,26 @@ function CreativeStep({
         activeSide={activeSide}
         onActiveSideChange={setActiveSide}
         isLoading={isPreviewLoading}
+        postcardSize={size}
       />
 
       {campaign?.artwork?.fileUrl ? (
-        <ArtworkUpload campaignId={campaignId} onUploadComplete={onUploadComplete} />
+        <div className="wizard-review-card">
+          <p className="wizard-review-card-title">Replace artwork</p>
+          <ArtworkUpload campaignId={campaignId} onUploadComplete={onUploadComplete} />
+        </div>
       ) : (
         <div className="rounded-2xl border border-dashed border-[var(--color-border)] bg-[var(--color-bg-alt)]/50 p-6 text-center sm:p-8">
-          <div className="mx-auto h-12 w-12 rounded-2xl bg-white border border-[var(--color-border)] flex items-center justify-center text-[var(--color-text-muted)] mb-4">
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-[var(--color-border)] bg-white text-[var(--color-text-muted)]">
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden>
               <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m6.75 12H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
             </svg>
           </div>
-          <p className="text-sm font-medium mb-1">Drop your PDF here</p>
-          <p className="text-xs text-[var(--color-text-muted)] mb-4">Max 4MB · print-ready artwork</p>
+          <p className="mb-1 text-sm font-medium">Drop your PDF here</p>
+          <p className="mb-4 text-xs text-[var(--color-text-muted)]">Max 4MB · print-ready artwork</p>
           <ArtworkUpload campaignId={campaignId} onUploadComplete={onUploadComplete} />
         </div>
       )}
-    </div>
-  );
-}
-
-function PostcardMockup({ size }: { size: string }) {
-  const aspect =
-    size === "4x6" ? "aspect-[3/2]" : size === "6x11" ? "aspect-[11/6]" : "aspect-[7/5]";
-  return (
-    <div className="flex justify-center">
-      <div
-        className={`${aspect} w-full max-w-xs rounded-lg shadow-lg border-2 border-white bg-gradient-to-br from-[var(--color-bg-dark)] to-[#1e3a5f] flex items-center justify-center`}
-      >
-        <div className="text-center text-white/90 p-4">
-          <p className="text-xs uppercase tracking-widest opacity-70">Preview</p>
-          <p className="font-semibold mt-1">{size.replace("x", "×")}&quot;</p>
-        </div>
-      </div>
     </div>
   );
 }

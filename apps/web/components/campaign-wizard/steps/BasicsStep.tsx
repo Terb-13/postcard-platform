@@ -3,6 +3,7 @@
 import type { UseFormReturn } from "react-hook-form";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { WizardStepHeader } from "../WizardStepHeader";
 import type { CampaignBasics } from "../schema";
 
 const SIZES = [
@@ -23,12 +24,11 @@ export function BasicsStep({ form }: { form: UseFormReturn<CampaignBasics> }) {
 
   return (
     <div className="max-w-none space-y-6 md:max-w-lg md:space-y-8">
-      <div>
-        <h2 className="heading-sm">Campaign basics</h2>
-        <p className="text-small mt-1 text-[var(--color-text-muted)]">
-          Name your campaign and choose a postcard size.
-        </p>
-      </div>
+      <WizardStepHeader
+        step="Step 1 · Basics"
+        title="Start with the essentials"
+        description="Name your campaign and choose a postcard size. You can refine targeting and creative next."
+      />
 
       <div className="space-y-2">
         <Label htmlFor="name">Campaign name</Label>
@@ -42,21 +42,21 @@ export function BasicsStep({ form }: { form: UseFormReturn<CampaignBasics> }) {
         )}
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-3">
         <Label>Postcard size</Label>
-        <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {SIZES.map((s) => (
             <button
               key={s.value}
               type="button"
               onClick={() => setValue("size", s.value)}
-              className={`min-h-[72px] rounded-2xl border p-4 text-left transition-all duration-200 hover:shadow-[var(--shadow-sm)] ${
+              className={`min-h-[76px] rounded-2xl border p-4 text-left transition-all duration-200 hover:shadow-[var(--shadow-sm)] ${
                 selectedSize === s.value
                   ? "border-[var(--color-accent)] bg-[var(--color-accent-subtle)] shadow-[var(--shadow-sm)] ring-2 ring-[var(--color-accent)]/20"
                   : "border-[var(--color-border)] hover:border-[var(--color-border-strong)]"
               }`}
             >
-              <span className="font-semibold block">{s.label}</span>
+              <span className="block font-semibold">{s.label}</span>
               <span className="text-small text-[var(--color-text-muted)]">{s.desc}</span>
             </button>
           ))}

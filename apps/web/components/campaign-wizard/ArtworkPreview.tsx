@@ -18,6 +18,8 @@ export type ArtworkPreviewProps = {
   frontAlt?: string;
   backAlt?: string;
   className?: string;
+  /** Postcard size label, e.g. `6x11` — shown in print preview header. */
+  postcardSize?: string;
   /** Thumbnails or PDF pages are still resolving. */
   isLoading?: boolean;
   onImageLoad?: (side: PostcardSide, dimensions: { width: number; height: number }) => void;
@@ -89,6 +91,7 @@ export function ArtworkPreview({
   frontAlt = "Postcard front artwork preview",
   backAlt = "Postcard back artwork preview",
   className,
+  postcardSize,
   isLoading = false,
   onImageLoad,
   onImageError,
@@ -146,7 +149,9 @@ export function ArtworkPreview({
             Print preview
           </p>
           <p className="mt-0.5 text-sm text-[var(--color-text-secondary)]">
-            Review your artwork before it goes to production.
+            {postcardSize
+              ? `${postcardSize.replace("x", "×")}″ · print-ready preview`
+              : "Review your artwork before it goes to production."}
           </p>
         </div>
 
