@@ -2,5 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "turbo run build --filter=web",
   "installCommand": "npm install --prefer-offline --no-audit",
-  "devCommand": "turbo run dev --filter=web"
+  "devCommand": "turbo run dev --filter=web",
+  "outputDirectory": "apps/web/.next"
 }
