@@ -1,13 +1,13 @@
 import { Visual } from "@/components/shared/Visual";
 import { LandingSectionHeader } from "./LandingSectionHeader";
 
-/** Asset: apps/web/public/images/marketing/results.jpg (1280×896) */
-const RESULTS_IMAGE = "/images/marketing/results.jpg";
+/** Census data visualization — replaces generic office stock photography */
+const DATA_IMAGE = "/images/marketing/data.jpg";
 
-const OUTCOMES = [
-  { stat: "Minutes", label: "to quote a targeted campaign" },
-  { stat: "ZIP-level", label: "Census income & mover data" },
-  { stat: "Full", label: "visibility before you print" },
+const TRUST_SIGNALS = [
+  { value: "ACS 5-yr", label: "Census estimates on every ZIP" },
+  { value: "ZIP-level", label: "Income, movers & household density" },
+  { value: "Transparent", label: "Reach and cost before you print" },
 ] as const;
 
 const QUOTES = [
@@ -27,56 +27,65 @@ const QUOTES = [
 
 export function LandingSocialProof() {
   return (
-    <section id="results" className="section bg-[var(--color-bg)] border-b border-[var(--color-border)] scroll-mt-24">
+    <section
+      id="results"
+      className="section scroll-mt-24 border-b border-[var(--color-border)] bg-[var(--color-bg)]"
+    >
       <div className="container">
-        <div className="lg:grid lg:grid-cols-2 lg:gap-12 xl:gap-16 lg:items-start">
-          <div>
-            <LandingSectionHeader
-              eyebrow="Results & trust"
-              title="Real businesses. Real results."
-              description="Operators use Postcard to reach neighborhoods that match their offer — with data-backed targeting and transparent campaign economics."
-              className="mb-6"
-            />
+        <LandingSectionHeader
+          align="center"
+          eyebrow="Results & trust"
+          title="Built for operators who need precision"
+          description="Restaurants, home services, real estate, and retail use Postcard to reach neighborhoods that match their offer — with data-backed targeting and transparent campaign economics."
+          className="mx-auto mb-8 lg:mb-12"
+        />
 
-            <ul className="grid grid-cols-3 gap-3 mb-6 lg:mb-0">
-              {OUTCOMES.map((o) => (
-                <li
-                  key={o.label}
-                  className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-4 text-center"
-                >
-                  <p className="text-sm font-bold text-[var(--color-bg-dark)]">{o.stat}</p>
-                  <p className="mt-1 text-micro text-[var(--color-text-muted)] leading-snug">{o.label}</p>
-                </li>
-              ))}
-            </ul>
-          </div>
+        <ul className="mx-auto mb-10 grid max-w-4xl grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-5 lg:mb-12">
+          {TRUST_SIGNALS.map((signal) => (
+            <li
+              key={signal.label}
+              className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-5 text-center"
+            >
+              <p className="font-mono text-sm font-bold tracking-wide text-[var(--color-accent)]">
+                {signal.value}
+              </p>
+              <p className="mt-2 text-micro leading-snug text-[var(--color-text-muted)]">
+                {signal.label}
+              </p>
+            </li>
+          ))}
+        </ul>
 
-          <div className="space-y-5">
-            <Visual
-              treatment="socialProof"
-              aspectRatio="10/7"
-              src={RESULTS_IMAGE}
-              alt="Targeted postcard campaign results and measurable outreach outcomes"
-              sizes="(max-width: 1024px) 100vw, 44vw"
-            />
-
-            <div className="space-y-4">
-              {QUOTES.map((item) => (
-                <blockquote
-                  key={item.role}
-                  className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 sm:p-6"
-                >
-                  <p className="text-[15px] leading-relaxed text-[var(--color-text-secondary)]">
-                    &ldquo;{item.quote}&rdquo;
-                  </p>
-                  <footer className="mt-3 text-sm font-medium text-[var(--color-text-muted)]">
-                    — {item.role}
-                  </footer>
-                </blockquote>
-              ))}
-            </div>
-          </div>
+        <div className="mx-auto mb-10 max-w-4xl lg:mb-12">
+          <Visual
+            treatment="socialProof"
+            aspectRatio="10/7"
+            src={DATA_IMAGE}
+            alt="Census ACS data powering ZIP-level audience targeting and campaign reach estimates"
+            sizes="(max-width: 1024px) 100vw, 56vw"
+            caption="Authoritative Census ACS data — not broker lists or guesswork."
+          />
         </div>
+
+        <div className="mx-auto grid max-w-6xl gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+          {QUOTES.map((item, i) => (
+            <blockquote
+              key={item.role}
+              className={`landing-quote-card ${i === 1 ? "lg:translate-y-4" : ""}`}
+            >
+              <p className="landing-body leading-relaxed text-[var(--color-text-secondary)]">
+                &ldquo;{item.quote}&rdquo;
+              </p>
+              <footer className="mt-6 border-t border-[var(--color-border)] pt-5 text-sm font-medium text-[var(--color-text-muted)]">
+                {item.role}
+              </footer>
+            </blockquote>
+          ))}
+        </div>
+
+        <p className="mt-10 text-center text-micro text-[var(--color-text-muted)] lg:mt-12">
+          Customer stories — placeholders for launch testimonials
+        </p>
       </div>
     </section>
   );

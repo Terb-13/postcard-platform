@@ -9,7 +9,7 @@ export function LandingFinalCta() {
           <h2 className="landing-section-title text-white mb-4">
             Ready to target with real Census data?
           </h2>
-          <p className="landing-section-desc text-white/70 mb-9 max-w-lg mx-auto">
+          <p className="landing-section-desc mx-auto mb-10 max-w-lg text-white/70">
             Start free, explore the live map, and launch your first campaign when your audience
             and cost look right.
           </p>

@@ -6,59 +6,67 @@ const PROBLEM_IMAGE = "/images/marketing/problem.jpg";
 
 const PAINS = [
   {
-    title: "You're paying to reach everyone",
+    title: "Blanket mail wastes budget",
     description:
-      "Blanket ZIP mail hits households that will never buy — budget spent on noise, not opportunity.",
+      "Every household in a ZIP gets the same piece — including people who will never buy. You pay for reach you don't need.",
   },
   {
-    title: "Targeting is guesswork",
+    title: "Audience selection is a guess",
     description:
-      "Without real demographics, you can't see income, movers, or household density before you commit.",
+      "Spreadsheets, broker lists, and gut feel can't tell you median income or mover rates for the block you're targeting.",
   },
   {
-    title: "No proof before you print",
+    title: "No visibility until it's too late",
     description:
-      "Quantity and cost are locked in before you know who you're actually mailing.",
+      "You commit to quantity and cost before you know who you're actually mailing — then hope the printer got it right.",
   },
 ] as const;
 
 export function LandingProblem() {
   return (
-    <section id="problem" className="section bg-[var(--color-bg)] scroll-mt-24">
+    <section id="problem" className="section scroll-mt-24 bg-[var(--color-bg)]">
       <div className="container">
-        <div className="lg:grid lg:grid-cols-2 lg:gap-12 xl:gap-16 lg:items-center">
-          <div className="space-y-6">
+        <div className="lg:grid lg:grid-cols-12 lg:items-start lg:gap-12 xl:gap-16">
+          <div className="lg:col-span-5 lg:sticky lg:top-28 lg:self-start">
             <LandingSectionHeader
-              eyebrow="The problem"
-              title="Most direct mail gets ignored."
-              description="When you can't target with confidence, every postcard is a gamble — and wasted spend adds up fast."
+              eyebrow="The challenge"
+              title="Direct mail works — but untargeted mail doesn't"
+              description={
+                <>
+                  You already know postcards can drive local business. The hard part is knowing{" "}
+                  <span className="font-medium text-[var(--color-text)]">which</span> homes are
+                  worth reaching — and proving it before you spend.
+                </>
+              }
             />
-
-            <ul className="space-y-4">
-              {PAINS.map((pain) => (
-                <li
-                  key={pain.title}
-                  className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-5 sm:px-6"
-                >
-                  <h3 className="font-semibold text-[var(--color-bg-dark)] tracking-tight">
-                    {pain.title}
-                  </h3>
-                  <p className="mt-2 text-[15px] leading-relaxed text-[var(--color-text-secondary)]">
-                    {pain.description}
-                  </p>
-                </li>
-              ))}
-            </ul>
           </div>
 
-          {/* Problem: untargeted direct mail / wasted reach — problem section explainer */}
+          <div className="mt-8 grid gap-4 sm:gap-5 lg:col-span-7 lg:mt-0">
+            {PAINS.map((pain, i) => (
+              <article key={pain.title} className="landing-feature-row">
+                <span className="landing-step-index" aria-hidden>
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <div className="min-w-0 pt-0.5">
+                  <h3 className="text-lg font-semibold tracking-tight text-[var(--color-bg-dark)] lg:text-xl">
+                    {pain.title}
+                  </h3>
+                  <p className="landing-body mt-2 text-[var(--color-text-secondary)]">
+                    {pain.description}
+                  </p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+
+        <div className="mx-auto mt-10 max-w-4xl lg:mt-12">
           <Visual
             treatment="feature"
             aspectRatio="10/7"
             src={PROBLEM_IMAGE}
             alt="Untargeted direct mail failing to reach the right households"
-            sizes="(max-width: 1024px) 100vw, 44vw"
-            className="mt-8 lg:mt-0"
+            sizes="(max-width: 1024px) 100vw, 56vw"
           />
         </div>
       </div>

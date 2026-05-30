@@ -6,44 +6,44 @@ const WORKFLOW_IMAGE = "/images/marketing/workflow.jpg";
 
 const STEPS = [
   {
-    step: "1",
+    step: "01",
     title: "Target with Census data",
-    description: "Select ZIPs on the map or draw an area. Filter by income and mover rates.",
+    description:
+      "Search ZIPs, click boundaries on the map, or draw a custom area. Filter by income and mover rates.",
   },
   {
-    step: "2",
+    step: "02",
     title: "Upload your artwork",
-    description: "Add your postcard design. We prep print-ready files and proofs.",
+    description:
+      "Drop in your postcard design. We handle sizing, proofing, and print-ready preparation.",
   },
   {
-    step: "3",
-    title: "Review & pay",
-    description: "Confirm reach, audience breakdown, and per-piece cost before you commit.",
+    step: "03",
+    title: "Review reach & pay",
+    description:
+      "See household count, audience breakdown, and per-piece cost before you commit.",
   },
   {
-    step: "4",
-    title: "Print & deliver",
-    description: "Drummond handles production and mailing. Track status end to end.",
+    step: "04",
+    title: "Drummond prints & ships",
+    description:
+      "Your campaign goes to production. Track status from proof through delivery.",
   },
 ] as const;
 
 export function LandingHowItWorks() {
   return (
-    <section
-      id="how-it-works"
-      className="section bg-[var(--color-surface)] scroll-mt-24"
-    >
+    <section id="how-it-works" className="section scroll-mt-24 bg-[var(--color-surface)]">
       <div className="container">
         <LandingSectionHeader
           align="center"
           eyebrow="How it works"
-          title="From targeting to mailbox in four steps."
-          description="A clear, software-guided path from audience selection to delivery — built for operators, not agencies."
-          className="mx-auto mb-8 lg:mb-10"
+          title="From targeting to mailbox in four steps"
+          description="A guided flow designed for clarity — no agency hand-holding required."
+          className="mx-auto mb-8 lg:mb-12"
         />
 
-        <div className="max-w-5xl mx-auto mb-8 lg:mb-10">
-          {/* How it works: four-step workflow diagram — process explainer */}
+        <div className="mx-auto mb-10 max-w-5xl lg:mb-12">
           <Visual
             treatment="feature"
             aspectRatio="11/6"
@@ -53,22 +53,47 @@ export function LandingHowItWorks() {
           />
         </div>
 
-        <ol className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 max-w-6xl mx-auto">
+        <ol className="grid gap-8 sm:grid-cols-2 lg:hidden">
           {STEPS.map((item) => (
-            <li key={item.step} className="text-center lg:text-left">
-              <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border-2 border-[var(--color-accent)] text-sm font-bold text-[var(--color-accent)]">
-                {item.step}
-              </span>
-              <h3 className="mt-4 font-semibold text-lg text-[var(--color-bg-dark)] tracking-tight">
-                {item.title}
-              </h3>
-              <p className="mt-2 text-[15px] leading-relaxed text-[var(--color-text-secondary)]">
-                {item.description}
-              </p>
+            <li key={item.step}>
+              <StepCard {...item} />
+            </li>
+          ))}
+        </ol>
+
+        <ol className="landing-steps-rail hidden lg:grid lg:grid-cols-4">
+          {STEPS.map((item, index) => (
+            <li key={item.step} className="landing-step-cell">
+              {index < STEPS.length - 1 && (
+                <span className="landing-step-connector" aria-hidden />
+              )}
+              <StepCard {...item} />
             </li>
           ))}
         </ol>
       </div>
     </section>
+  );
+}
+
+function StepCard({
+  step,
+  title,
+  description,
+}: {
+  step: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="flex h-full flex-col">
+      <span className="landing-step-index">{step}</span>
+      <h3 className="mt-4 text-lg font-semibold tracking-tight text-[var(--color-bg-dark)] lg:mt-5">
+        {title}
+      </h3>
+      <p className="landing-body mt-2 flex-1 text-[var(--color-text-secondary)]">
+        {description}
+      </p>
+    </div>
   );
 }

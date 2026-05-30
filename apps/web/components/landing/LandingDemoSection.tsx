@@ -13,10 +13,10 @@ export function LandingDemoSection() {
           eyebrow="See it in action"
           title="See exactly who you can reach."
           description="Explore live Census estimates on the map — search ZIPs, select boundaries, and watch audience and cost update instantly. No login required."
-          className="mx-auto mb-6 lg:mb-8"
+          className="mx-auto mb-8 lg:mb-10"
         />
 
-        <div className="max-w-5xl mx-auto">
+        <div className="mx-auto max-w-5xl">
           <div className="demo-stage">
             <LandingTargetingDemo />
           </div>
