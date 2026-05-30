@@ -244,15 +244,27 @@ body {
     padding-top: var(--space-12);
     padding-bottom: var(--space-12);
   }
+  .section-tight {
+    padding-top: var(--space-8);
+    padding-bottom: var(--space-12);
+  }
   @media (min-width: 640px) {
     .section {
       padding-top: var(--space-16);
+      padding-bottom: var(--space-16);
+    }
+    .section-tight {
+      padding-top: var(--space-10);
       padding-bottom: var(--space-16);
     }
   }
   @media (min-width: 1024px) {
     .section {
       padding-top: var(--space-20);
+      padding-bottom: var(--space-20);
+    }
+    .section-tight {
+      padding-top: var(--space-12);
       padding-bottom: var(--space-20);
     }
   }

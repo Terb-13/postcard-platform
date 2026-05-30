@@ -283,7 +283,18 @@ export const targetingRouter = router({
   getZctasInBounds: publicProcedure
     .input(
       z.object({
-        bbox: z.tuple([z.number(), z.number(), z.number(), z.number()]),
+        bbox: z
+          .tuple([z.number(), z.number(), z.number(), z.number()])
+          .refine(
+            ([west, south, east, north]) =>
+              west < east &&
+              south < north &&
+              west >= -180 &&
+              east <= 180 &&
+              south >= -90 &&
+              north <= 90,
+            { message: "Invalid map bounding box" }
+          ),
         limit: z.number().int().min(1).max(200).default(120),
       })
     )

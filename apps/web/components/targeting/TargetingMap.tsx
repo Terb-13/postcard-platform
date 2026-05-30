@@ -30,6 +30,23 @@ const MAP_STYLE = "mapbox://styles/mapbox/light-v11";
 const DEFAULT_CENTER = { longitude: -98.5795, latitude: 39.8283, zoom: 3.5 };
 const VIEWPORT_ZOOM_MIN = 8;
 
+function isValidBbox(bbox: [number, number, number, number] | null | undefined): boolean {
+  if (!bbox) return false;
+  const [west, south, east, north] = bbox;
+  return (
+    Number.isFinite(west) &&
+    Number.isFinite(south) &&
+    Number.isFinite(east) &&
+    Number.isFinite(north) &&
+    west < east &&
+    south < north &&
+    west >= -180 &&
+    east <= 180 &&
+    south >= -90 &&
+    north <= 90
+  );
+}
+
 type ViewState = { longitude: number; latitude: number; zoom: number };
 
 type Props = {
@@ -66,9 +83,7 @@ export function TargetingMap({
   const [mobileStatsOpen, setMobileStatsOpen] = useState(false);
   const [selectionPulse, setSelectionPulse] = useState(false);
   const [mapNotice, setMapNotice] = useState<string | null>(null);
-  const [viewportBbox, setViewportBbox] = useState<[number, number, number, number] | null>(
-    null
-  );
+  const [pendingBbox, setPendingBbox] = useState<[number, number, number, number] | null>(null);
   const [debouncedBbox, setDebouncedBbox] = useState<[number, number, number, number] | null>(
     null
   );
@@ -119,10 +134,11 @@ export function TargetingMap({
   }, [selectionPulse, debouncedZctas.join(",")]);
 
   useEffect(() => {
-    if (!debouncedBbox) return;
-    const t = setTimeout(() => setViewportBbox(debouncedBbox), 500);
+    const t = setTimeout(() => {
+      setDebouncedBbox(isValidBbox(pendingBbox) ? pendingBbox : null);
+    }, 400);
     return () => clearTimeout(t);
-  }, [debouncedBbox]);
+  }, [pendingBbox]);
 
   const authEstimateQuery = trpc.targeting.estimateAudience.useQuery(
     {
@@ -173,10 +189,11 @@ export function TargetingMap({
   );
 
   const viewportBoundaries = trpc.targeting.getZctasInBounds.useQuery(
-    { bbox: viewportBbox!, limit: 120 },
+    { bbox: debouncedBbox!, limit: 120 },
     {
-      enabled: !!viewportBbox && viewState.zoom >= VIEWPORT_ZOOM_MIN && !drawMode,
+      enabled: isValidBbox(debouncedBbox) && viewState.zoom >= VIEWPORT_ZOOM_MIN && !drawMode,
       staleTime: 120_000,
+      retry: false,
     }
   );
 
@@ -246,12 +263,12 @@ export function TargetingMap({
   const updateViewportBbox = useCallback(() => {
     const map = mapRef.current?.getMap();
     if (!map || viewState.zoom < VIEWPORT_ZOOM_MIN) {
-      setDebouncedBbox(null);
+      setPendingBbox(null);
       return;
     }
     const b = map.getBounds();
     if (!b) return;
-    setDebouncedBbox([b.getWest(), b.getSouth(), b.getEast(), b.getNorth()]);
+    setPendingBbox([b.getWest(), b.getSouth(), b.getEast(), b.getNorth()]);
   }, [viewState.zoom]);
 
   useEffect(() => {

@@ -79,7 +79,6 @@ export function ReviewStep({
   return (
     <div className="max-w-none space-y-6 md:max-w-2xl md:space-y-8">
       <WizardStepHeader
-        step="Step 4 · Review"
         title="Review & schedule"
         description="Confirm your audience, creative, and cost before checkout."
       />

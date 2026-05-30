@@ -25,7 +25,6 @@ export function BasicsStep({ form }: { form: UseFormReturn<CampaignBasics> }) {
   return (
     <div className="max-w-none space-y-6 md:max-w-lg md:space-y-8">
       <WizardStepHeader
-        step="Step 1 · Basics"
         title="Start with the essentials"
         description="Name your campaign and choose a postcard size. You can refine targeting and creative next."
       />

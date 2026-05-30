@@ -5,7 +5,7 @@ export function LandingDemoSection() {
   return (
     <section
       id="demo"
-      className="section scroll-mt-24 bg-[var(--color-bg-subtle)] border-y border-[var(--color-border)]"
+      className="section-tight scroll-mt-24 border-b border-[var(--color-border)] bg-[var(--color-bg-subtle)]"
     >
       <div className="container">
         <LandingSectionHeader

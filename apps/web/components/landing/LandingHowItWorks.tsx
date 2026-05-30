@@ -1,8 +1,4 @@
-import { Visual } from "@/components/shared/Visual";
 import { LandingSectionHeader } from "./LandingSectionHeader";
-
-/** Asset: apps/web/public/images/marketing/workflow.jpg (1408×768) */
-const WORKFLOW_IMAGE = "/images/marketing/workflow.jpg";
 
 const STEPS = [
   {
@@ -40,20 +36,10 @@ export function LandingHowItWorks() {
           eyebrow="How it works"
           title="From targeting to mailbox in four steps"
           description="A guided flow designed for clarity — no agency hand-holding required."
-          className="mx-auto mb-8 lg:mb-12"
+          className="mx-auto mb-10 lg:mb-12"
         />
 
-        <div className="mx-auto mb-10 max-w-5xl lg:mb-12">
-          <Visual
-            treatment="feature"
-            aspectRatio="11/6"
-            src={WORKFLOW_IMAGE}
-            alt="Four-step Postcard Platform workflow from targeting through delivery"
-            sizes="(max-width: 1024px) 100vw, 72vw"
-          />
-        </div>
-
-        <ol className="grid gap-8 sm:grid-cols-2 lg:hidden">
+        <ol className="grid gap-6 sm:grid-cols-2 lg:hidden">
           {STEPS.map((item) => (
             <li key={item.step}>
               <StepCard {...item} />
@@ -88,7 +74,7 @@ function StepCard({
   return (
     <div className="flex h-full flex-col">
       <span className="landing-step-index">{step}</span>
-      <h3 className="mt-4 text-lg font-semibold tracking-tight text-[var(--color-bg-dark)] lg:mt-5">
+      <h3 className="mt-4 text-lg font-semibold tracking-tight text-[var(--color-bg-dark)]">
         {title}
       </h3>
       <p className="landing-body mt-2 flex-1 text-[var(--color-text-secondary)]">

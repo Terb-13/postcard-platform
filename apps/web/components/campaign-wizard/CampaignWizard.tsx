@@ -331,7 +331,7 @@ export function CampaignWizard() {
   const isSaving = createCampaign.isPending || updateDraft.isPending || saveStatus === "saving";
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg)] pb-[calc(6.5rem+env(safe-area-inset-bottom))] md:pb-10">
+    <div className="min-h-screen bg-[var(--color-bg)] pb-[calc(7.5rem+env(safe-area-inset-bottom))] md:pb-10">
       <header className="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-surface)]/90 backdrop-blur">
         <div className="container flex max-w-5xl items-center justify-between gap-3 py-3 sm:gap-4 sm:py-4">
           <div className="min-w-0">
@@ -553,7 +553,6 @@ function CreativeStep({
   return (
     <div className="space-y-6 md:space-y-8">
       <WizardStepHeader
-        step="Step 3 · Creative"
         title="Upload your postcard design"
         description="PDF only — front and back as separate pages. Our team reviews within a few hours before you can pay."
       />

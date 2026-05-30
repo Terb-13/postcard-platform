@@ -26,7 +26,6 @@ export function TargetingStep({
   return (
     <div className="space-y-5 md:space-y-6">
       <WizardStepHeader
-        step="Step 2 · Targeting"
         title="Who should receive your postcards?"
         description="Search ZIP codes, click the map, or draw a custom boundary. Reach and cost update live from US Census data."
         badge={<CensusLiveBadge />}

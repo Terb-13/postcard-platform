@@ -128,12 +128,10 @@ This project is designed to deploy easily to Vercel.
 
 1. Connect the GitHub repo in Vercel.
 2. Use these settings:
-   - **Framework Preset**: Next.js
-   - **Root Directory**: `.` (the monorepo root)
-   - **Build Command**: `turbo run build --filter=web`
-   - **Install Command**: `npm install`
-
-   (We have a `vercel.json` at the root that helps with this.)
+   - **Framework Preset**: Next.js (auto-detected via Turborepo)
+   - **Root Directory**: `.` (monorepo root — leave empty)
+   - **Build / Install / Dev commands**: defined in root `vercel.json` (`turbo run build --filter=web`)
+   - **Output Directory**: leave blank (do not override — Vercel/Turbo resolve `.next` under `apps/web`)
 
 3. **Important**: You must set **all** the environment variables from section 2 above in Vercel (under Project Settings → Environment Variables).
 

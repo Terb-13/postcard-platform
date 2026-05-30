@@ -31,10 +31,9 @@ export function CheckoutStep({ campaign, onPay, isPaying }: Props) {
   return (
     <div className="mx-auto max-w-lg space-y-6 md:space-y-8">
       <WizardStepHeader
-        step="Step 5 · Checkout"
         title="Complete your campaign"
         description="Secure payment via Stripe. Production starts after our team approves your artwork."
-        className="text-center sm:text-left [&_.wizard-step-eyebrow]:sm:mx-0 [&_.heading-sm]:sm:mx-0"
+        className="text-center sm:text-left [&_.heading-sm]:sm:mx-0"
       />
 
       {campaign && (
