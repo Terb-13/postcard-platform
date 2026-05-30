@@ -27,7 +27,7 @@ const QUOTES = [
 
 export function LandingSocialProof() {
   return (
-    <section id="results" className="section section-rhythm bg-[var(--color-bg)] border-b border-[var(--color-border)] scroll-mt-24">
+    <section id="results" className="section bg-[var(--color-bg)] border-b border-[var(--color-border)] scroll-mt-24">
       <div className="container">
         <div className="lg:grid lg:grid-cols-2 lg:gap-16 xl:gap-20 lg:items-start">
           <div>
@@ -38,7 +38,7 @@ export function LandingSocialProof() {
               className="mb-8"
             />
 
-            <ul className="grid grid-cols-3 gap-3 mb-8">
+            <ul className="grid grid-cols-3 gap-3">
               {OUTCOMES.map((o) => (
                 <li
                   key={o.label}
@@ -49,27 +49,15 @@ export function LandingSocialProof() {
                 </li>
               ))}
             </ul>
+          </div>
 
-            {/* Social proof: campaign results photography — desktop sidebar placement */}
+          <div className="mt-10 lg:mt-0 space-y-5">
             <Visual
               treatment="socialProof"
               aspectRatio="10/7"
               src={RESULTS_IMAGE}
               alt="Targeted postcard campaign results and measurable outreach outcomes"
               sizes="(max-width: 1024px) 100vw, 44vw"
-              className="hidden lg:block"
-            />
-          </div>
-
-          <div className="mt-10 lg:mt-0 space-y-5">
-            {/* Social proof: campaign results photography — mobile stack above testimonials */}
-            <Visual
-              treatment="socialProof"
-              aspectRatio="10/7"
-              src={RESULTS_IMAGE}
-              alt="Targeted postcard campaign results and measurable outreach outcomes"
-              sizes="100vw"
-              className="lg:hidden"
             />
 
             <div className="space-y-5">

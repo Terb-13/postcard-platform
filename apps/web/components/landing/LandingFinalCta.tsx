@@ -2,7 +2,7 @@ import { AuthButtons } from "./AuthButtons";
 
 export function LandingFinalCta() {
   return (
-    <section className="dark-section section section-rhythm">
+    <section className="dark-section section">
       <div className="container text-center">
         <div className="max-w-2xl mx-auto">
           <p className="landing-eyebrow text-white/50 mb-4">Get started</p>

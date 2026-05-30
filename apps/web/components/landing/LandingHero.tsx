@@ -7,8 +7,8 @@ const HERO_IMAGE = "/images/marketing/hero.jpg";
 
 export function LandingHero() {
   return (
-    <section className="relative overflow-hidden border-b border-[var(--color-border)] bg-[var(--color-surface)]">
-      <div className="container relative z-10 pt-14 pb-14 sm:pt-20 sm:pb-20 lg:pt-24 lg:pb-24">
+    <section className="section relative overflow-hidden border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+      <div className="container relative z-10">
         <div className="lg:grid lg:grid-cols-2 lg:gap-16 xl:gap-24 lg:items-center">
           <div className="max-w-xl lg:max-w-none">
             <LandingSectionHeader

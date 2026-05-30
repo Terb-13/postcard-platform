@@ -3,8 +3,6 @@ import { LandingSectionHeader } from "./LandingSectionHeader";
 
 /** Asset: apps/web/public/images/marketing/solution.jpg (1408×768) */
 const SOLUTION_IMAGE = "/images/marketing/solution.jpg";
-/** Asset: apps/web/public/images/marketing/data.jpg (1280×896) */
-const DATA_IMAGE = "/images/marketing/data.jpg";
 
 const VALUES = [
   {
@@ -23,37 +21,24 @@ const VALUES = [
 
 export function LandingSolution() {
   return (
-    <section id="solution" className="section section-rhythm bg-white border-y border-[var(--color-border)] scroll-mt-24">
+    <section id="solution" className="section bg-white border-y border-[var(--color-border)] scroll-mt-24">
       <div className="container">
         <LandingSectionHeader
           align="center"
           eyebrow="The solution"
           title="Reach the right people. Not everyone."
           description="Postcard Platform combines real Census geo data with a simple, modern workflow — so you mail with precision, not hope."
-          className="mx-auto mb-12 lg:mb-16"
+          className="mx-auto mb-10 lg:mb-12"
         />
 
-        <div className="grid gap-5 lg:grid-cols-12 lg:gap-6 max-w-6xl mx-auto mb-12 lg:mb-16">
-          <div className="lg:col-span-7">
-            {/* Solution: targeted direct mail workflow — primary solution explainer */}
-            <Visual
-              treatment="feature"
-              aspectRatio="11/6"
-              src={SOLUTION_IMAGE}
-              alt="Targeted direct mail powered by Postcard Platform software"
-              sizes="(max-width: 1024px) 100vw, 56vw"
-            />
-          </div>
-          <div className="lg:col-span-5">
-            {/* Solution: Census demographic data overlay — supporting data visual */}
-            <Visual
-              treatment="feature"
-              aspectRatio="10/7"
-              src={DATA_IMAGE}
-              alt="Census demographic data applied to ZIP-level geographic targeting"
-              sizes="(max-width: 1024px) 100vw, 40vw"
-            />
-          </div>
+        <div className="max-w-5xl mx-auto mb-10 lg:mb-12">
+          <Visual
+            treatment="feature"
+            aspectRatio="11/6"
+            src={SOLUTION_IMAGE}
+            alt="Targeted direct mail powered by Postcard Platform software"
+            sizes="(max-width: 1024px) 100vw, 72vw"
+          />
         </div>
 
         <ul className="grid gap-5 sm:grid-cols-3 max-w-6xl mx-auto">

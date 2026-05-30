@@ -5,9 +5,11 @@ import Link from "next/link";
 import { AuthButtons } from "./AuthButtons";
 
 const NAV_LINKS = [
-  { href: "#problem", label: "The Problem" },
-  { href: "#demo", label: "Live Demo" },
-  { href: "#how-it-works", label: "How It Works" },
+  { href: "#problem", label: "Problem" },
+  { href: "#solution", label: "Solution" },
+  { href: "#demo", label: "Demo" },
+  { href: "#how-it-works", label: "How it works" },
+  { href: "#results", label: "Results" },
 ] as const;
 
 export function LandingNav() {

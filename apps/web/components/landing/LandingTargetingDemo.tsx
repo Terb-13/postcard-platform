@@ -34,7 +34,7 @@ export function LandingTargetingDemo() {
         </span>
       </div>
 
-      <div className="relative p-3 sm:p-4 lg:p-5 bg-[var(--color-bg-alt)]/40">
+      <div className="p-3 sm:p-4 lg:p-5 bg-[var(--color-bg-alt)]/40">
         <TargetingMap
           size="6x11"
           selection={selection}
@@ -43,7 +43,6 @@ export function LandingTargetingDemo() {
           readOnlySidebar
           mobileStatsSheet
           initialViewState={DEMO_VIEW}
-          className="w-full"
         />
       </div>
 

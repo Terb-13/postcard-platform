@@ -31,7 +31,7 @@ export function LandingHowItWorks() {
   return (
     <section
       id="how-it-works"
-      className="section section-rhythm bg-[var(--color-surface)] scroll-mt-24"
+      className="section bg-[var(--color-surface)] scroll-mt-24"
     >
       <div className="container">
         <LandingSectionHeader

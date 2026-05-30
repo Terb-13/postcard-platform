@@ -24,7 +24,7 @@ const PAINS = [
 
 export function LandingProblem() {
   return (
-    <section id="problem" className="section section-rhythm bg-[var(--color-bg)] scroll-mt-24">
+    <section id="problem" className="section bg-[var(--color-bg)] scroll-mt-24">
       <div className="container">
         <div className="lg:grid lg:grid-cols-2 lg:gap-16 xl:gap-20 lg:items-center">
           <div className="space-y-8 lg:space-y-10">
