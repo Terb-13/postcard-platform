@@ -1,58 +1,31 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalDependencies": ["**/.env.*local"],
+  "globalDependencies": [".env.local"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**"],
-      "env": ["SKIP_ENV_VALIDATION"]
-    },
-    "@postcard-platform/ai#build": {
-      "outputs": []
-    },
-    "@postcard-platform/api#build": {
-      "outputs": [],
-      "env": ["SKIP_ENV_VALIDATION"]
-    },
-    "@postcard-platform/db#build": {
-      "outputs": [],
-      "env": ["SKIP_ENV_VALIDATION"]
+      "env": [
+        "POSTGRES_URL",
+        "POSTGRES_PRISMA_URL",
+        "POSTGRES_URL_NON_POOLING",
+        "POSTGRES_USER",
+        "POSTGRES_HOST",
+        "POSTGRES_PASSWORD",
+        "POSTGRES_DATABASE",
+        "SUPABASE_ANON_KEY",
+        "SUPABASE_URL",
+        "SUPABASE_SERVICE_ROLE_KEY",
+        "SUPABASE_JWT_SECRET",
+        "SUPABASE_PUBLISHABLE_KEY",
+        "SUPABASE_SECRET_KEY",
+        "CLERK_WEBHOOK_SECRET",
+        "SKIP_ENV_VALIDATION"
+      ]
     },
     "dev": {
       "cache": false,
       "persistent": true
-    },
-    "db:generate": {
-      "cache": false,
-      "dependsOn": ["^db:generate"]
-    },
-    "db:push": {
-      "cache": false
-    },
-    "//#build": {
-      "dependsOn": ["^build"]
     }
-  },
-  "globalEnv": [
-    "DATABASE_URL",
-    "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
-    "CLERK_SECRET_KEY",
-    "STRIPE_SECRET_KEY",
-    "STRIPE_WEBHOOK_SECRET",
-    "RESEND_API_KEY",
-    "UPLOADTHING_TOKEN",
-    "R2_ACCOUNT_ID",
-    "R2_ACCESS_KEY_ID",
-    "R2_SECRET_ACCESS_KEY",
-    "R2_BUCKET",
-    "R2_PUBLIC_URL",
-    "INNGEST_SIGNING_KEY",
-    "XAI_API_KEY",
-    "NEXT_PUBLIC_APP_URL",
-    "SKIP_ENV_VALIDATION",
-    "CENSUS_API_KEY",
-    "MAPBOX_ACCESS_TOKEN",
-    "NEXT_PUBLIC_MAPBOX_TOKEN",
-    "POSTCARD_BASE_RATE_CENTS"
-  ]
+  }
 }
