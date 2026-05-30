@@ -1,8 +1,5 @@
-import { Visual } from "@/components/shared/Visual";
 import { LandingSectionHeader } from "./LandingSectionHeader";
-
-/** Census data visualization — replaces generic office stock photography */
-const DATA_IMAGE = "/images/marketing/data.jpg";
+import { LandingTrustMetrics } from "./LandingTrustMetrics";
 
 const TRUST_SIGNALS = [
   { value: "ACS 5-yr", label: "Census estimates on every ZIP" },
@@ -52,14 +49,7 @@ export function LandingSocialProof() {
         </ul>
 
         <div className="mx-auto mb-10 max-w-4xl lg:mb-12">
-          <Visual
-            treatment="socialProof"
-            aspectRatio="10/7"
-            src={DATA_IMAGE}
-            alt="Census ACS data powering ZIP-level audience targeting and campaign reach estimates"
-            sizes="(max-width: 1024px) 100vw, 56vw"
-            caption="Authoritative Census ACS data — not broker lists or guesswork."
-          />
+          <LandingTrustMetrics />
         </div>
 
         <div className="mx-auto grid max-w-6xl gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
