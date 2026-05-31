@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Postcard Platform — Precision Direct Mail</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600&amp;display=swap');
+        
+        :root {
+            --navy: #0A2540;
+            --cream: #fafaf9;
+            --teal: #0EA5E9;
+        }
+        
+        body {
+            font-family: 'Inter', system_ui, sans-serif;
+        }
+        
+        .heading-font {
+            font-family: 'Space Grotesk', 'Inter', system_ui, sans-serif;
+            font-weight: 600;
+            letter-spacing: -0.025em;
+        }
+
+        .navy {
+            color: #0A2540;
+        }
+        
+        .bg-navy {
+            background-color: #0A2540;
+        }
+
+        .section {
+            padding-top: 5rem;
+            padding-bottom: 5rem;
+        }
+
+        .card {
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), 
+                       box-shadow 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+        
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+
+        .nav-link {
+            transition: color 0.1s ease;
+        }
+        
+        .nav-link:hover {
+            color: #0EA5E9;
+        }
+
+        .teal-accent {
+            color: #0EA5E9;
+        }
+
+        .premium-shadow {
+            box-shadow: 0 10px 15px -3px rgb(15 23 42 / 0.1), 
+                       0 4px 6px -4px rgb(15 23 42 / 0.1);
+        }
+
+        .map-container {
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 15px -3px rgb(15 23 42 / 0.1);
+        }
+
+        .stat-number {
+            font-variant-numeric: tabular-nums;
+        }
+    </style>
+</head>
+<body class="bg-[#fafaf9] text-[#0A2540]">
+    <!-- Navbar -->
+    <nav class="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-8">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex items-center gap-x-3">
+                    <div class="w-9 h-9 bg-[#0A2540] rounded-2xl flex items-center justify-center">
+                        <span class="text-white font-bold text-2xl tracking-tighter">P</span>
+                    </div>
+                    <div>
+                        <span class="font-semibold text-2xl tracking-tight">Postcard</span>
+                    </div>
+                </div>
+
+                <div class="hidden md:flex items-center gap-x-8 text-sm font-medium">
+                    <a href="#products" class="nav-link">Products</a>
+                    <a href="#how-it-works" class="nav-link">How it Works</a>
+                    <a href="#map-tool" class="nav-link">Map Tool</a>
+                    <a href="#resources" class="nav-link">Resources</a>
+                </div>
+
+                <div class="flex items-center gap-x-4">
+                    <button onclick="showLoginModal()"
+                            class="px-5 py-2.5 text-sm font-medium rounded-3xl hover:bg-gray-100 transition-colors">
+                        Log in
+                    </button>
+                    <button onclick="startOrder()"
+                            class="bg-[#0A2540] hover:bg-black transition-all text-white px-6 py-2.5 rounded-3xl text-sm font-semibold flex items-center gap-x-2">
+                        Start an Order
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative bg-[#0A2540] text-white">
+        <div class="max-w-7xl mx-auto px-8 pt-16 pb-20">
+            <div class="grid lg:grid-cols-12 gap-12 items-center">
+                <div class="lg:col-span-7">
+                    <div class="inline-flex items-center gap-x-2 bg-white/10 px-4 py-1.5 rounded-3xl mb-6 text-sm">
+                        <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                        <span class="font-medium">Trusted by 60,000+ marketers</span>
+                    </div>
+                    
+                    <h1 class="text-7xl leading-[1.05] font-semibold tracking-tighter mb-6">
+                        Design, Target,<br>
+                        and Mail Postcard<br>
+                        Campaigns.
+                    </h1>
+                    
+                    <p class="max-w-lg text-xl text-white/75 mb-10">
+                        The modern platform for local businesses to run precise, 
+                        data-driven direct mail campaigns — powered by real Census data.
+                    </p>
+
+                    <div class="flex flex-wrap items-center gap-4">
+                        <button onclick="startOrder()"
+                                class="bg-white text-[#0A2540] hover:bg-gray-100 transition-all px-8 py-4 rounded-3xl font-semibold text-lg flex items-center gap-x-3 shadow-sm">
+                            Start an Order
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7V3" />
+                            </svg>
+                        </button>
+                        
+                        <button onclick="document.getElementById('map-tool').scrollIntoView({ behavior: 'smooth' })"
+                                class="border border-white/40 hover:bg-white/10 transition-colors px-8 py-4 rounded-3xl font-medium text-lg flex items-center gap-x-3">
+                            Launch Map Tool
+                        </button>
+                    </div>
+                    
+                    <div class="mt-8 flex items-center gap-x-6 text-sm">
+                        <div class="flex -space-x-2">
+                            <div class="w-6 h-6 bg-white rounded-full border border-[#0A2540]"></div>
+                            <div class="w-6 h-6 bg-white rounded-full border border-[#0A2540]"></div>
+                            <div class="w-6 h-6 bg-white rounded-full border border-[#0A2540]"></div>
+                        </div>
+                        <span class="text-white/60">Join 12,400 businesses this month</span>
+                    </div>
+                </div>
+
+                <!-- Hero Visual -->
+                <div class="lg:col-span-5">
+                    <div class="relative rounded-3xl overflow-hidden shadow-2xl border border-white/20">
+                        <img src="images/hero.jpg" alt="Precision direct mail targeting" 
+                             class="w-full aspect-[16/10] object-cover">
+                        <div class="absolute inset-0 bg-gradient-to-r from-[#0A2540]/60 to-transparent"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Explore Popular Products -->
+    <section id="products" class="max-w-7xl mx-auto px-8 py-20">
+        <div class="flex justify-between items-end mb-10">
+            <div>
+                <div class="uppercase text-xs tracking-[1.5px] font-semibold text-[#0EA5E9]">Solutions</div>
+                <h2 class="text-5xl font-semibold tracking-tight">Popular Products</h2>
+            </div>
+            <a href="#" class="hidden md:block text-sm font-medium text-[#0EA5E9] hover:underline">Browse all products →</a>
+        </div>
+
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- EDDM Card -->
+            <div class="card bg-white border border-gray-200 rounded-3xl p-6 hover:border-[#0EA5E9]/30">
+                <div class="aspect-[16/10] bg-gray-100 rounded-2xl mb-5 overflow-hidden">
+                    <img src="images/eddm-product.jpg" class="w-full h-full object-cover" alt="Every Door Direct Mail">
+                </div>
+                <div class="font-semibold text-xl mb-2">Every Door Direct Mail</div>
+                <p class="text-gray-600 text-sm leading-relaxed mb-4">Reach every household in a neighborhood without a mailing list.</p>
+                <div class="flex justify-between items-center">
+                    <span class="text-xs font-medium bg-gray-100 px-3 py-1 rounded-2xl">Starting at $0.19/piece</span>
+                    <button onclick="startOrder('eddm')" 
+                            class="text-sm font-semibold text-[#0EA5E9] hover:text-black">Start Order →</button>
+                </div>
+            </div>
+
+            <!-- Targeted Card -->
+            <div class="card bg-white border border-gray-200 rounded-3xl p-6 hover:border-[#0EA5E9]/30">
+                <div class="aspect-[16/10] bg-gray-100 rounded-2xl mb-5 overflow-hidden">
+                    <img src="images/targeted-product.jpg" class="w-full h-full object-cover" alt="Targeted Direct Mail">
+                </div>
+                <div class="font-semibold text-xl mb-2">Targeted Direct Mail</div>
+                <p class="text-gray-600 text-sm leading-relaxed mb-4">Reach specific households using real Census demographics.</p>
+                <div class="flex justify-between items-center">
+                    <span class="text-xs font-medium bg-gray-100 px-3 py-1 rounded-2xl">Starting at $0.28/piece</span>
+                    <button onclick="startOrder('targeted')" 
+                            class="text-sm font-semibold text-[#0EA5E9] hover:text-black">Start Order →</button>
+                </div>
+            </div>
+
+            <!-- Saturation Card -->
+            <div class="card bg-white border border-gray-200 rounded-3xl p-6 hover:border-[#0EA5E9]/30">
+                <div class="aspect-[16/10] bg-gray-100 rounded-2xl mb-5 overflow-hidden">
+                    <img src="images/saturation-product.jpg" class="w-full h-full object-cover" alt="Saturation Mail">
+                </div>
+                <div class="font-semibold text-xl mb-2">Saturation / Saturation Mail</div>
+                <p class="text-gray-600 text-sm leading-relaxed mb-4">Maximum reach within a defined geographic area.</p>
+                <div class="flex justify-between items-center">
+                    <span class="text-xs font-medium bg-gray-100 px-3 py-1 rounded-2xl">Starting at $0.17/piece</span>
+                    <button onclick="startOrder('saturation')" 
+                            class="text-sm font-semibold text-[#0EA5E9] hover:text-black">Start Order →</button>
+                </div>
+            </div>
+
+            <!-- New Mover Card -->
+            <div class="card bg-white border border-gray-200 rounded-3xl p-6 hover:border-[#0EA5E9]/30">
+                <div class="aspect-[16/10] bg-gray-100 rounded-2xl mb-5 overflow-hidden">
+                    <img src="images/newmover-product.jpg" class="w-full h-full object-cover" alt="New Mover">
+                </div>
+                <div class="font-semibold text-xl mb-2">New Mover Campaigns</div>
+                <p class="text-gray-600 text-sm leading-relaxed mb-4">Target new residents as they move into your area.</p>
+                <div class="flex justify-between items-center">
+                    <span class="text-xs font-medium bg-gray-100 px-3 py-1 rounded-2xl">Starting at $0.32/piece</span>
+                    <button onclick="startOrder('newmover')" 
+                            class="text-sm font-semibold text-[#0EA5E9] hover:text-black">Start Order →</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Value Proposition -->
+    <section class="bg-white border-t border-b border-gray-200 py-20">
+        <div class="max-w-7xl mx-auto px-8">
+            <div class="text-center mb-12">
+                <div class="text-[#0EA5E9] font-semibold tracking-widest text-xs mb-3">WHY POSTCARD</div>
+                <h3 class="text-4xl font-semibold tracking-tight">Built for results, not guesswork.</h3>
+            </div>
+            
+            <div class="grid md:grid-cols-4 gap-8">
+                <div>
+                    <div class="text-[#0EA5E9] text-3xl mb-3">01</div>
+                    <div class="font-semibold text-xl mb-2">Real Census Data</div>
+                    <p class="text-gray-600">Target by income, age, home ownership, and recent movers with actual U.S. Census data.</p>
+                </div>
+                <div>
+                    <div class="text-[#0EA5E9] text-3xl mb-3">02</div>
+                    <div class="font-semibold text-xl mb-2">Live Map Targeting</div>
+                    <p class="text-gray-600">See exact reach and cost update in real time as you draw on the map.</p>
+                </div>
+                <div>
+                    <div class="text-[#0EA5E9] text-3xl mb-3">03</div>
+                    <div class="font-semibold text-xl mb-2">Full Transparency</div>
+                    <p class="text-gray-600">Track every piece from design approval through delivery with photos.</p>
+                </div>
+                <div>
+                    <div class="text-[#0EA5E9] text-3xl mb-3">04</div>
+                    <div class="font-semibold text-xl mb-2">Fast &amp; Affordable</div>
+                    <p class="text-gray-600">Get campaigns in the mail in as little as 5 business days.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section id="how-it-works" class="max-w-7xl mx-auto px-8 py-20">
+        <div class="text-center mb-12">
+            <div class="text-[#0EA5E9] text-xs tracking-widest font-semibold mb-3">4 SIMPLE STEPS</div>
+            <h3 class="text-5xl font-semibold tracking-tighter">How it works</h3>
+        </div>
+
+        <div class="grid md:grid-cols-4 gap-6">
+            <div class="text-center">
+                <div class="w-14 h-14 bg-[#0A2540] text-white rounded-3xl flex items-center justify-center mx-auto mb-5 text-2xl font-semibold">1</div>
+                <div class="font-semibold mb-2">Design or Choose</div>
+                <p class="text-sm text-gray-600">Upload your design or pick from hundreds of professional templates.</p>
+            </div>
+            <div class="text-center">
+                <div class="w-14 h-14 bg-[#0A2540] text-white rounded-3xl flex items-center justify-center mx-auto mb-5 text-2xl font-semibold">2</div>
+                <div class="font-semibold mb-2">Target on the Map</div>
+                <p class="text-sm text-gray-600">Draw on the map or filter by real Census demographics.</p>
+            </div>
+            <div class="text-center">
+                <div class="w-14 h-14 bg-[#0A2540] text-white rounded-3xl flex items-center justify-center mx-auto mb-5 text-2xl font-semibold">3</div>
+                <div class="font-semibold mb-2">Review &amp; Pay</div>
+                <p class="text-sm text-gray-600">See exact pricing and approve your campaign.</p>
+            </div>
+            <div class="text-center">
+                <div class="w-14 h-14 bg-[#0A2540] text-white rounded-3xl flex items-center justify-center mx-auto mb-5 text-2xl font-semibold">4</div>
+                <div class="font-semibold mb-2">Track Results</div>
+                <p class="text-sm text-gray-600">Get notified when your mail hits mailboxes with proof of delivery.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Social Proof -->
+    <section class="bg-[#0A2540] text-white py-16">
+        <div class="max-w-5xl mx-auto px-8 text-center">
+            <div class="text-white/70 text-sm tracking-widest mb-6">TRUSTED BY LOCAL BUSINESSES ACROSS AMERICA</div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-x-8 gap-y-8 items-center opacity-90">
+                <div class="font-semibold text-2xl">Bloom &amp; Co</div>
+                <div class="font-semibold text-2xl">Riverside Cafe</div>
+                <div class="font-semibold text-2xl">Summit Physical Therapy</div>
+                <div class="font-semibold text-2xl">The Local Market</div>
+                <div class="font-semibold text-2xl">Driftwood Coffee</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Final CTA -->
+    <section class="max-w-4xl mx-auto px-8 py-20 text-center">
+        <h2 class="text-6xl font-semibold tracking-tighter mb-6">Ready to run smarter direct mail?</h2>
+        <p class="text-xl text-gray-600 mb-8 max-w-md mx-auto">Join thousands of local businesses using data to grow.</p>
+        
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <button onclick="startOrder()" 
+                    class="bg-[#0A2540] hover:bg-black transition-colors text-white px-10 py-4 rounded-3xl font-semibold text-lg">
+                Start Your First Campaign
+            </button>
+            <button onclick="document.getElementById('map-tool').scrollIntoView({ behavior: 'smooth' })"
+                    class="border-2 border-[#0A2540] hover:bg-gray-50 px-10 py-4 rounded-3xl font-semibold text-lg">
+                Try the Map Tool
+            </button>
+        </div>
+    </section>
+
+    <!-- ==================== MAP TOOL SECTION (Core Interactive) ==================== -->
+    <section id="map-tool" class="bg-white border-t pt-16 pb-20">
+        <div class="max-w-7xl mx-auto px-8">
+            <div class="flex justify-between items-end mb-8">
+                <div>
+                    <div class="text-[#0EA5E9] text-xs font-semibold tracking-[1.5px]">CORE TECHNOLOGY</div>
+                    <h3 class="text-5xl font-semibold tracking-tighter">Precision Targeting Map</h3>
+                </div>
+                <div class="hidden md:block text-right">
+                    <div class="text-sm text-gray-500">Real Census data • Live pricing</div>
+                </div>
+            </div>
+
+            <!-- Interactive Map Demo -->
+            <div class="grid lg:grid-cols-12 gap-6">
+                <!-- Sidebar Controls -->
+                <div class="lg:col-span-3 bg-[#fafaf9] rounded-3xl p-6">
+                    <div class="mb-6">
+                        <div class="text-sm font-semibold mb-2">Target Area</div>
+                        <input type="text" value="Downtown + 3 ZIP codes" 
+                               class="w-full bg-white border border-gray-300 rounded-2xl px-4 py-3 text-sm">
+                    </div>
+
+                    <div class="mb-6">
+                        <div class="text-sm font-semibold mb-2">Demographics</div>
+                        <div class="space-y-2 text-sm">
+                            <label class="flex items-center gap-x-2">
+                                <input type="checkbox" checked class="accent-[#0EA5E9]"> Household Income $75k+
+                            </label>
+                            <label class="flex items-center gap-x-2">
+                                <input type="checkbox" checked class="accent-[#0EA5E9]"> Homeowners
+                            </label>
+                            <label class="flex items-center gap-x-2">
+                                <input type="checkbox" class="accent-[#0EA5E9]"> Recent Movers (last 12 mo)
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-sm mb-2">
+                            <span class="font-medium">Radius</span>
+                            <span class="font-semibold">2.5 mi</span>
+                        </div>
+                        <input type="range" min="0.5" max="5" step="0.5" value="2.5" 
+                               class="w-full accent-[#0EA5E9]">
+                    </div>
+                </div>
+
+                <!-- Map -->
+                <div class="lg:col-span-6">
+                    <div id="map" class="map-container w-full h-[420px] bg-gray-100 rounded-3xl"></div>
+                </div>
+
+                <!-- Live Results -->
+                <div class="lg:col-span-3 bg-[#fafaf9] rounded-3xl p-6 flex flex-col">
+                    <div>
+                        <div class="text-sm font-semibold mb-1">Selected Reach</div>
+                        <div class="text-6xl font-semibold tabular-nums tracking-tighter" id="reach">14,820</div>
+                        <div class="text-sm text-gray-500">households</div>
+                    </div>
+
+                    <div class="mt-6 pt-6 border-t">
+                        <div class="text-sm font-semibold mb-3">Estimated Cost</div>
+                        <div class="flex justify-between items-baseline mb-1">
+                            <span class="text-4xl font-semibold tabular-nums" id="cost">$4,150</span>
+                            <span class="text-xs text-gray-500">($0.28 per piece)</span>
+                        </div>
+                        <div class="text-xs text-gray-500">Includes printing + postage</div>
+                    </div>
+
+                    <div class="mt-auto pt-8">
+                        <button onclick="continueToDesign()"
+                                class="w-full bg-[#0EA5E9] hover:bg-[#0284C8] transition-colors text-white font-semibold py-4 rounded-3xl text-lg">
+                            Continue to Design
+                        </button>
+                        <div class="text-[10px] text-center text-gray-400 mt-2">Save targeting for later</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-[#0A2540] text-white/70 py-12 text-sm">
+        <div class="max-w-7xl mx-auto px-8 grid grid-cols-2 md:grid-cols-5 gap-y-10">
+            <div>
+                <div class="font-semibold text-white mb-4">Products</div>
+                <div class="space-y-1.5">
+                    <div>Every Door Direct Mail</div>
+                    <div>Targeted Direct Mail</div>
+                    <div>Saturation Mail</div>
+                    <div>New Mover Campaigns</div>
+                </div>
+            </div>
+            <div>
+                <div class="font-semibold text-white mb-4">Platform</div>
+                <div class="space-y-1.5">
+                    <div>Map Targeting Tool</div>
+                    <div>Templates</div>
+                    <div>Design Services</div>
+                    <div>API &amp; Integrations</div>
+                </div>
+            </div>
+            <div>
+                <div class="font-semibold text-white mb-4">Resources</div>
+                <div class="space-y-1.5">
+                    <div>Blog</div>
+                    <div>Case Studies</div>
+                    <div>USPS Guides</div>
+                    <div>Webinars</div>
+                </div>
+            </div>
+            <div class="col-span-2 md:col-span-1">
+                <div class="font-semibold text-white mb-4">Company</div>
+                <div>About Us</div>
+                <div>USPS Partnership</div>
+                <div>Careers</div>
+                <div class="mt-4 text-xs">© 2026 Postcard Platform</div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Simple Login Modal -->
+    <div id="login-modal" onclick="hideLoginModal()" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
+        <div onclick="event.stopImmediatePropagation()" class="bg-white rounded-3xl p-8 w-full max-w-sm">
+            <h3 class="font-semibold text-2xl mb-6">Welcome back</h3>
+            
+            <div class="space-y-4">
+                <input type="email" placeholder="you@business.com" 
+                       class="w-full border border-gray-300 rounded-2xl px-4 py-3">
+                <input type="password" placeholder="Password" 
+                       class="w-full border border-gray-300 rounded-2xl px-4 py-3">
+                
+                <button onclick="login()" 
+                        class="w-full bg-[#0A2540] text-white font-semibold py-3.5 rounded-3xl">Log in</button>
+                
+                <div class="text-center text-sm">
+                    Don't have an account? <span class="text-[#0EA5E9] cursor-pointer" onclick="hideLoginModal(); startOrder()">Get started</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tailwind script
+        function initializeTailwind() {
+            // Already handled by CDN
+        }
+
+        // Fake interactive map using Leaflet
+        let map;
+        let selectedAreas = 0;
+
+        function initMap() {
+            const mapContainer = document.getElementById('map');
+            if (!mapContainer) return;
+
+            map = L.map('map').setView([39.8283, -98.5795], 4);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Add some fake interactive areas
+            const areas = [
+                { lat: 40.7128, lng: -74.0060, name: "New York Metro", reach: 4820 },
+                { lat: 34.0522, lng: -118.2437, name: "Los Angeles", reach: 3120 },
+                { lat: 41.8781, lng: -87.6298, name: "Chicago", reach: 2890 },
+                { lat: 29.7604, lng: -95.3698, name: "Houston", reach: 2140 },
+            ];
+
+            areas.forEach(area => {
+                const circle = L.circle([area.lat, area.lng], {
+                    color: '#0EA5E9',
+                    fillColor: '#0EA5E9',
+                    fillOpacity: 0.15,
+                    radius: 45000
+                }).addTo(map);
+
+                circle.on('click', () => {
+                    selectedAreas = (selectedAreas + 1) % 3 + 1;
+                    updateLiveStats(selectedAreas);
+                    
+                    circle.setStyle({
+                        fillOpacity: selectedAreas > 0 ? 0.4 : 0.15,
+                        color: selectedAreas > 0 ? '#0A2540' : '#0EA5E9'
+                    });
+                });
+            });
+
+            // Initial stats
+            updateLiveStats(2);
+        }
+
+        function updateLiveStats(areas) {
+            const reachEl = document.getElementById('reach');
+            const costEl = document.getElementById('cost');
+            
+            if (!reachEl || !costEl) return;
+
+            const baseReach = 7420;
+            const totalReach = baseReach + (areas * 3200);
+            const cost = Math.round(totalReach * 0.28);
+
+            reachEl.textContent = totalReach.toLocaleString();
+            costEl.textContent = '$' + cost.toLocaleString();
+        }
+
+        function startOrder(type = '') {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black/70 flex items-center justify-center z-[999]';
+            modal.innerHTML = `
+                <div class="bg-white rounded-3xl max-w-md w-full mx-4 p-8">
+                    <h3 class="text-2xl font-semibold mb-2">Start a New Campaign</h3>
+                    <p class="text-gray-600 mb-6">Let's get your first targeted campaign in the mail.</p>
+                    
+                    <div class="space-y-3">
+                        <button onclick="simulateOrderFlow(this)" class="w-full text-left p-4 border hover:border-[#0EA5E9] rounded-2xl flex items-center justify-between group">
+                            <div>
+                                <div class="font-semibold">Targeted Direct Mail</div>
+                                <div class="text-sm text-gray-500">Precision using Census data</div>
+                            </div>
+                            <span class="text-[#0EA5E9] group-hover:translate-x-1 transition">→</span>
+                        </button>
+                        
+                        <button onclick="simulateOrderFlow(this)" class="w-full text-left p-4 border hover:border-[#0EA5E9] rounded-2xl flex items-center justify-between group">
+                            <div>
+                                <div class="font-semibold">Every Door Direct Mail</div>
+                                <div class="text-sm text-gray-500">Reach an entire neighborhood</div>
+                            </div>
+                            <span class="text-[#0EA5E9] group-hover:translate-x-1 transition">→</span>
+                        </button>
+                    </div>
+                    
+                    <button onclick="this.closest('.fixed').remove()" 
+                            class="mt-6 text-sm text-gray-500 hover:text-gray-700">Cancel</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function simulateOrderFlow(el) {
+            el.closest('.fixed').remove();
+            alert("Great! This would normally open the full campaign wizard with the interactive map pre-loaded.\n\nIn this prototype, the Map Tool section above demonstrates the core experience.");
+            document.getElementById('map-tool').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function continueToDesign() {
+            alert("This would take you to the Design/Upload step with your current map selection saved.\n\nIn a real flow, you'd choose or upload artwork next.");
+        }
+
+        function showLoginModal() {
+            document.getElementById('login-modal').classList.remove('hidden');
+            document.getElementById('login-modal').classList.add('flex');
+        }
+
+        function hideLoginModal() {
+            const modal = document.getElementById('login-modal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+
+        function login() {
+            hideLoginModal();
+            alert("Logged in! (Demo)\n\nYou would now see your Dashboard with My Campaigns.");
+        }
+
+        // Initialize everything
+        function init() {
+            initializeTailwind();
+            
+            // Initialize the interactive map
+            setTimeout(() => {
+                initMap();
+            }, 800);
+
+            // Keyboard support for demo
+            document.addEventListener('keydown', function(e) {
+                if (e.key === "/" && document.activeElement.tagName === "BODY") {
+                    e.preventDefault();
+                    document.getElementById('map-tool').scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+
+            console.log('%c[Postcard Redesign] Buyer-as-hero prototype initialized. Ready for feedback.', 'color:#64748b');
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>

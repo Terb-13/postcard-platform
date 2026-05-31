@@ -44,9 +44,10 @@ async function geocodeZipClient(zcta: string): Promise<SelectedZcta | null> {
 type Props = {
   onSelect: (zcta: SelectedZcta) => void;
   className?: string;
+  placeholder?: string;
 };
 
-export function ZipSearch({ onSelect, className }: Props) {
+export function ZipSearch({ onSelect, className, placeholder = "Search by city or ZIP…" }: Props) {
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
   const [open, setOpen] = useState(false);
@@ -150,7 +151,7 @@ export function ZipSearch({ onSelect, className }: Props) {
         <input
           type="search"
           inputMode="numeric"
-          placeholder="Search ZIP or press Enter…"
+          placeholder={placeholder}
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);

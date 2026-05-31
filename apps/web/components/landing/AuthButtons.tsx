@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 import {
   SignInButton,
@@ -11,12 +12,22 @@ import {
 
 const hasClerk = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
 
-type Variant = "nav" | "nav-mobile" | "hero" | "final" | "demo";
+type Variant =
+  | "nav"
+  | "nav-mobile"
+  | "hero"
+  | "final"
+  | "demo"
+  | "marketing-nav"
+  | "marketing-nav-mobile"
+  | "marketing-final";
 
 type AuthButtonsProps = {
   variant?: Variant;
   /** Called after a navigation/auth action (e.g. close mobile drawer) */
   onAction?: () => void;
+  /** Optional icon after hero CTA label (e.g. arrow) */
+  ctaIcon?: ReactNode;
 };
 
 function FallbackButton({
@@ -54,8 +65,46 @@ function StartTargetingLink({ className }: { className?: string }) {
   );
 }
 
-export function AuthButtons({ variant = "nav", onAction }: AuthButtonsProps) {
+const heroCtaClass = "btn-hero-primary auth-button w-full sm:w-auto justify-center";
+const MARKETING_ORDER_CTA = "Start an Order";
+
+const marketingNavPrimaryClass =
+  "inline-flex min-h-[44px] items-center justify-center rounded-3xl bg-[#0A2540] px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-black";
+
+export function AuthButtons({ variant = "nav", onAction, ctaIcon }: AuthButtonsProps) {
   if (!hasClerk) {
+    if (variant === "marketing-nav" || variant === "marketing-nav-mobile") {
+      const stack = variant === "marketing-nav-mobile";
+      return (
+        <div className={stack ? "flex flex-col gap-3 w-full" : "flex items-center gap-4"}>
+          <Link
+            href="/sign-in"
+            className={
+              stack
+                ? "inline-flex min-h-[44px] w-full items-center justify-center rounded-3xl px-5 py-2.5 text-sm font-medium hover:bg-gray-100"
+                : "rounded-3xl px-5 py-2.5 text-sm font-medium hover:bg-gray-100"
+            }
+            onClick={onAction}
+          >
+            Log in
+          </Link>
+          <Link
+            href="/sign-up"
+            className={stack ? `${marketingNavPrimaryClass} w-full` : marketingNavPrimaryClass}
+            onClick={onAction}
+          >
+            {MARKETING_ORDER_CTA}
+          </Link>
+        </div>
+      );
+    }
+    if (variant === "marketing-final") {
+      return (
+        <Link href="/sign-up" className={marketingNavPrimaryClass + " px-10 py-4 text-lg"}>
+          {MARKETING_ORDER_CTA}
+        </Link>
+      );
+    }
     if (variant === "nav" || variant === "nav-mobile") {
       const stack = variant === "nav-mobile";
       return (
@@ -87,6 +136,14 @@ export function AuthButtons({ variant = "nav", onAction }: AuthButtonsProps) {
         </Link>
       );
     }
+    if (variant === "hero") {
+      return (
+        <Link href="/sign-up" className={heroCtaClass}>
+          {MARKETING_ORDER_CTA}
+          {ctaIcon}
+        </Link>
+      );
+    }
     const label =
       variant === "final" ? "Start your first campaign free" : "Start Targeting";
     return (
@@ -98,6 +155,80 @@ export function AuthButtons({ variant = "nav", onAction }: AuthButtonsProps) {
             : "btn-primary btn-cta auth-button w-full sm:w-auto justify-center text-[15px] opacity-80 cursor-not-allowed"
         }
       />
+    );
+  }
+
+  if (variant === "marketing-nav" || variant === "marketing-nav-mobile") {
+    const stack = variant === "marketing-nav-mobile";
+    return (
+      <div className={stack ? "flex flex-col gap-3 w-full" : "flex items-center gap-4"}>
+        <SignedOut>
+          <SignInButton mode="modal" fallbackRedirectUrl="/campaigns">
+            <button
+              type="button"
+              className={
+                stack
+                  ? "inline-flex min-h-[44px] w-full items-center justify-center rounded-3xl px-5 py-2.5 text-sm font-medium hover:bg-gray-100"
+                  : "rounded-3xl px-5 py-2.5 text-sm font-medium hover:bg-gray-100"
+              }
+              onClick={onAction}
+            >
+              Log in
+            </button>
+          </SignInButton>
+          <SignUpButton mode="modal" fallbackRedirectUrl="/campaigns/new">
+            <button
+              type="button"
+              className={stack ? `${marketingNavPrimaryClass} w-full` : marketingNavPrimaryClass}
+              onClick={onAction}
+            >
+              {MARKETING_ORDER_CTA}
+            </button>
+          </SignUpButton>
+        </SignedOut>
+        <SignedIn>
+          <Link
+            href="/campaigns"
+            className={
+              stack
+                ? "inline-flex min-h-[44px] w-full items-center justify-center rounded-3xl px-5 py-2.5 text-sm font-medium hover:bg-gray-100"
+                : "rounded-3xl px-5 py-2.5 text-sm font-medium hover:bg-gray-100"
+            }
+            onClick={onAction}
+          >
+            My Campaigns
+          </Link>
+          <Link
+            href="/campaigns/new"
+            className={stack ? `${marketingNavPrimaryClass} w-full` : marketingNavPrimaryClass}
+            onClick={onAction}
+          >
+            {MARKETING_ORDER_CTA}
+          </Link>
+        </SignedIn>
+      </div>
+    );
+  }
+
+  if (variant === "marketing-final") {
+    return (
+      <>
+        <SignedOut>
+          <SignUpButton mode="modal" fallbackRedirectUrl="/campaigns/new">
+            <button
+              type="button"
+              className={`${marketingNavPrimaryClass} px-10 py-4 text-lg`}
+            >
+              {MARKETING_ORDER_CTA}
+            </button>
+          </SignUpButton>
+        </SignedOut>
+        <SignedIn>
+          <Link href="/campaigns/new" className={`${marketingNavPrimaryClass} px-10 py-4 text-lg`}>
+            {MARKETING_ORDER_CTA}
+          </Link>
+        </SignedIn>
+      </>
     );
   }
 
@@ -203,22 +334,21 @@ export function AuthButtons({ variant = "nav", onAction }: AuthButtonsProps) {
     );
   }
 
-  // Hero variant
+  // Hero variant — commercial landing CTA
   return (
     <>
       <SignedOut>
         <SignUpButton mode="modal" fallbackRedirectUrl="/campaigns/new">
-          <button className="btn-primary btn-cta auth-button w-full sm:w-auto justify-center text-[15px]">
-            Start Targeting
+          <button type="button" className={heroCtaClass}>
+            {MARKETING_ORDER_CTA}
+            {ctaIcon}
           </button>
         </SignUpButton>
       </SignedOut>
       <SignedIn>
-        <Link
-          href="/campaigns/new"
-          className="btn-primary btn-cta auth-button w-full sm:w-auto justify-center text-[15px]"
-        >
-          Start Targeting
+        <Link href="/campaigns/new" className={heroCtaClass}>
+          {MARKETING_ORDER_CTA}
+          {ctaIcon}
         </Link>
       </SignedIn>
     </>

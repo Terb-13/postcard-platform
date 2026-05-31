@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/sheet";
 import { trpc } from "@/lib/trpc/client";
 import { cn, formatCurrency, formatNumber, formatTrpcError } from "@/lib/utils";
+import { MarketingMapControlsPanel } from "@/components/marketing/MarketingMapControlsPanel";
+import { MarketingMapResultsPanel } from "@/components/marketing/MarketingMapResultsPanel";
 import { ZipSearch } from "./ZipSearch";
 import { StatsSidebar } from "./StatsSidebar";
 import { DrawControl, useMapDrawInteractions } from "./MapDrawControl";
@@ -64,6 +66,17 @@ type Props = {
   hideDrawControl?: boolean;
   /** Collapsible bottom sheet for stats on mobile (wizard mode) */
   mobileStatsSheet?: boolean;
+  /** 3-column marketing layout (redesign/map-tool.html) — requires demoMode */
+  marketingLayout?: boolean;
+  /** Live estimate for marketing section header (total cost) */
+  onMarketingEstimate?: (payload: {
+    estimate: {
+      reach?: number;
+      pricing?: { totalPriceCents?: number; unitPriceCents?: number };
+    } | null;
+    isLoading: boolean;
+    isUpdating: boolean;
+  }) => void;
   /** Sticky footer inside sidebar (static node or render from live estimate) */
   sidebarFooter?:
     | ReactNode
@@ -87,8 +100,12 @@ export function TargetingMap({
   initialViewState,
   hideDrawControl = false,
   mobileStatsSheet = false,
+  marketingLayout = false,
+  onMarketingEstimate,
   sidebarFooter,
 }: Props) {
+  const useMarketingLayout = demoMode && marketingLayout;
+  const useMobileStatsSheet = mobileStatsSheet || useMarketingLayout;
   const mapRef = useRef<MapRef>(null);
   const [viewState, setViewState] = useState<ViewState>(initialViewState ?? DEFAULT_CENTER);
   const [drawMode, setDrawMode] = useState(false);
@@ -194,6 +211,21 @@ export function TargetingMap({
     (estimateQuery.isFetching && debouncedZctas.length > 0 && !!estimateQuery.data);
   const isInitialLoading =
     estimateQuery.isFetching && debouncedZctas.length > 0 && !estimateQuery.data;
+
+  useEffect(() => {
+    if (!useMarketingLayout || !onMarketingEstimate) return;
+    onMarketingEstimate({
+      estimate: estimateQuery.data ?? null,
+      isLoading: isInitialLoading,
+      isUpdating,
+    });
+  }, [
+    useMarketingLayout,
+    onMarketingEstimate,
+    estimateQuery.data,
+    isInitialLoading,
+    isUpdating,
+  ]);
 
   const selectedBoundaries = trpc.targeting.getZctaBoundaries.useQuery(
     { zctas: zctaCodes },
@@ -466,6 +498,129 @@ export function TargetingMap({
     );
   }
 
+  if (useMarketingLayout) {
+    const estimate = estimateQuery.data ?? null;
+    const resultsPanel = (
+      <MarketingMapResultsPanel
+        zctas={selection.zctas}
+        estimate={estimate}
+        isLoading={isInitialLoading}
+        isUpdating={isUpdating}
+      />
+    );
+
+    return (
+      <div className={cn("marketing-map-grid grid grid-cols-1 gap-6 lg:grid-cols-12", className)}>
+        <MarketingMapControlsPanel
+          zctas={selection.zctas}
+          onSelectZip={addZcta}
+          filters={selection.filters}
+          onFiltersChange={(filters) => onSelectionChange({ ...selection, filters })}
+        />
+
+        <div className="order-2 flex flex-col lg:col-span-6">
+          {mapNotice && (
+            <p
+              role="status"
+              className="mb-3 rounded-2xl border border-amber-200/80 bg-amber-50 px-4 py-2.5 text-xs font-medium text-amber-900"
+            >
+              {mapNotice}
+            </p>
+          )}
+
+          <div className="marketing-map-canvas relative h-[320px] overflow-hidden rounded-3xl border border-gray-200 bg-gray-100 shadow-[0_10px_15px_-3px_rgb(15_23_42_/_0.1)] sm:h-[400px] lg:h-[520px]">
+            <MapGL
+              ref={mapRef}
+              {...viewState}
+              onMove={(evt) => setViewState(evt.viewState)}
+              onMoveEnd={updateViewportBbox}
+              mapboxAccessToken={MAPBOX_TOKEN}
+              mapStyle={MAP_STYLE}
+              interactiveLayerIds={drawMode ? [] : ["zcta-fill"]}
+              onClick={onMapClick}
+              cursor={drawMode ? "crosshair" : "pointer"}
+              style={{ width: "100%", height: "100%" }}
+            >
+              <NavigationControl position="top-right" visualizePitch={false} showCompass={false} />
+              {!hideDrawControl && (
+                <DrawControl drawMode={drawMode} onPolygonComplete={handlePolygonComplete} />
+              )}
+              {(mapGeoJson.features.length > 0 || selectedBoundaries.isLoading) && (
+                <Source id="zcta-areas" type="geojson" data={mapGeoJson}>
+                  <Layer
+                    id="zcta-fill"
+                    type="fill"
+                    paint={{
+                      "fill-color": ["get", "fillColor"],
+                      "fill-opacity": ["case", ["get", "selected"], 0.72, 0.35],
+                    }}
+                  />
+                  <Layer
+                    id="zcta-outline"
+                    type="line"
+                    paint={{
+                      "line-color": ["case", ["get", "selected"], "#0A2540", "#94a3b8"],
+                      "line-width": ["case", ["get", "selected"], 2, 0.75],
+                      "line-opacity": ["case", ["get", "selected"], 1, 0.6],
+                    }}
+                  />
+                </Source>
+              )}
+            </MapGL>
+
+            {selectedBoundaries.isLoading && zctaCodes.length > 0 && (
+              <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+                <span className="rounded-full bg-white/90 px-4 py-2 text-xs font-medium text-gray-600 shadow-sm">
+                  Loading ZIP boundaries…
+                </span>
+              </div>
+            )}
+
+            <div className="pointer-events-none absolute bottom-4 left-4 z-10 rounded-2xl bg-white/95 px-3 py-2 text-xs font-medium text-gray-600 shadow-sm">
+              Click ZIP boundaries to select
+            </div>
+          </div>
+        </div>
+
+        <div className="order-3 hidden lg:col-span-3 lg:flex lg:flex-col">{resultsPanel}</div>
+
+        {useMobileStatsSheet && (
+          <>
+            {!mobileStatsOpen && (
+              <MobileStatsFab
+                estimate={estimate}
+                selectedCount={selection.zctas.length}
+                isLoading={isInitialLoading}
+                isUpdating={isUpdating}
+                onOpen={() => setMobileStatsOpen(true)}
+                embedded={false}
+                label="View live results"
+              />
+            )}
+            <Sheet open={mobileStatsOpen} onOpenChange={setMobileStatsOpen}>
+              <SheetContent
+                side="bottom"
+                className="flex max-h-[88vh] flex-col gap-0 overflow-hidden rounded-t-3xl border-gray-200 bg-[#fafaf9] p-0 lg:hidden"
+              >
+                <SheetHeader className="shrink-0 border-b border-gray-200 bg-white px-5 pb-4 pt-2 text-left">
+                  <SheetTitle className="text-lg font-semibold text-[#0A2540]">
+                    Live results
+                  </SheetTitle>
+                  <SheetDescription className="text-gray-600">
+                    Reach and cost update as you select ZIPs
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="overflow-y-auto p-4 [&_aside]:min-h-0 [&_aside]:shadow-none">
+                  {resultsPanel}
+                </div>
+              </SheetContent>
+            </Sheet>
+          </>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(
@@ -503,7 +658,7 @@ export function TargetingMap({
           demoMode
             ? "targeting-workspace-main min-h-[320px] lg:min-h-[520px]"
             : "min-h-[320px] sm:min-h-[400px] md:min-h-[540px]",
-          mobileStatsSheet && (demoMode ? "pb-14 lg:pb-0" : "pb-2 md:pb-0")
+          useMobileStatsSheet && (demoMode ? "pb-14 lg:pb-0" : "pb-2 md:pb-0")
         )}
       >
         {!demoMode && (
@@ -677,7 +832,7 @@ export function TargetingMap({
       )}
 
       {/* Mobile: FAB + bottom sheet (wizard + demo) */}
-      {mobileStatsSheet && (
+      {useMobileStatsSheet && (
         <>
           {!mobileStatsOpen && (
             <MobileStatsFab
@@ -716,7 +871,7 @@ export function TargetingMap({
         </>
       )}
 
-      {!mobileStatsSheet && (
+      {!useMobileStatsSheet && (
         <StatsSidebar className="flex shrink-0 md:w-80 md:hidden" {...sidebarProps} />
       )}
     </div>
@@ -730,6 +885,7 @@ function MobileStatsFab({
   isUpdating,
   onOpen,
   embedded = false,
+  label = "View targeting stats",
 }: {
   estimate?: {
     reach?: number;
@@ -741,6 +897,7 @@ function MobileStatsFab({
   onOpen: () => void;
   /** Position inside demo container instead of fixed to viewport */
   embedded?: boolean;
+  label?: string;
 }) {
   const hasSelection = selectedCount > 0;
   const summary =
@@ -758,13 +915,11 @@ function MobileStatsFab({
       <button
         type="button"
         onClick={onOpen}
-        className="targeting-stats-fab pointer-events-auto inline-flex max-w-[min(100vw-2rem,20rem)] items-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 text-left shadow-[var(--shadow-md)] transition-transform active:scale-[0.98]"
-        aria-label="View targeting stats"
+        className="targeting-stats-fab pointer-events-auto inline-flex max-w-[min(100vw-2rem,20rem)] items-center rounded-full border border-gray-200 bg-white px-4 py-2.5 text-left shadow-lg transition-transform active:scale-[0.98]"
+        aria-label={label}
       >
         <span className="min-w-0 flex-1">
-          <span className="block text-xs font-semibold text-[var(--color-text)]">
-            View targeting stats
-          </span>
+          <span className="block text-xs font-semibold text-[#0A2540]">{label}</span>
           {hasSelection ? (
             <span className="mt-0.5 block truncate text-[11px] text-[var(--color-text-muted)]">
               {isLoading && !estimate ? (

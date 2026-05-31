@@ -30,10 +30,14 @@
   --color-text-muted: #64748b;      /* Slate-500 */
   --color-text-inverse: #fafaf9;
 
-  --color-accent: #0A66C2;          /* Trust blue — refined */
+  --color-accent: #0A66C2;          /* Trust blue — logged-in app */
   --color-accent-hover: #084d96;
   --color-accent-light: #dbeafe;
   --color-accent-subtle: #f0f7ff;
+
+  /* Marketing / landing — prototype teal */
+  --color-landing-accent: #0ea5e9;
+  --color-landing-accent-hover: #0284c7;
 
   --color-success: #15803d;
   --color-success-light: #f0fdf4;
@@ -171,7 +175,11 @@ body {
     font-weight: 600;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: var(--color-accent);
+    color: var(--color-landing-accent);
+  }
+
+  .landing-accent {
+    color: var(--color-landing-accent);
   }
 
   .landing-section-title {
@@ -374,6 +382,61 @@ body {
     min-height: 60px;
   }
 
+  /* Navy hero — inverted primary (prototype index.html) */
+  .btn-hero-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 1rem 2rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+    line-height: 1;
+    border-radius: var(--radius-2xl);
+    background: #ffffff;
+    color: var(--color-bg-dark);
+    box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
+    transition: all var(--transition-base);
+    border: none;
+    cursor: pointer;
+    min-height: 60px;
+    white-space: nowrap;
+  }
+  .btn-hero-primary:hover {
+    background: #f5f5f4;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+  .btn-hero-primary:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 3px;
+  }
+
+  .btn-hero-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 1rem 2rem;
+    font-size: 1.125rem;
+    font-weight: 500;
+    line-height: 1;
+    border-radius: var(--radius-2xl);
+    color: #ffffff;
+    border: 1px solid rgb(255 255 255 / 0.4);
+    background: transparent;
+    transition: all var(--transition-base);
+    min-height: 60px;
+    white-space: nowrap;
+  }
+  .btn-hero-outline:hover {
+    background: rgb(255 255 255 / 0.1);
+  }
+  .btn-hero-outline:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 3px;
+  }
+
   .btn-ghost {
     display: inline-flex;
     align-items: center;
@@ -476,7 +539,31 @@ body {
     font-weight: 600;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--color-accent);
+    color: var(--color-landing-accent);
+  }
+
+  .landing-pillar-index {
+    font-size: 1.75rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    color: var(--color-landing-accent);
+  }
+
+  .landing-step-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.5rem;
+    height: 3.5rem;
+    margin-left: auto;
+    margin-right: auto;
+    border-radius: var(--radius-2xl);
+    background: var(--color-bg-dark);
+    color: var(--color-text-inverse);
+    font-size: 1.5rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
   }
 
   .landing-quote-card {
@@ -1015,6 +1102,53 @@ body {
     color: white;
     border-color: var(--color-bg-dark);
     box-shadow: 0 4px 12px -2px rgb(10 37 64 / 0.35);
+  }
+
+  /* Marketing map tool — redesign/map-tool.html surfaces */
+  .marketing-zip-search .targeting-search-icon {
+    display: none;
+  }
+  .marketing-zip-search .targeting-search-input {
+    height: 2.5rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    border-radius: 1rem;
+    border: 1px solid #d1d5db;
+    font-size: 0.875rem;
+    background: #ffffff;
+    box-shadow: none;
+  }
+  .marketing-zip-search .targeting-search-input:focus {
+    border-color: #0ea5e9;
+    box-shadow: 0 0 0 3px rgb(14 165 233 / 0.2);
+    outline: none;
+  }
+  .marketing-zip-search .targeting-search-input::placeholder {
+    color: #9ca3af;
+  }
+  .marketing-zip-search .targeting-search-dropdown {
+    border-radius: 1rem;
+    border-color: #e5e7eb;
+  }
+  .marketing-zip-search .targeting-search-zip {
+    background: rgb(14 165 233 / 0.12);
+    color: #0a2540;
+  }
+  .marketing-zip-search .targeting-search-result:hover {
+    background: #f9fafb;
+  }
+
+  .marketing-map-canvas .mapboxgl-ctrl-group {
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgb(15 23 42 / 0.06);
+  }
+  .marketing-map-canvas .mapboxgl-ctrl-group button {
+    width: 28px;
+    height: 28px;
+  }
+  .marketing-map-canvas .mapboxgl-ctrl-attrib {
+    font-size: 10px;
+    opacity: 0.65;
   }
 
   /* Landing photography — consistent tech-product framing */

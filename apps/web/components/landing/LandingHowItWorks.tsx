@@ -1,85 +1,71 @@
+import Image from "next/image";
 import { LandingSectionHeader } from "./LandingSectionHeader";
 
 const STEPS = [
   {
-    step: "01",
-    title: "Target with Census data",
+    number: "1",
+    title: "Design or choose",
     description:
-      "Search ZIPs, click boundaries on the map, or draw a custom area. Filter by income and mover rates.",
+      "Upload your postcard design or start from a template — we handle sizing and print-ready prep.",
   },
   {
-    step: "02",
-    title: "Upload your artwork",
+    number: "2",
+    title: "Target on the map",
     description:
-      "Drop in your postcard design. We handle sizing, proofing, and print-ready preparation.",
+      "Draw on the map, select ZIPs, or filter by real Census demographics. Reach updates live.",
   },
   {
-    step: "03",
-    title: "Review reach & pay",
+    number: "3",
+    title: "Review & pay",
     description:
-      "See household count, audience breakdown, and per-piece cost before you commit.",
+      "See exact household count, audience breakdown, and per-piece cost before you approve.",
   },
   {
-    step: "04",
-    title: "Drummond prints & ships",
+    number: "4",
+    title: "Track results",
     description:
-      "Your campaign goes to production. Track status from proof through delivery.",
+      "Follow your campaign from proof through print and delivery — know when mail hits mailboxes.",
   },
 ] as const;
 
 export function LandingHowItWorks() {
   return (
-    <section id="how-it-works" className="section scroll-mt-24 bg-[var(--color-surface)]">
+    <section id="how-it-works" className="section scroll-mt-24 bg-[var(--color-bg)]">
       <div className="container">
         <LandingSectionHeader
           align="center"
-          eyebrow="How it works"
-          title="From targeting to mailbox in four steps"
-          description="A guided flow designed for clarity — no agency hand-holding required."
-          className="mx-auto mb-10 lg:mb-12"
+          eyebrow="4 simple steps"
+          title="How it works"
+          description="A guided flow designed for clarity — from first design to mail in the mailbox."
+          className="mx-auto mb-10 max-w-3xl lg:mb-12"
         />
 
-        <ol className="grid gap-6 sm:grid-cols-2 lg:hidden">
-          {STEPS.map((item) => (
-            <li key={item.step}>
-              <StepCard {...item} />
-            </li>
-          ))}
-        </ol>
+        <figure className="landing-visual relative mx-auto mb-12 max-w-6xl overflow-hidden rounded-3xl border border-[var(--color-border)] shadow-xl lg:mb-14">
+          <Image
+            src="/images/workflow.jpg"
+            alt="Local business owner moving through the direct mail campaign workflow"
+            width={1400}
+            height={560}
+            className="aspect-[21/9] w-full object-cover sm:aspect-[16/7]"
+            sizes="(max-width: 1024px) 100vw, 72rem"
+          />
+          <div className="landing-visual-overlay" aria-hidden />
+        </figure>
 
-        <ol className="landing-steps-rail hidden lg:grid lg:grid-cols-4">
-          {STEPS.map((item, index) => (
-            <li key={item.step} className="landing-step-cell">
-              {index < STEPS.length - 1 && (
-                <span className="landing-step-connector" aria-hidden />
-              )}
-              <StepCard {...item} />
+        <ol className="mx-auto grid max-w-6xl gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
+          {STEPS.map((item) => (
+            <li key={item.number} className="text-center">
+              <span className="landing-step-badge">{item.number}</span>
+              <h3 className="mt-5 text-lg font-semibold tracking-tight text-[var(--color-bg-dark)]">
+                {item.title}
+              </h3>
+              <p className="landing-body mx-auto mt-2 max-w-[16rem] text-[var(--color-text-secondary)]">
+                {item.description}
+              </p>
             </li>
           ))}
         </ol>
       </div>
     </section>
-  );
-}
-
-function StepCard({
-  step,
-  title,
-  description,
-}: {
-  step: string;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="flex h-full flex-col">
-      <span className="landing-index-badge">{step}</span>
-      <h3 className="mt-4 text-lg font-semibold tracking-tight text-[var(--color-bg-dark)]">
-        {title}
-      </h3>
-      <p className="landing-body mt-2 flex-1 text-[var(--color-text-secondary)]">
-        {description}
-      </p>
-    </div>
   );
 }
