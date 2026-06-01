@@ -6,10 +6,11 @@ import type { SelectedZcta, TargetingFilters } from "@/components/targeting/type
 import { cn } from "@/lib/utils";
 import { MarketingDemographicFilters } from "./MarketingDemographicFilters";
 import { formatTargetAreaSummary } from "./marketing-map-utils";
+import type { MarketingMapVariant } from "./marketing-map-variant";
 import {
+  marketingMapFieldClass,
   marketingMapPanelClass,
   marketingMapPanelLabelClass,
-  marketingMapFieldClass,
 } from "./marketing-map-styles";
 
 type Props = {
@@ -17,44 +18,47 @@ type Props = {
   onSelectZip: (zcta: SelectedZcta) => void;
   filters?: TargetingFilters;
   onFiltersChange: (filters: TargetingFilters | undefined) => void;
+  variant?: MarketingMapVariant;
   className?: string;
 };
 
-/**
- * redesign/map-tool.html — left panel: search, filters, radius.
- * Contained white card; no workspace chips or pills.
- */
+/** redesign/index.html + map-tool.html — left panel */
 export function MarketingMapControlsPanel({
   zctas,
   onSelectZip,
   filters,
   onFiltersChange,
+  variant = "homepage",
   className,
 }: Props) {
   const [radius, setRadius] = useState(2.5);
   const areaSummary = formatTargetAreaSummary(zctas);
+  const searchLabel = variant === "homepage" ? "Target area" : "Search location";
 
   return (
     <aside
       className={cn(
-        marketingMapPanelClass,
-        "order-1 flex flex-col gap-0 lg:col-span-3",
+        marketingMapPanelClass(variant),
+        "order-1 flex flex-col lg:col-span-3",
         className
       )}
     >
       <div className="mb-6">
-        <p className={marketingMapPanelLabelClass}>Search location</p>
+        <p className={marketingMapPanelLabelClass}>{searchLabel}</p>
         <ZipSearch
           onSelect={onSelectZip}
           className="marketing-zip-search"
-          placeholder="City, state, or ZIP code"
+          placeholder={variant === "homepage" ? "City, state, or ZIP code" : "Denver, CO or ZIP"}
         />
         {areaSummary ? (
           <input
             type="text"
             readOnly
             value={areaSummary}
-            className={cn(marketingMapFieldClass, "mt-3 text-gray-600")}
+            className={cn(
+              marketingMapFieldClass,
+              variant === "homepage" ? "mt-3 px-4 py-3" : "mt-3 text-gray-600"
+            )}
             aria-label="Selected target area"
           />
         ) : null}
@@ -63,12 +67,18 @@ export function MarketingMapControlsPanel({
       <MarketingDemographicFilters
         filters={filters}
         onChange={onFiltersChange}
+        variant={variant}
         className="mb-6"
       />
 
-      <div className="mt-auto pt-2">
-        <div className="mb-1.5 flex justify-between text-sm text-[#0A2540]">
-          <span>Radius</span>
+      <div className={variant === "homepage" ? "mt-auto" : "mt-auto pt-2"}>
+        <div
+          className={cn(
+            "flex justify-between text-sm text-[#0A2540]",
+            variant === "homepage" ? "mb-2" : "mb-1.5"
+          )}
+        >
+          <span className={variant === "homepage" ? "font-medium" : undefined}>Radius</span>
           <span className="font-semibold tabular-nums">{radius} mi</span>
         </div>
         <input

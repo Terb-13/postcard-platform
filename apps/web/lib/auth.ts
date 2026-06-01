@@ -3,11 +3,18 @@ import { prisma } from "@/lib/db";
 
 import type { User } from "@prisma/client";
 
+/** Match middleware.ts — auth() throws if only the publishable key is set. */
+const hasClerkMiddleware =
+  Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) &&
+  Boolean(process.env.CLERK_SECRET_KEY);
+
 /**
  * Gets the current Prisma User record for the logged in Clerk user.
  * Auto-provisions org + user when Clerk session exists but webhook sync is pending.
  */
 export async function getCurrentUser(): Promise<User | null> {
+  if (!hasClerkMiddleware) return null;
+
   const { userId } = await auth();
 
   if (!userId) return null;

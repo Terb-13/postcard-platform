@@ -1,3 +1,5 @@
+import { marketingSocialEyebrow } from "./marketing-design-system";
+
 const BUSINESSES = [
   "Bloom & Co",
   "Riverside Cafe",
@@ -11,12 +13,12 @@ export function MarketingSocialProof() {
   return (
     <section id="results" className="scroll-mt-24 bg-[#0A2540] py-16 text-white">
       <div className="mx-auto max-w-5xl px-8 text-center">
-        <p className="mb-6 text-xs font-semibold uppercase tracking-[1.5px] text-white/70">
+        <p className={marketingSocialEyebrow}>
           TRUSTED BY LOCAL BUSINESSES ACROSS AMERICA
         </p>
         <ul className="grid grid-cols-2 items-center gap-x-8 gap-y-8 opacity-90 md:grid-cols-5">
           {BUSINESSES.map((name) => (
-            <li key={name} className="text-2xl font-semibold tracking-tight">
+            <li key={name} className="text-2xl font-semibold">
               {name}
             </li>
           ))}

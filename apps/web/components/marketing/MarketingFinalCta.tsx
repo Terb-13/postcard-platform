@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { AuthButtons } from "@/components/landing/AuthButtons";
 import {
-  bodyText,
   marketingContainerNarrow,
+  marketingCtaOutline,
   marketingSectionPy,
   marketingTitleCta,
 } from "./marketing-design-system";
 
-/** redesign/index.html — Final CTA (centered, confident, text-only) */
+/** redesign/index.html — Final CTA */
 export function MarketingFinalCta() {
   return (
     <section className={`scroll-mt-24 ${marketingSectionPy}`}>
@@ -22,10 +22,7 @@ export function MarketingFinalCta() {
 
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <AuthButtons variant="marketing-final" />
-            <Link
-              href="#map-tool"
-              className="inline-flex items-center justify-center rounded-3xl border-2 border-[#0A2540] bg-transparent px-10 py-4 text-lg font-semibold text-[#0A2540] transition-colors hover:bg-gray-50"
-            >
+            <Link href="#map-tool" className={marketingCtaOutline}>
               Try the Map Tool
             </Link>
           </div>

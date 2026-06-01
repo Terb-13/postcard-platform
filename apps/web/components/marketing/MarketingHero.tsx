@@ -31,7 +31,7 @@ export function MarketingHero() {
           <div className="lg:col-span-7">
             <div className="mb-6 inline-flex items-center gap-x-2 rounded-3xl bg-white/10 px-4 py-1.5 text-sm">
               <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-              <span className="font-medium">Trusted by thousands of local businesses</span>
+              <span className="font-medium">Trusted by 60,000+ marketers</span>
             </div>
 
             <h1 className={`${marketingHeroTitle} mb-6`}>
@@ -63,9 +63,7 @@ export function MarketingHero() {
                   />
                 ))}
               </div>
-              <span className="text-white/60">
-                Join growing businesses using data-driven direct mail
-              </span>
+              <span className="text-white/60">Join 12,400 businesses this month</span>
             </div>
           </div>
 

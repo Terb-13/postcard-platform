@@ -4,6 +4,8 @@
 
 This document is the operational guide for the rebuild.
 
+**Working checklist (phases, routes, commands):** see [`MARKETING_BUILDOUT_GUIDE.md`](./MARKETING_BUILDOUT_GUIDE.md).
+
 ---
 
 ## Core Principles

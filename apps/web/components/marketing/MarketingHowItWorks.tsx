@@ -1,7 +1,10 @@
 import {
-  bodyText,
   marketingContainer,
+  marketingEyebrowWide,
   marketingSectionPy,
+  marketingStepBadge,
+  marketingStepBody,
+  marketingStepTitle,
   marketingTitleLg,
 } from "./marketing-design-system";
 
@@ -28,26 +31,22 @@ const STEPS = [
   },
 ] as const;
 
-/** Matches prototype How It Works — clean, confident 4-step flow */
+/** redesign/index.html — How it works (#how-it-works) */
 export function MarketingHowItWorks() {
   return (
     <section id="how-it-works" className={`scroll-mt-24 ${marketingSectionPy}`}>
       <div className={marketingContainer}>
         <header className="mb-12 text-center">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[1.5px] text-[#0EA5E9]">
-            4 SIMPLE STEPS
-          </p>
+          <p className={`mb-3 ${marketingEyebrowWide}`}>4 SIMPLE STEPS</p>
           <h2 className={marketingTitleLg}>How it works</h2>
         </header>
 
-        <div className="grid gap-8 md:grid-cols-4">
+        <div className="grid gap-6 md:grid-cols-4">
           {STEPS.map((step) => (
             <div key={step.number} className="text-center">
-              <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-3xl bg-[#0A2540] text-2xl font-semibold text-white">
-                {step.number}
-              </div>
-              <p className="mb-3 text-lg font-semibold text-[#0A2540]">{step.title}</p>
-              <p className={bodyText}>{step.description}</p>
+              <div className={marketingStepBadge}>{step.number}</div>
+              <p className={marketingStepTitle}>{step.title}</p>
+              <p className={marketingStepBody}>{step.description}</p>
             </div>
           ))}
         </div>

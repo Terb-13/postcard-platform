@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "dev": "npx turbo run dev",
+    "dev:web:clean": "npm run dev:clean -w web",
     "build": "npx turbo run build",
     "db:generate": "npx turbo run db:generate",
     "db:push": "npx turbo run db:push",

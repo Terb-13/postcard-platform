@@ -78,9 +78,9 @@ export const marketingMapSectionPy = 'pt-16 pb-20';
 export const marketingEyebrow =
   'text-xs font-semibold uppercase tracking-[1.5px] text-[#0EA5E9]';
 
-/** Products / How / Map title — text-5xl semibold tracking-tighter */
+/** Products / How / Map title — text-5xl semibold tracking-tighter (prototype) */
 export const marketingTitleLg = 'text-5xl font-semibold tracking-tighter text-[#0A2540]';
-export const marketingTitleProducts = 'text-5xl font-semibold tracking-tight text-[#0A2540]';
+export const marketingTitleProducts = 'text-5xl font-semibold tracking-tighter text-[#0A2540]';
 
 /** Value props headline */
 export const marketingTitleMd = 'text-4xl font-semibold tracking-tight text-[#0A2540]';
@@ -98,3 +98,30 @@ export const marketingProductCard =
 
 /** Navy social proof band */
 export const marketingNavyBand = 'bg-[#0A2540] text-white/90';
+
+/** Eyebrow — WHY POSTCARD / 4 SIMPLE STEPS (tracking-widest) */
+export const marketingEyebrowWide =
+  'text-xs font-semibold uppercase tracking-widest text-[#0EA5E9]';
+
+/** Social proof band label */
+export const marketingSocialEyebrow =
+  'mb-6 text-sm tracking-widest text-white/70';
+
+/** Value props — numbered column */
+export const marketingValueIndex = 'mb-3 text-3xl text-[#0EA5E9]';
+export const marketingValueTitle = 'mb-2 text-xl font-semibold text-[#0A2540]';
+export const marketingValueBody = 'text-gray-600';
+
+/** How it works — step */
+export const marketingStepBadge =
+  'mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-3xl bg-[#0A2540] text-2xl font-semibold text-white';
+export const marketingStepTitle = 'mb-2 font-semibold text-[#0A2540]';
+export const marketingStepBody = 'text-sm text-gray-600';
+
+/** Final CTA primary button (prototype) */
+export const marketingCtaPrimary =
+  'inline-flex items-center justify-center rounded-3xl bg-[#0A2540] px-10 py-4 text-lg font-semibold text-white transition-colors hover:bg-black';
+
+/** Final CTA outline button */
+export const marketingCtaOutline =
+  'inline-flex items-center justify-center rounded-3xl border-2 border-[#0A2540] bg-transparent px-10 py-4 text-lg font-semibold text-[#0A2540] transition-colors hover:bg-gray-50';

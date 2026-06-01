@@ -1,62 +1,44 @@
 import Link from "next/link";
-import { MarketingNav } from "@/components/marketing/MarketingNav";
-import { MarketingFooter } from "@/components/marketing/MarketingFooter";
+import { MarketingPageShell } from "@/components/marketing/MarketingPageShell";
+import { MarketingPageHero } from "@/components/marketing/MarketingPageHero";
+import { MarketingPrimaryCta } from "@/components/marketing/MarketingPrimaryCta";
+import { marketingContainerNarrow } from "@/components/marketing/marketing-design-system";
+import { EDDM_BENEFITS } from "@/components/marketing/marketing-solutions";
 
-/**
- * Every Door Direct Mail landing page
- * Matches the structure and tone of redesign/every-door-direct-mail.html
- * while using the shared marketing chrome and real CTAs.
- */
+/** redesign/every-door-direct-mail.html */
 export default function EveryDoorDirectMailPage() {
   return (
-    <div className="min-h-screen bg-[#fafaf9] text-[#0A2540]">
-      <MarketingNav />
+    <MarketingPageShell>
+      <main className={marketingContainerNarrow}>
+        <MarketingPageHero
+          backLink={{ href: "/direct-mail-marketing", label: "← All Solutions" }}
+          title="Every Door Direct Mail"
+          description="Reach every household in a neighborhood — no mailing list required."
+        />
 
-      <main className="max-w-5xl mx-auto px-8 py-16">
-        <Link
-          href="/direct-mail-marketing"
-          className="text-sm text-[#0A2540] hover:text-[#0EA5E9] transition-colors"
-        >
-          ← All Solutions
-        </Link>
-
-        <h1 className="mt-4 text-5xl font-semibold tracking-tight">
-          Every Door Direct Mail
-        </h1>
-        <p className="mt-3 max-w-2xl text-xl text-gray-600">
-          Reach every household in a neighborhood — no mailing list required.
-        </p>
-
-        <div className="mt-12 grid gap-8 md:grid-cols-2">
+        <div className="grid gap-8 md:grid-cols-2">
           <div>
-            <h3 className="mb-3 font-semibold text-lg">Key Benefits</h3>
-            <ul className="space-y-2.5 text-gray-700">
-              <li className="flex items-start gap-2">✓ No mailing list needed</li>
-              <li className="flex items-start gap-2">✓ Lowest cost per piece</li>
-              <li className="flex items-start gap-2">✓ Great for brand awareness and local reach</li>
-              <li className="flex items-start gap-2">✓ USPS discounts available</li>
+            <h2 className="mb-3 font-semibold">Key Benefits</h2>
+            <ul className="space-y-2 text-gray-700">
+              {EDDM_BENEFITS.map((item) => (
+                <li key={item}>✓ {item}</li>
+              ))}
             </ul>
           </div>
-
           <div className="flex items-start">
-            <Link
-              href="/campaigns/new?product=eddm"
-              className="inline-flex w-full items-center justify-center rounded-3xl bg-[#0A2540] px-8 py-4 text-center text-lg font-semibold text-white transition hover:bg-black sm:w-auto"
-            >
+            <MarketingPrimaryCta href="/map-tool" className="w-full text-center sm:w-auto">
               Launch EDDM Map Tool
-            </Link>
+            </MarketingPrimaryCta>
           </div>
         </div>
 
-        <div className="mt-16 border-t border-gray-200 pt-10 text-sm text-gray-600">
-          Ready to go broader?{" "}
+        <p className="mt-16 border-t border-gray-200 pt-10 text-sm text-gray-600">
+          Ready for more precision?{" "}
           <Link href="/targeted-direct-mail" className="font-medium text-[#0EA5E9] hover:underline">
             Try Targeted Direct Mail →
           </Link>
-        </div>
+        </p>
       </main>
-
-      <MarketingFooter />
-    </div>
+    </MarketingPageShell>
   );
 }

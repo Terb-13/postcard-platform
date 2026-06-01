@@ -1,8 +1,11 @@
 import {
-  bodyText,
   marketingContainer,
+  marketingEyebrowWide,
   marketingSectionPy,
   marketingTitleMd,
+  marketingValueBody,
+  marketingValueIndex,
+  marketingValueTitle,
 } from "./marketing-design-system";
 
 const VALUE_PROPS = [
@@ -29,7 +32,7 @@ const VALUE_PROPS = [
   },
 ] as const;
 
-/** redesign/index.html — Value proposition (text only, 4 columns) */
+/** redesign/index.html — Value proposition (#value) */
 export function MarketingValueProps() {
   return (
     <section
@@ -38,18 +41,16 @@ export function MarketingValueProps() {
     >
       <div className={marketingContainer}>
         <header className="mb-12 text-center">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[1.5px] text-[#0EA5E9]">
-            WHY POSTCARD
-          </p>
+          <p className={`mb-3 ${marketingEyebrowWide}`}>WHY POSTCARD</p>
           <h2 className={marketingTitleMd}>Built for results, not guesswork.</h2>
         </header>
 
-        <div className="grid gap-10 md:grid-cols-4">
+        <div className="grid gap-8 md:grid-cols-4">
           {VALUE_PROPS.map((item) => (
             <article key={item.index}>
-              <p className="mb-3 text-3xl font-semibold text-[#0EA5E9]">{item.index}</p>
-              <p className="mb-2 text-xl font-semibold text-[#0A2540]">{item.title}</p>
-              <p className={bodyText}>{item.description}</p>
+              <p className={marketingValueIndex}>{item.index}</p>
+              <p className={marketingValueTitle}>{item.title}</p>
+              <p className={marketingValueBody}>{item.description}</p>
             </article>
           ))}
         </div>
