@@ -31,7 +31,9 @@ import { WizardMobileNav } from "./WizardMobileNav";
 import {
   appendWizardProductParams,
   parseCampaignWizardParams,
+  resolveProductFromCampaign,
   type PostcardSize,
+  type Product,
 } from "@/lib/products";
 
 const STEP_IDS = WIZARD_STEPS.map((s) => s.id);
@@ -73,27 +75,58 @@ export function CampaignWizard() {
   });
 
   const size = basicsForm.watch("size");
-  const productFromUrl = wizardProductParams.product;
-  const preselectedSize = wizardProductParams.size;
+
+  const { data: campaign, refetch: refetchCampaign, isLoading: campaignLoading } =
+    trpc.campaign.getById.useQuery({ id: campaignId! }, { enabled: !!campaignId });
+
+  const activeProduct = useMemo((): Product | null => {
+    if (campaign) {
+      return resolveProductFromCampaign({
+        productSlug: campaign.productSlug,
+        productType: campaign.productType,
+        size: campaign.size,
+      });
+    }
+    return wizardProductParams.product;
+  }, [campaign, wizardProductParams.product]);
+
+  const preselectedSize = useMemo((): PostcardSize | null => {
+    if (campaign?.size) {
+      const campaignSize = campaign.size as PostcardSize;
+      if (activeProduct?.sizes.some((s) => s.value === campaignSize)) {
+        return campaignSize;
+      }
+      return campaignSize;
+    }
+    return wizardProductParams.size;
+  }, [activeProduct, campaign, wizardProductParams.size]);
 
   const urlParamsAppliedRef = useRef(false);
 
   const syncWizardUrl = useCallback(
-    (overrides?: { step?: number; size?: PostcardSize; campaignId?: string | null }) => {
+    (overrides?: {
+      step?: number;
+      size?: PostcardSize;
+      campaignId?: string | null;
+      product?: Product | null;
+    }) => {
       const params = new URLSearchParams(searchParams.toString());
       const nextStep = overrides?.step ?? stepIndex;
-      const nextCampaignId = overrides?.campaignId !== undefined ? overrides.campaignId : campaignId;
+      const nextCampaignId =
+        overrides?.campaignId !== undefined ? overrides.campaignId : campaignId;
       const nextSize =
         overrides?.size ?? (basicsForm.getValues("size") as PostcardSize);
+      const product =
+        overrides?.product !== undefined ? overrides.product : activeProduct;
 
       params.set("step", String(nextStep));
       if (nextCampaignId) params.set("campaignId", nextCampaignId);
       else params.delete("campaignId");
 
-      appendWizardProductParams(params, productFromUrl, nextSize);
+      appendWizardProductParams(params, product, nextSize);
       router.replace(`/campaigns/new?${params.toString()}`, { scroll: false });
     },
-    [basicsForm, campaignId, productFromUrl, router, searchParams, stepIndex]
+    [activeProduct, basicsForm, campaignId, router, searchParams, stepIndex]
   );
 
   useEffect(() => {
@@ -107,15 +140,12 @@ export function CampaignWizard() {
 
   const handleSizeChange = useCallback(
     (nextSize: PostcardSize) => {
-      if (productFromUrl || preselectedSize) {
-        syncWizardUrl({ size: nextSize });
+      if (activeProduct || preselectedSize) {
+        syncWizardUrl({ size: nextSize, product: activeProduct });
       }
     },
-    [preselectedSize, productFromUrl, syncWizardUrl]
+    [activeProduct, preselectedSize, syncWizardUrl]
   );
-
-  const { data: campaign, refetch: refetchCampaign, isLoading: campaignLoading } =
-    trpc.campaign.getById.useQuery({ id: campaignId! }, { enabled: !!campaignId });
 
   const createCampaign = trpc.campaign.create.useMutation();
   const updateDraft = trpc.campaign.updateDraft.useMutation();
@@ -172,7 +202,18 @@ export function CampaignWizard() {
           : undefined,
       });
     }
-  }, [campaign, basicsForm]);
+
+    const draftProduct = resolveProductFromCampaign({
+      productSlug: campaign.productSlug,
+      productType: campaign.productType,
+      size: campaignSize,
+    });
+    syncWizardUrl({
+      campaignId: campaign.id,
+      size: campaignSize,
+      product: draftProduct,
+    });
+  }, [campaign, basicsForm, syncWizardUrl]);
 
   const currentStepId = STEP_IDS[stepIndex] as WizardStepId;
 
@@ -202,6 +243,8 @@ export function CampaignWizard() {
         id: campaignId,
         name: basics.name,
         size: basics.size,
+        productSlug: activeProduct?.slug,
+        productType: activeProduct?.productType,
         targeting:
           zctaList.length > 0
             ? {
@@ -214,14 +257,15 @@ export function CampaignWizard() {
         notes: notes || null,
       });
       await refetchCampaign();
-      syncWizardUrl({ size: basics.size as PostcardSize, campaignId });
+      syncWizardUrl({ size: basics.size as PostcardSize, campaignId, product: activeProduct });
       return campaignId;
     }
 
     const created = await createCampaign.mutateAsync({
       name: basics.name,
       size: basics.size,
-      productType: productFromUrl?.productType,
+      productType: activeProduct?.productType,
+      productSlug: activeProduct?.slug,
       dropDate: dropDate || undefined,
       notes: notes || undefined,
       targeting:
@@ -238,15 +282,16 @@ export function CampaignWizard() {
       campaignId: created.id,
       size: basics.size as PostcardSize,
       step: stepIndex,
+      product: activeProduct,
     });
     return created.id;
   }, [
+    activeProduct,
     basicsForm,
     campaignId,
     createCampaign,
     dropDate,
     notes,
-    productFromUrl,
     refetchCampaign,
     stepIndex,
     syncWizardUrl,
@@ -392,7 +437,7 @@ export function CampaignWizard() {
               ← Campaigns
             </Link>
             <h1 className="heading-md mt-0.5 truncate sm:mt-1">
-              {productFromUrl ? `New ${productFromUrl.shortTitle} campaign` : "New campaign"}
+              {activeProduct ? `New ${activeProduct.shortTitle} campaign` : "New campaign"}
             </h1>
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -446,7 +491,7 @@ export function CampaignWizard() {
               {currentStepId === "basics" && (
                 <BasicsStep
                   form={basicsForm}
-                  product={productFromUrl}
+                  product={activeProduct}
                   preselectedSize={preselectedSize}
                   onSizeChange={handleSizeChange}
                 />

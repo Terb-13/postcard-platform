@@ -1,28 +1,20 @@
-/** Solutions hub + product pages — aligned with redesign/*.html */
-
+/** Solutions hub — links to canonical /products catalog */
 export const SOLUTIONS_HUB = [
   {
-    href: "/every-door-direct-mail",
+    href: "/products/every-door-direct-mail",
     title: "Every Door Direct Mail",
     description: "Reach every address in a neighborhood without a mailing list.",
   },
   {
-    href: "/targeted-direct-mail",
+    href: "/products/targeted-direct-mail",
     title: "Targeted Direct Mail",
     description: "Reach specific households using real Census demographics.",
   },
   {
-    href: "/map-tool",
+    href: "/products/saturation-mail",
     title: "Saturation Mail",
     description: "Maximum reach within a defined geographic area at the lowest cost.",
   },
-] as const;
-
-export const EDDM_BENEFITS = [
-  "No mailing list needed",
-  "Lowest cost per piece",
-  "Great for brand awareness",
-  "USPS discounts available",
 ] as const;
 
 export const TEMPLATE_ITEMS = [

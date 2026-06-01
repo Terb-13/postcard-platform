@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { AuthButtons } from "@/components/landing/AuthButtons";
 import { marketingContainer, marketingHeroTitle } from "./marketing-design-system";
 
@@ -49,6 +50,9 @@ export function MarketingHero() {
 
             <div className="flex flex-wrap items-center gap-4">
               <AuthButtons variant="hero" ctaIcon={<HeroCtaArrow />} />
+              <Link href="/products" className="btn-hero-outline">
+                Browse All Products
+              </Link>
               <a href="#map-tool" className="btn-hero-outline">
                 Launch Map Tool
               </a>

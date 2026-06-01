@@ -41,6 +41,7 @@ export const campaignRouter = router({
         size: z.string(),
         quantity: z.number().int().min(100).optional(),
         productType: z.enum(["EDDM", "TARGETED"]).optional(),
+        productSlug: z.string().optional(),
         dropDate: z.string().optional(), // ISO date string
         notes: z.string().optional(),
         targeting: targetingInputSchema,
@@ -108,6 +109,7 @@ export const campaignRouter = router({
           name: input.name,
           size: input.size,
           productType: input.productType ?? "EDDM",
+          productSlug: input.productSlug ?? null,
           quantity,
           dropDate,
           notes: input.notes,
@@ -129,6 +131,8 @@ export const campaignRouter = router({
         id: z.string(),
         name: z.string().min(1).optional(),
         size: z.string().optional(),
+        productType: z.enum(["EDDM", "TARGETED"]).optional(),
+        productSlug: z.string().optional(),
         quantity: z.number().int().min(100).optional(),
         dropDate: z.string().nullable().optional(),
         notes: z.string().nullable().optional(),
@@ -153,6 +157,8 @@ export const campaignRouter = router({
       const data: Prisma.CampaignUpdateInput = {};
       if (input.name != null) data.name = input.name;
       if (input.size != null) data.size = input.size;
+      if (input.productType != null) data.productType = input.productType;
+      if (input.productSlug !== undefined) data.productSlug = input.productSlug;
       if (input.quantity != null) data.quantity = input.quantity;
       if (input.dropDate !== undefined) {
         data.dropDate = input.dropDate ? new Date(input.dropDate) : null;

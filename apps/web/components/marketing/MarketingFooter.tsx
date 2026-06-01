@@ -1,14 +1,9 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-
-const PRODUCT_LINKS = [
-  { label: "Every Door Direct Mail", href: "/campaigns/new?product=eddm" },
-  { label: "Targeted Direct Mail", href: "/campaigns/new?product=targeted" },
-  { label: "Saturation Mail", href: "/campaigns/new?product=saturation" },
-  { label: "New Mover Campaigns", href: "/campaigns/new?product=newmover" },
-] as const;
+import { products } from "@/lib/products";
 
 const PLATFORM_LINKS = [
+  { label: "All Products", href: "/products" },
   { label: "Map Targeting Tool", href: "#map-tool" },
   { label: "Templates", href: "/templates" },
   { label: "Design Services", href: "/design-services" },
@@ -20,9 +15,9 @@ export function MarketingFooter() {
     <footer className="bg-[#0A2540] py-12 text-sm text-white/70">
       <div className="mx-auto grid max-w-7xl grid-cols-2 gap-y-10 px-8 md:grid-cols-5">
         <FooterColumn title="Products">
-          {PRODUCT_LINKS.map((item) => (
-            <FooterLink key={item.label} href={item.href}>
-              {item.label}
+          {products.map((product) => (
+            <FooterLink key={product.slug} href={`/products/${product.slug}`}>
+              {product.title}
             </FooterLink>
           ))}
         </FooterColumn>

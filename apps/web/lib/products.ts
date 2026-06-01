@@ -24,6 +24,8 @@ export type ProductSize = {
   description: string;
   /** Physical dimensions for display */
   dimensions?: string;
+  /** Estimated per-piece price range — computed if omitted */
+  priceRange?: string;
   /** Shown on product detail + wizard when this size is the product default */
   recommended?: boolean;
 };
@@ -35,8 +37,13 @@ export type Product = {
   tagline: string;
   /** Persuasive one-liner for product detail hero */
   heroHighlight: string;
+  /** Section headline above benefits grid on product detail page */
+  benefitsHeadline: string;
   description: string;
+  /** Card/thumbnail image */
   image: string;
+  /** Large hero image on product detail page */
+  heroImage: string;
   priceTeaser: string;
   /** Explains why the default size fits this product */
   sizeRecommendationNote: string;
@@ -48,6 +55,33 @@ export type Product = {
   benefits: ProductBenefit[];
   idealFor: string[];
 };
+
+export const POSTCARD_SIZE_MULTIPLIERS: Record<PostcardSize, number> = {
+  "4x6": 1,
+  "5x7": 1.15,
+  "6x9": 1.35,
+  "6x11": 1.5,
+};
+
+/** Parse base rate from priceTeaser e.g. "Starting at $0.19/piece" */
+function parseBasePriceCents(teaser: string): number {
+  const match = teaser.match(/\$([\d.]+)/);
+  if (!match) return 25;
+  return Math.round(parseFloat(match[1]) * 100);
+}
+
+/** Estimated per-piece range for a size, derived from product base rate × size multiplier */
+export function getSizePriceRange(product: Product, size: PostcardSize): string {
+  const sizeOption = product.sizes.find((s) => s.value === size);
+  if (sizeOption?.priceRange) return sizeOption.priceRange;
+
+  const baseCents = parseBasePriceCents(product.priceTeaser);
+  const mult = POSTCARD_SIZE_MULTIPLIERS[size] ?? 1;
+  const low = (baseCents * mult) / 100;
+  const high = low * 1.08;
+  const fmt = (n: number) => n.toFixed(2);
+  return `$${fmt(low)} – $${fmt(high)}/pc`;
+}
 
 export const POSTCARD_SIZES: ProductSize[] = [
   { value: "6x11", label: "6×11″", description: "Every Door Direct Mail standard", recommended: true },
@@ -61,11 +95,13 @@ export const products: Product[] = [
     slug: "every-door-direct-mail",
     title: "Every Door Direct Mail",
     shortTitle: "EDDM",
-    tagline: "Reach every household in a neighborhood — no mailing list required.",
-    heroHighlight: "Blanket entire neighborhoods. No list. No waste.",
+    tagline: "The proven way to reach every household on a carrier route — no list required.",
+    heroHighlight: "Reach every customer in your area. No mailing list to buy.",
+    benefitsHeadline: "Why local businesses choose Every Door Direct Mail",
     description:
-      "Blanket entire carrier routes with oversized postcards. Perfect for local businesses that want maximum visibility in a defined area.",
+      "Select USPS carrier routes on the map and mail oversized postcards to every deliverable address. Ideal for restaurants, home services, and retailers who want neighborhood-wide visibility without list costs.",
     image: "/images/eddm-product.jpg",
+    heroImage: "/images/marketing/hero.jpg",
     priceTeaser: "Starting at $0.19/piece",
     sizeRecommendationNote:
       "6×11″ is the USPS Every Door standard — maximum mailbox presence and the format carriers expect on EDDM routes.",
@@ -94,24 +130,24 @@ export const products: Product[] = [
     ],
     benefits: [
       {
-        title: "Maximum neighborhood visibility",
-        description: "Every deliverable address on your selected routes receives your piece.",
+        title: "No mailing list needed",
+        description: "USPS delivers to every address on your selected routes — skip list brokers entirely.",
         icon: "reach",
       },
       {
-        title: "Predictable per-piece pricing",
-        description: "See household counts and cost before you commit — no surprises.",
+        title: "Lowest cost per impression",
+        description: "EDDM rates plus route-based targeting keep costs predictable from the first quote.",
         icon: "pricing",
       },
       {
-        title: "Launch in days, not weeks",
-        description: "Pick routes on the map, upload artwork, and mail in as little as 5 days.",
-        icon: "speed",
+        title: "Dominates the mailbox",
+        description: "6×11″ postcards stand out against letters and flyers — built for local offers that get noticed.",
+        icon: "scale",
       },
       {
-        title: "Built for local businesses",
-        description: "Grand openings, seasonal promos, and route-based awareness that drives foot traffic.",
-        icon: "scale",
+        title: "Live in as little as 5 days",
+        description: "Pick routes, upload artwork, and mail fast with Census household counts before you pay.",
+        icon: "speed",
       },
     ],
     idealFor: ["Restaurants", "Home services", "Retail stores", "Real estate"],
@@ -120,11 +156,13 @@ export const products: Product[] = [
     slug: "targeted-direct-mail",
     title: "Targeted Direct Mail",
     shortTitle: "Targeted",
-    tagline: "Reach specific households using real Census demographics.",
-    heroHighlight: "Mail only to households that match your ideal customer.",
+    tagline: "Mail only to households that match your ideal customer profile.",
+    heroHighlight: "Stop paying to reach people who will never buy.",
+    benefitsHeadline: "Precision targeting that beats blanket mail",
     description:
-      "Filter by income, home ownership, age, and more. Spend your budget on the households most likely to respond.",
+      "Layer Census demographics on top of your map selection — income, home ownership, age, and more — so every piece lands with a household that fits.",
     image: "/images/targeted-product.jpg",
+    heroImage: "/images/marketing/data.jpg",
     priceTeaser: "Starting at $0.28/piece",
     sizeRecommendationNote:
       "6×9″ balances impact and cost for targeted drops — enough room for a compelling offer without overspending on postage.",
@@ -165,23 +203,23 @@ export const products: Product[] = [
     ],
     benefits: [
       {
-        title: "Higher response rates",
-        description: "Filter out low-fit households so every piece works harder.",
+        title: "Higher response, less waste",
+        description: "Exclude low-fit households before you print — spend only on prospects that match your criteria.",
         icon: "targeting",
       },
       {
-        title: "Real Census demographics",
-        description: "Income, home ownership, age, and more — not purchased lists.",
+        title: "Real U.S. Census data",
+        description: "Not purchased lists — filter by verified demographics attached to each household.",
         icon: "transparency",
       },
       {
-        title: "Geography + filters combined",
-        description: "Draw on the map, then refine by the attributes that matter to you.",
+        title: "Map + filters in one flow",
+        description: "Draw your geography, apply filters, and watch reach and cost update in real time.",
         icon: "reach",
       },
       {
-        title: "Transparent reach before you pay",
-        description: "Live household counts update as you adjust targeting.",
+        title: "Know your audience before checkout",
+        description: "Household counts and estimates are locked in before you upload artwork or pay.",
         icon: "pricing",
       },
     ],
@@ -191,11 +229,13 @@ export const products: Product[] = [
     slug: "discount-zones",
     title: "Discount Zones",
     shortTitle: "Discount Zones",
-    tagline: "High-volume drops in select markets at reduced rates.",
-    heroHighlight: "Our lowest rates — available in pre-negotiated partner markets.",
+    tagline: "Pre-negotiated zone pricing for high-volume mailers in select markets.",
+    heroHighlight: "Our lowest rates — mail more households for the same budget.",
+    benefitsHeadline: "Volume pricing without cutting corners",
     description:
-      "Pre-negotiated zone pricing for businesses willing to mail on shared schedules. Same quality, lower cost in eligible areas.",
+      "Qualify for shared print schedules and zone-based rates in partner markets. Same map tools and artwork review — just a lower per-piece price when you commit to volume.",
     image: "/images/targeted-product.jpg",
+    heroImage: "/images/marketing/results.jpg",
     priceTeaser: "Starting at $0.15/piece",
     sizeRecommendationNote:
       "6×11″ EDDM in discount zones delivers the best cost-per-impression — our most popular format for zone drops.",
@@ -224,23 +264,23 @@ export const products: Product[] = [
     ],
     benefits: [
       {
-        title: "Lowest per-piece rates",
-        description: "Pre-negotiated pricing in eligible markets beats standard drops.",
+        title: "Lowest per-piece rates we offer",
+        description: "Zone pricing beats standard EDDM when your drop qualifies in an eligible market.",
         icon: "pricing",
       },
       {
-        title: "Built for repeat mailers",
-        description: "Lock in zone rates for monthly or seasonal campaigns.",
+        title: "Built for repeat campaigns",
+        description: "Lock in rates for monthly, seasonal, or multi-location programs that mail on schedule.",
         icon: "scale",
       },
       {
-        title: "More households, same budget",
-        description: "Stretch spend across more addresses without sacrificing quality.",
+        title: "More reach, same spend",
+        description: "Stretch budget across additional households without downgrading print quality.",
         icon: "reach",
       },
       {
-        title: "Priority partner slots",
-        description: "Reserved production windows in high-demand markets.",
+        title: "Reserved production windows",
+        description: "Priority slots in busy markets so your drop ships on time, even at peak volume.",
         icon: "speed",
       },
     ],
@@ -250,11 +290,13 @@ export const products: Product[] = [
     slug: "saturation-mail",
     title: "Saturation Mail",
     shortTitle: "Saturation",
-    tagline: "Maximum reach within a defined geographic area.",
-    heroHighlight: "Cover every address in your ZIP codes — pure awareness at scale.",
+    tagline: "Blanket every deliverable address in the ZIP codes you choose.",
+    heroHighlight: "Own the mailbox across entire ZIP codes — pure awareness at scale.",
+    benefitsHeadline: "Maximum coverage when share of voice matters",
     description:
-      "Cover every deliverable address in your chosen ZIP codes. Built for awareness campaigns that need blanket coverage.",
+      "Cover 100% of deliverable addresses in your selected ZIPs. Built for launches, events, and awareness campaigns where being everywhere locally is the goal.",
     image: "/images/saturation-product.jpg",
+    heroImage: "/images/marketing/solution.jpg",
     priceTeaser: "Starting at $0.17/piece",
     sizeRecommendationNote:
       "6×11″ gives saturation campaigns the oversized presence needed to stand out when every household gets a piece.",
@@ -289,23 +331,23 @@ export const products: Product[] = [
     ],
     benefits: [
       {
-        title: "Unmatched local awareness",
-        description: "Every deliverable address in your selected ZIPs receives your piece.",
+        title: "100% ZIP coverage",
+        description: "Every deliverable address in your selected ZIPs receives your piece — no gaps.",
         icon: "reach",
       },
       {
-        title: "Simple geography-based buying",
-        description: "Select ZIP codes on the map — no list required.",
+        title: "Geography-only buying",
+        description: "Select ZIPs on the map and see household counts instantly. No list required.",
         icon: "targeting",
       },
       {
-        title: "Scales from one ZIP to dozens",
-        description: "Start small or blanket an entire metro area.",
+        title: "One ZIP or fifty",
+        description: "Start with a single neighborhood or blanket a metro — the same simple workflow scales.",
         icon: "scale",
       },
       {
-        title: "Artwork review included",
-        description: "Our team checks print readiness before your drop goes live.",
+        title: "Print-ready artwork review",
+        description: "Our team verifies your PDF before production so saturation drops ship without surprises.",
         icon: "transparency",
       },
     ],
@@ -345,6 +387,32 @@ export function resolveSizeForProduct(
 
 export function getSizeOption(product: Product, size: PostcardSize): ProductSize | undefined {
   return product.sizes.find((s) => s.value === size);
+}
+
+export function resolveProductFromCampaign(input: {
+  productSlug?: string | null;
+  productType?: string | null;
+  size?: string | null;
+}): Product | null {
+  if (input.productSlug) {
+    return getProductBySlug(input.productSlug) ?? null;
+  }
+  if (input.productType === "TARGETED") {
+    return getProductBySlug("targeted-direct-mail") ?? null;
+  }
+  return getProductBySlug("every-door-direct-mail") ?? null;
+}
+
+export function buildCampaignDraftHref(
+  campaignId: string,
+  product?: Product | null,
+  size?: PostcardSize | null
+): string {
+  const params = new URLSearchParams();
+  params.set("campaignId", campaignId);
+  if (product) appendWizardProductParams(params, product, size ?? product.defaultSize);
+  else if (size) params.set("size", size);
+  return `/campaigns/new?${params.toString()}`;
 }
 
 export function buildCampaignWizardHref(product: Product, size?: PostcardSize): string {

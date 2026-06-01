@@ -5,6 +5,11 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc/client";
+import {
+  buildCampaignDraftHref,
+  resolveProductFromCampaign,
+  type PostcardSize,
+} from "@/lib/products";
 import { ArtworkPreview } from "@/components/ArtworkPreview";
 import { ArtworkUpload } from "@/components/ArtworkUpload";
 import { ProductionTimeline } from "@/components/ProductionTimeline";
@@ -87,6 +92,16 @@ export default function MyCampaignsPage() {
               const canPay =
                 artwork?.status === "APPROVED" && campaign.status !== "PAID" && !job;
               const isRejected = artwork?.status === "REJECTED";
+              const isDraft = campaign.status === "DRAFT";
+              const resumeHref = buildCampaignDraftHref(
+                campaign.id,
+                resolveProductFromCampaign({
+                  productSlug: campaign.productSlug,
+                  productType: campaign.productType,
+                  size: campaign.size,
+                }),
+                campaign.size as PostcardSize
+              );
 
               return (
                 <Card key={campaign.id} className="p-6 hover:translate-y-0">
@@ -109,6 +124,11 @@ export default function MyCampaignsPage() {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
+                      {isDraft && (
+                        <Link href={resumeHref}>
+                          <Button variant="secondary">Continue setup →</Button>
+                        </Link>
+                      )}
                       {canPay && (
                         <Button
                           onClick={() => createCheckout.mutate({ campaignId: campaign.id })}

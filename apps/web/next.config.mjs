@@ -7,6 +7,26 @@ const nextConfig = {
     "mapbox-gl",
   ],
 
+  async redirects() {
+    return [
+      {
+        source: "/direct-mail-marketing",
+        destination: "/products",
+        permanent: true,
+      },
+      {
+        source: "/every-door-direct-mail",
+        destination: "/products/every-door-direct-mail",
+        permanent: true,
+      },
+      {
+        source: "/targeted-direct-mail",
+        destination: "/products/targeted-direct-mail",
+        permanent: true,
+      },
+    ];
+  },
+
   // Externalize native/server-only packages from the server bundle.
   // This prevents webpack from trying to parse .node binaries (e.g. @napi-rs/canvas)
   // and complex assets from pdfjs-dist when they are imported via API routes / Inngest functions.

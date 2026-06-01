@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AuthButtons } from "./AuthButtons";
 
 const NAV_LINKS = [
+  { href: "/products", label: "Products" },
   { href: "#problem", label: "Problem" },
   { href: "#solution", label: "Solution" },
   { href: "#demo", label: "Demo" },
@@ -43,11 +44,17 @@ export function LandingNav() {
         </Link>
 
         <nav className="landing-nav-links hidden md:flex" aria-label="Main">
-          {NAV_LINKS.map((link) => (
-            <a key={link.href} href={link.href} className="landing-nav-link">
-              {link.label}
-            </a>
-          ))}
+          {NAV_LINKS.map((link) =>
+            link.href.startsWith("#") ? (
+              <a key={link.href} href={link.href} className="landing-nav-link">
+                {link.label}
+              </a>
+            ) : (
+              <Link key={link.href} href={link.href} className="landing-nav-link">
+                {link.label}
+              </Link>
+            )
+          )}
         </nav>
 
         <div className="hidden md:flex items-center gap-2.5 shrink-0">
@@ -96,16 +103,27 @@ export function LandingNav() {
             </div>
 
             <nav className="flex flex-col p-3" aria-label="Mobile">
-              {NAV_LINKS.map((link) => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  className="landing-nav-drawer-link"
-                  onClick={closeMenu}
-                >
-                  {link.label}
-                </a>
-              ))}
+              {NAV_LINKS.map((link) =>
+                link.href.startsWith("#") ? (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    className="landing-nav-drawer-link"
+                    onClick={closeMenu}
+                  >
+                    {link.label}
+                  </a>
+                ) : (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="landing-nav-drawer-link"
+                    onClick={closeMenu}
+                  >
+                    {link.label}
+                  </Link>
+                )
+              )}
             </nav>
 
             <div className="mt-auto p-5 pt-2 border-t border-[var(--color-border)] flex flex-col gap-3">

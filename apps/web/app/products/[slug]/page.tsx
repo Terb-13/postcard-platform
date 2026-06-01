@@ -38,16 +38,16 @@ export default async function ProductDetailPage({ params }: PageProps) {
       <main>
         <ProductDetailHero product={product} />
 
-        <div className={`${marketingContainerNarrow} space-y-16 py-16 pb-20`}>
+        <div className={`${marketingContainerNarrow} space-y-12 py-12 pb-20 sm:space-y-16 sm:py-16`}>
           <ProductBenefitsGrid product={product} />
 
           <section>
-            <h2 className="mb-4 text-xl font-semibold text-[#0A2540]">Ideal for</h2>
+            <h2 className="mb-4 text-lg font-semibold text-[#0A2540] sm:text-xl">Ideal for</h2>
             <div className="flex flex-wrap gap-2">
               {product.idealFor.map((item) => (
                 <span
                   key={item}
-                  className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 shadow-sm"
+                  className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:border-[#0EA5E9]/30"
                 >
                   {item}
                 </span>

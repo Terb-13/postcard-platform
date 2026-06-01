@@ -6,10 +6,9 @@ import { AuthButtons } from "@/components/landing/AuthButtons";
 
 /** redesign/index.html — Nav links & structure */
 const NAV_LINKS = [
-  { href: "#products", label: "Products" },
+  { href: "/products", label: "Products" },
   { href: "#how-it-works", label: "How it Works" },
   { href: "#map-tool", label: "Map Tool" },
-  { href: "/direct-mail-marketing", label: "Solutions" },
 ] as const;
 
 export function MarketingNav() {
