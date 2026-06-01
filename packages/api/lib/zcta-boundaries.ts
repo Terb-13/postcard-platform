@@ -34,7 +34,7 @@ function setCache(key: string, data: FeatureCollection): void {
 
 async function tigerQuery(params: Record<string, string>): Promise<FeatureCollection> {
   const url = `${TIGER_ZCTA_LAYER}?${new URLSearchParams(params).toString()}`;
-  const res = await fetch(url, { next: { revalidate: 86400 } } as RequestInit);
+  const res = await fetch(url, { headers: { Accept: "application/json" } });
   if (!res.ok) {
     throw new Error(`TIGERweb error (${res.status})`);
   }

@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { ZipSearch } from "@/components/targeting/ZipSearch";
+import { SelectedZctaChips } from "@/components/targeting/SelectedZctaChips";
 import type { SelectedZcta, TargetingFilters } from "@/components/targeting/types";
 import { cn } from "@/lib/utils";
 import { MarketingDemographicFilters } from "./MarketingDemographicFilters";
-import { formatTargetAreaSummary } from "./marketing-map-utils";
 import type { MarketingMapVariant } from "./marketing-map-variant";
 import {
   marketingMapFieldClass,
@@ -16,6 +16,8 @@ import {
 type Props = {
   zctas: SelectedZcta[];
   onSelectZip: (zcta: SelectedZcta) => void;
+  onRemoveZcta: (zcta: string) => void;
+  onClearAll?: () => void;
   filters?: TargetingFilters;
   onFiltersChange: (filters: TargetingFilters | undefined) => void;
   variant?: MarketingMapVariant;
@@ -26,13 +28,14 @@ type Props = {
 export function MarketingMapControlsPanel({
   zctas,
   onSelectZip,
+  onRemoveZcta,
+  onClearAll,
   filters,
   onFiltersChange,
   variant = "homepage",
   className,
 }: Props) {
   const [radius, setRadius] = useState(2.5);
-  const areaSummary = formatTargetAreaSummary(zctas);
   const searchLabel = variant === "homepage" ? "Target area" : "Search location";
 
   return (
@@ -50,17 +53,16 @@ export function MarketingMapControlsPanel({
           className="marketing-zip-search"
           placeholder={variant === "homepage" ? "City, state, or ZIP code" : "Denver, CO or ZIP"}
         />
-        {areaSummary ? (
-          <input
-            type="text"
-            readOnly
-            value={areaSummary}
-            className={cn(
-              marketingMapFieldClass,
-              variant === "homepage" ? "mt-3 px-4 py-3" : "mt-3 text-gray-600"
-            )}
-            aria-label="Selected target area"
-          />
+        <SelectedZctaChips
+          zctas={zctas}
+          onRemove={onRemoveZcta}
+          onClearAll={onClearAll}
+          className="mt-3"
+        />
+        {zctas.length === 0 ? (
+          <p className="mt-3 text-sm text-gray-500">
+            Search for a ZIP or click boundaries on the map to build your audience.
+          </p>
         ) : null}
       </div>
 

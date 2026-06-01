@@ -276,7 +276,14 @@ export const targetingRouter = router({
   getZctaBoundaries: publicProcedure
     .input(z.object({ zctas: zctaArraySchema }))
     .query(async ({ input }) => {
-      return getZctaBoundaries(input.zctas);
+      try {
+        return await getZctaBoundaries(input.zctas);
+      } catch (err) {
+        if (err instanceof TRPCError) throw err;
+        const message =
+          err instanceof Error ? err.message : "Failed to load ZIP boundaries from Census TIGERweb";
+        throw new TRPCError({ code: "BAD_GATEWAY", message, cause: err });
+      }
     }),
 
   /** ZCTAs visible in map viewport */

@@ -22,6 +22,7 @@ import { MarketingMapResultsPanel } from "@/components/marketing/MarketingMapRes
 import { marketingMapCanvasClass } from "@/components/marketing/marketing-map-styles";
 import type { MarketingMapVariant } from "@/components/marketing/marketing-map-variant";
 import { ZipSearch } from "./ZipSearch";
+import { SelectedZctaChips } from "./SelectedZctaChips";
 import { StatsSidebar } from "./StatsSidebar";
 import { DrawControl, useMapDrawInteractions } from "./MapDrawControl";
 import { incomeToColor, INCOME_LEGEND_GRADIENT } from "./income-scale";
@@ -252,11 +253,25 @@ export function TargetingMap({
 
   useEffect(() => {
     if (selectedBoundaries.isError) {
+      const detail = selectedBoundaries.error
+        ? formatTrpcError(selectedBoundaries.error)
+        : "";
       setMapNotice(
-        "Could not load ZIP boundaries. Check your connection or try fewer ZIPs."
+        detail
+          ? `Could not load ZIP boundaries: ${detail}`
+          : "Could not load ZIP boundaries. Check your connection or try fewer ZIPs."
       );
+      return;
     }
-  }, [selectedBoundaries.isError]);
+    if (selectedBoundaries.isSuccess && mapNotice?.startsWith("Could not load ZIP boundaries")) {
+      setMapNotice(null);
+    }
+  }, [
+    selectedBoundaries.isError,
+    selectedBoundaries.isSuccess,
+    selectedBoundaries.error,
+    mapNotice,
+  ]);
 
   const statsByZcta = useMemo(() => {
     const map = new Map<string, { medianIncome: number | null; population: number }>();
@@ -494,7 +509,11 @@ export function TargetingMap({
         </p>
         <div className="mt-6 max-w-md mx-auto">
           <ZipSearch onSelect={addZcta} />
-          <SelectedChips zctas={selection.zctas} onRemove={removeZcta} className="mt-4 justify-center" />
+          <SelectedZctaChips
+            zctas={selection.zctas}
+            onRemove={removeZcta}
+            className="mt-4 justify-center"
+          />
         </div>
         <div className="mt-6">
           <StatsSidebar {...sidebarProps} />
@@ -521,6 +540,8 @@ export function TargetingMap({
         <MarketingMapControlsPanel
           zctas={selection.zctas}
           onSelectZip={addZcta}
+          onRemoveZcta={removeZcta}
+          onClearAll={clearSelection}
           filters={selection.filters}
           onFiltersChange={(filters) => onSelectionChange({ ...selection, filters })}
           variant={mapVariant}
@@ -651,7 +672,7 @@ export function TargetingMap({
               </p>
             </div>
             <ZipSearch onSelect={addZcta} />
-            <SelectedChips zctas={selection.zctas} onRemove={removeZcta} />
+            <SelectedZctaChips zctas={selection.zctas} onRemove={removeZcta} />
           </div>
           <StatsSidebar
             className="min-h-0 flex-1 rounded-none border-0 shadow-none targeting-sidebar-flat"
@@ -697,7 +718,7 @@ export function TargetingMap({
           <>
             <div className="space-y-3 lg:hidden">
               <ZipSearch onSelect={addZcta} />
-              <SelectedChips zctas={selection.zctas} onRemove={removeZcta} />
+              <SelectedZctaChips zctas={selection.zctas} onRemove={removeZcta} />
             </div>
             <div className="targeting-map-toolbar hidden shrink-0 items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] bg-[var(--color-surface)] px-4 py-2 lg:flex">
               <div className="flex items-center gap-2">
@@ -710,7 +731,9 @@ export function TargetingMap({
           </>
         )}
 
-        {!demoMode && <SelectedChips zctas={selection.zctas} onRemove={removeZcta} />}
+        {!demoMode && (
+          <SelectedZctaChips zctas={selection.zctas} onRemove={removeZcta} />
+        )}
 
         {mapNotice && (
           <p
@@ -953,30 +976,3 @@ function MobileStatsFab({
   );
 }
 
-function SelectedChips({
-  zctas,
-  onRemove,
-  className,
-}: {
-  zctas: SelectedZcta[];
-  onRemove: (zcta: string) => void;
-  className?: string;
-}) {
-  if (zctas.length === 0) return null;
-  return (
-    <div className={cn("flex flex-wrap gap-1.5 items-center", className)}>
-      {zctas.map((z) => (
-        <button
-          key={z.zcta}
-          type="button"
-          onClick={() => onRemove(z.zcta)}
-          className="targeting-chip"
-          title="Remove from selection"
-        >
-          {z.zcta}
-          <span aria-hidden className="opacity-60">×</span>
-        </button>
-      ))}
-    </div>
-  );
-}
