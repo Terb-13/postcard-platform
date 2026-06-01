@@ -54,6 +54,19 @@ model SavedMap {
   @@index([organizationId])
 }
 
+enum MailingJobType {
+  EDDM
+  TARGETED
+}
+
+enum MailingJobStatus {
+  PENDING
+  LIST_GENERATED
+  SENT_TO_PRINTER
+  COMPLETED
+  FAILED
+}
+
 // Campaign (customer order)
 model Campaign {
   id                    String   @id @default(cuid())
@@ -63,6 +76,8 @@ model Campaign {
   name                  String
   size                  String   // e.g. "6x11", "4x6"
   quantity              Int
+  /// EDDM | TARGETED — drives post-checkout finalize path
+  productType           String   @default("EDDM")
   dropDate              DateTime?
   notes                 String?
   status                String   @default("DRAFT") // DRAFT | READY_FOR_PAYMENT | PAID | IN_PRODUCTION | COMPLETED
@@ -88,9 +103,43 @@ model Campaign {
   artwork          Artwork?
   productionJobs   ProductionJob[]
   targetingCriteria TargetingCriteria?
+  mailingJob       MailingJob?
 
   @@index([organizationId, status])
   @@index([status])
+}
+
+/// Post-checkout fulfillment: real route/list counts, final pricing, manifest for print partner
+model MailingJob {
+  id                  String           @id @default(cuid())
+  campaignId          String           @unique
+  campaign            Campaign         @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  type                MailingJobType
+  status              MailingJobStatus @default(PENDING)
+
+  estimatedTotalCents Int
+  finalTotalCents     Int?
+  costBreakdown       Json?
+
+  selectedRoutes      Json?
+  eddmTotalHomes      Int?
+
+  listProvider        String?
+  listRequestId       String?
+  recipientCount      Int?
+
+  manifestUrl         String?
+  finalQuantity       Int?
+  dropDate            DateTime?
+
+  errorMessage        String?
+
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@index([status])
+  @@index([type, status])
 }
 
 // Census-backed geo-targeting snapshot (optional 1:1 with Campaign)

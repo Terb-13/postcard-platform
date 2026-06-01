@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { formatCurrency, formatNumber, cn } from "@/lib/utils";
+import { formatCurrency, formatUnitPrice, formatNumber, cn } from "@/lib/utils";
 import type { SelectedZcta } from "@/components/targeting/types";
 import type { MarketingMapVariant } from "./marketing-map-variant";
 import { marketingMapPanelClass, marketingMapPanelLabelClass } from "./marketing-map-styles";
@@ -122,7 +122,7 @@ export function MarketingMapResultsPanel({
           </span>
           {unitCents != null && showReach && (
             <span className="text-xs text-gray-500">
-              ({formatCurrency(unitCents)} per piece)
+              ({formatUnitPrice(unitCents)} per piece)
             </span>
           )}
         </div>

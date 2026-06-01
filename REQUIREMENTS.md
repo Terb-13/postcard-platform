@@ -59,6 +59,13 @@ MAPBOX_ACCESS_TOKEN=pk....       # Server-side geocoding (can match public token
 
 # Pricing (optional)
 POSTCARD_BASE_RATE_CENTS=12
+POSTAGE_CENTS_PER_PIECE=20
+
+# Fulfillment / EDDM routes (staging + production)
+EDDM_ROUTES_PROVIDER=stub
+EDDM_ROUTES_API_URL=
+EDDM_ROUTES_API_KEY=
+MELISSA_API_KEY=
 
 # App
 NEXT_PUBLIC_APP_URL=http://localhost:3000

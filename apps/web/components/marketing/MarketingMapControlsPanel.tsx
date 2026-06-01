@@ -73,14 +73,22 @@ export function MarketingMapControlsPanel({
         className="mb-6"
       />
 
-      <div className={variant === "homepage" ? "mt-auto" : "mt-auto pt-2"}>
+      <div
+        className={cn(
+          variant === "homepage" ? "mt-auto" : "mt-auto pt-2",
+          "opacity-60"
+        )}
+        title="Radius targeting is not available yet"
+      >
         <div
           className={cn(
-            "flex justify-between text-sm text-[#0A2540]",
+            "flex justify-between text-sm text-gray-500",
             variant === "homepage" ? "mb-2" : "mb-1.5"
           )}
         >
-          <span className={variant === "homepage" ? "font-medium" : undefined}>Radius</span>
+          <span className={variant === "homepage" ? "font-medium" : undefined}>
+            Radius (coming soon)
+          </span>
           <span className="font-semibold tabular-nums">{radius} mi</span>
         </div>
         <input
@@ -89,9 +97,9 @@ export function MarketingMapControlsPanel({
           max={5}
           step={0.5}
           value={radius}
-          onChange={(e) => setRadius(Number(e.target.value))}
-          className="h-2 w-full cursor-pointer accent-[#0EA5E9]"
-          aria-label="Target radius in miles"
+          disabled
+          className="h-2 w-full cursor-not-allowed accent-[#0EA5E9]"
+          aria-label="Target radius in miles (coming soon)"
         />
       </div>
     </aside>

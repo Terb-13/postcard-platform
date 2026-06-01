@@ -65,9 +65,12 @@ export function MarketingDemographicFilters({
           />
           <span>Household Income $75k+</span>
         </label>
-        <label className="flex items-center gap-x-2 opacity-60" title="Coming soon">
-          <input type="checkbox" checked disabled className={CHECKBOX_CLASS} />
-          <span>Homeowners</span>
+        <label
+          className="flex cursor-not-allowed items-center gap-x-2 text-gray-500"
+          title="Homeowner targeting is not available yet"
+        >
+          <input type="checkbox" checked={false} disabled className={CHECKBOX_CLASS} />
+          <span>Homeowners (coming soon)</span>
         </label>
         <label className="flex cursor-pointer items-center gap-x-2">
           <input
@@ -86,6 +89,12 @@ export function MarketingDemographicFilters({
             <span>Business Owners</span>
           </label>
         ) : null}
+        {(incomeOn || moversOn) && (
+          <p className="pt-1 text-xs text-gray-500">
+            Reach and cost update from Census household data for your selected ZIP
+            {incomeOn && moversOn ? "s" : ""}.
+          </p>
+        )}
       </div>
     </div>
   );

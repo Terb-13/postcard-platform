@@ -40,6 +40,7 @@ export const campaignRouter = router({
         name: z.string().min(1),
         size: z.string(),
         quantity: z.number().int().min(100).optional(),
+        productType: z.enum(["EDDM", "TARGETED"]).optional(),
         dropDate: z.string().optional(), // ISO date string
         notes: z.string().optional(),
         targeting: targetingInputSchema,
@@ -106,6 +107,7 @@ export const campaignRouter = router({
           organizationId: ctx.user.organizationId,
           name: input.name,
           size: input.size,
+          productType: input.productType ?? "EDDM",
           quantity,
           dropDate,
           notes: input.notes,

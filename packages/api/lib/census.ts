@@ -28,6 +28,16 @@ export const CENSUS_VARS = {
   households: "B11001_001E",
 } as const;
 
+/** B19001 household income brackets — share of households at $75k+ */
+export const CENSUS_INCOME_BRACKET_VARS = {
+  total: "B19001_001E",
+  from75kTo100k: "B19001_013E",
+  from100kTo125k: "B19001_014E",
+  from125kTo150k: "B19001_015E",
+  from150kTo200k: "B19001_016E",
+  from200kPlus: "B19001_017E",
+} as const;
+
 /** Profile-table variable codes (acs/acs5/profile — DP02 mobility) */
 export const CENSUS_PROFILE_VARS = {
   /** DP02: percent living in the same house 1 year ago; movers ≈ 100 − this value */
@@ -53,6 +63,8 @@ export interface ZipDemographics {
   households: number;
   /** Approximate % who did not live in the same house 1 year ago (from DP02) */
   moverPercent: number | null;
+  /** Share of households earning $75k+ (0–1), from B19001 income brackets */
+  income75kPlusShare: number | null;
 }
 
 export interface ACSStatsResult {
@@ -143,7 +155,23 @@ function emptyZcta(zcta: string): ZipDemographics {
     medianIncome: null,
     households: 0,
     moverPercent: null,
+    income75kPlusShare: null,
   };
+}
+
+function income75kPlusShareFromBrackets(headers: string[], row: string[]): number | null {
+  const idx = (name: string) => headers.indexOf(name);
+  const total = parseNumber(row[idx(CENSUS_INCOME_BRACKET_VARS.total)]);
+  if (total == null || total <= 0) return null;
+
+  const above75k =
+    (parseNumber(row[idx(CENSUS_INCOME_BRACKET_VARS.from75kTo100k)]) ?? 0) +
+    (parseNumber(row[idx(CENSUS_INCOME_BRACKET_VARS.from100kTo125k)]) ?? 0) +
+    (parseNumber(row[idx(CENSUS_INCOME_BRACKET_VARS.from125kTo150k)]) ?? 0) +
+    (parseNumber(row[idx(CENSUS_INCOME_BRACKET_VARS.from150kTo200k)]) ?? 0) +
+    (parseNumber(row[idx(CENSUS_INCOME_BRACKET_VARS.from200kPlus)]) ?? 0);
+
+  return Math.min(1, Math.max(0, above75k / total));
 }
 
 function parseDetailRow(headers: string[], row: string[], moverByZcta: Map<string, number | null>): ZipDemographics {
@@ -161,6 +189,7 @@ function parseDetailRow(headers: string[], row: string[], moverByZcta: Map<strin
     medianIncome: income,
     households,
     moverPercent: moverByZcta.get(zcta) ?? null,
+    income75kPlusShare: income75kPlusShareFromBrackets(headers, row),
   };
 }
 
@@ -262,7 +291,10 @@ async function fetchProfileMoverPercents(zctas: string[]): Promise<Map<string, n
 
 async function fetchZctasFromApi(zctas: string[]): Promise<Map<string, ZipDemographics>> {
   const base = `https://api.census.gov/data/${ACS_YEAR}/${ACS_DATASET}`;
-  const vars = Object.values(CENSUS_VARS).join(",");
+  const vars = [
+    ...Object.values(CENSUS_VARS),
+    ...Object.values(CENSUS_INCOME_BRACKET_VARS),
+  ].join(",");
 
   const [detailJson, moverByZcta] = await Promise.all([
     fetchCensusJson(base, zctas, `NAME,${vars}`),

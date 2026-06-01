@@ -35,12 +35,45 @@ const geoJsonPolygonSchema = z
 
 type ACSStats = Awaited<ReturnType<typeof getACSStats>>;
 
+/** Household reach for one ZCTA after audience filters (income / movers). */
+function filteredHouseholdsForZcta(
+  z: ACSStats["zctas"][0],
+  filters: z.infer<typeof filtersSchema>
+): number {
+  let households = z.households;
+
+  if (filters.minIncome != null) {
+    if (z.income75kPlusShare != null) {
+      households = Math.round(households * z.income75kPlusShare);
+    } else if (z.medianIncome == null || z.medianIncome < filters.minIncome) {
+      return 0;
+    }
+  }
+
+  if (filters.maxIncome != null && (z.medianIncome == null || z.medianIncome > filters.maxIncome)) {
+    return 0;
+  }
+
+  if (filters.minMoverPercent != null) {
+    if (z.moverPercent == null || z.moverPercent < filters.minMoverPercent) {
+      return 0;
+    }
+    households = Math.round(households * (z.moverPercent / 100));
+  }
+
+  return households;
+}
+
 function applyFilters(stats: ACSStats, filters?: z.infer<typeof filtersSchema>): ACSStats {
   if (!filters) return stats;
 
   const filtered = stats.zctas.filter((z) => {
-    if (filters.minIncome != null && (z.medianIncome == null || z.medianIncome < filters.minIncome)) {
-      return false;
+    if (filters.minIncome != null) {
+      if (z.income75kPlusShare != null) {
+        if (z.income75kPlusShare <= 0) return false;
+      } else if (z.medianIncome == null || z.medianIncome < filters.minIncome) {
+        return false;
+      }
     }
     if (filters.maxIncome != null && (z.medianIncome == null || z.medianIncome > filters.maxIncome)) {
       return false;
@@ -51,11 +84,11 @@ function applyFilters(stats: ACSStats, filters?: z.infer<typeof filtersSchema>):
     ) {
       return false;
     }
-    return true;
+    return filteredHouseholdsForZcta(z, filters) > 0;
   });
 
   const population = filtered.reduce((s, r) => s + r.population, 0);
-  const households = filtered.reduce((s, r) => s + r.households, 0);
+  const households = filtered.reduce((s, r) => s + filteredHouseholdsForZcta(r, filters), 0);
   const incomes = filtered.map((r) => r.medianIncome).filter((n): n is number => n != null);
   const movers = filtered.map((r) => r.moverPercent).filter((n): n is number => n != null);
 

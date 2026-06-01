@@ -3,6 +3,7 @@ import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/db";
 import { sendEmail, emailTemplates } from "@/lib/email";
 import { targetingPayloadBlock } from "@/lib/targeting-summary";
+import { ensureMailingJobForCampaign } from "@postcard-platform/api/services/mailing-finalize.service";
 import type { Prisma } from "@prisma/client";
 
 export const runtime = "nodejs";
@@ -94,6 +95,9 @@ export async function POST(req: NextRequest) {
         },
       });
 
+      // 3b. Fulfillment job (real route/list counts + final pricing — finalized via /api/campaigns/[id]/finalize)
+      const mailingJob = await ensureMailingJobForCampaign(campaign);
+
       // 4. Advance campaign to IN_PRODUCTION
       await prisma.campaign.update({
         where: { id: campaign.id },
@@ -129,7 +133,9 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      console.log(`✅ Campaign ${campaignId} paid. ProductionJob ${productionJob.id} created.`);
+      console.log(
+        `✅ Campaign ${campaignId} paid. ProductionJob ${productionJob.id}, MailingJob ${mailingJob.id} created.`
+      );
     } catch (err) {
       console.error("Error processing Stripe webhook for campaign", campaignId, err);
       // Still return 200 so Stripe doesn't retry forever

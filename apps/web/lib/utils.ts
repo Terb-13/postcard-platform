@@ -13,6 +13,16 @@ export function formatCurrency(cents: number): string {
   }).format(cents / 100);
 }
 
+/** Per-piece rate — always show cents (totals use {@link formatCurrency}). */
+export function formatUnitPrice(cents: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(cents / 100);
+}
+
 export function formatNumber(n: number): string {
   return new Intl.NumberFormat("en-US").format(n);
 }
