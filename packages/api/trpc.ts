@@ -1,23 +1,25 @@
 import { initTRPC, TRPCError } from "@trpc/server";
-import superjson from "superjson";
 import { prisma } from "@postcard-platform/db/client";
 
-import type { User } from "@prisma/client";
+import type { PrismaClient, User } from "@prisma/client";
+
+export type TRPCContext = {
+  prisma: PrismaClient;
+  user: User | null;
+};
 
 interface CreateContextOptions {
   user: User | null;
 }
 
-export const createTRPCContext = async (opts: CreateContextOptions) => {
+export const createTRPCContext = async (opts: CreateContextOptions): Promise<TRPCContext> => {
   return {
     prisma,
     user: opts.user,
   };
 };
 
-const t = initTRPC.context<typeof createTRPCContext>().create({
-  transformer: superjson,
-});
+const t = initTRPC.context<TRPCContext>().create();
 
 export const router = t.router;
 export const publicProcedure = t.procedure;
