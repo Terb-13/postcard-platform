@@ -19,6 +19,8 @@ import { trpc } from "@/lib/trpc/client";
 import { cn, formatCurrency, formatNumber, formatTrpcError } from "@/lib/utils";
 import { MarketingMapControlsPanel } from "@/components/marketing/MarketingMapControlsPanel";
 import { MarketingMapResultsPanel } from "@/components/marketing/MarketingMapResultsPanel";
+import { marketingMapCanvasClass } from "@/components/marketing/marketing-map-styles";
+import type { MarketingMapVariant } from "@/components/marketing/marketing-map-variant";
 import { ZipSearch } from "./ZipSearch";
 import { StatsSidebar } from "./StatsSidebar";
 import { DrawControl, useMapDrawInteractions } from "./MapDrawControl";
@@ -68,6 +70,8 @@ type Props = {
   mobileStatsSheet?: boolean;
   /** 3-column marketing layout (redesign/map-tool.html) — requires demoMode */
   marketingLayout?: boolean;
+  /** homepage vs standalone map-tool page styling */
+  marketingMapVariant?: MarketingMapVariant;
   /** Live estimate for marketing section header (total cost) */
   onMarketingEstimate?: (payload: {
     estimate: {
@@ -101,6 +105,7 @@ export function TargetingMap({
   hideDrawControl = false,
   mobileStatsSheet = false,
   marketingLayout = false,
+  marketingMapVariant = "homepage",
   onMarketingEstimate,
   sidebarFooter,
 }: Props) {
@@ -500,12 +505,14 @@ export function TargetingMap({
 
   if (useMarketingLayout) {
     const estimate = estimateQuery.data ?? null;
+    const mapVariant = marketingMapVariant;
     const resultsPanel = (
       <MarketingMapResultsPanel
         zctas={selection.zctas}
         estimate={estimate}
         isLoading={isInitialLoading}
         isUpdating={isUpdating}
+        variant={mapVariant}
       />
     );
 
@@ -516,6 +523,7 @@ export function TargetingMap({
           onSelectZip={addZcta}
           filters={selection.filters}
           onFiltersChange={(filters) => onSelectionChange({ ...selection, filters })}
+          variant={mapVariant}
         />
 
         <div className="order-2 flex flex-col lg:col-span-6">
@@ -528,7 +536,7 @@ export function TargetingMap({
             </p>
           )}
 
-          <div className="marketing-map-canvas relative h-[320px] overflow-hidden rounded-3xl border border-gray-200 bg-gray-100 shadow-[0_10px_15px_-3px_rgb(15_23_42_/_0.1)] sm:h-[400px] lg:h-[520px]">
+          <div className={marketingMapCanvasClass(mapVariant)}>
             <MapGL
               ref={mapRef}
               {...viewState}

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map Tool • Postcard Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        body { font-family: 'Inter', system_ui, sans-serif; }
+        .navy { color: #0A2540; }
+        .bg-navy { background-color: #0A2540; }
+        .teal { color: #0EA5E9; }
+        .map-container { border-radius: 12px; overflow: hidden; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
+    </style>
+</head>
+<body class="bg-[#fafaf9]">
+    <nav class="bg-white border-b px-8 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-x-3">
+            <div class="w-8 h-8 bg-[#0A2540] rounded-2xl flex items-center justify-center">
+                <span class="text-white font-bold">P</span>
+            </div>
+            <span class="font-semibold text-xl">Postcard</span>
+            <span class="text-gray-400">/ Map Tool</span>
+        </div>
+        <div class="flex items-center gap-x-4 text-sm">
+            <a href="index.html" class="text-gray-600 hover:text-[#0A2540]">← Back to Home</a>
+            <button class="px-4 py-2 text-sm border rounded-2xl">Save Targeting</button>
+            <button onclick="continueToDesign()" class="bg-[#0A2540] text-white px-6 py-2 rounded-2xl text-sm font-semibold">Continue to Design</button>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-8 py-8">
+        <div class="flex justify-between items-end mb-6">
+            <div>
+                <h1 class="text-4xl font-semibold tracking-tight">Targeting Map</h1>
+                <p class="text-gray-600">Select areas using real Census data • Live pricing updates</p>
+            </div>
+            <div class="text-right text-sm">
+                <div class="text-gray-500">Estimated Total</div>
+                <div class="text-3xl font-semibold tabular-nums" id="total-cost">$0</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- Left Controls -->
+            <div class="lg:col-span-3 bg-white rounded-3xl p-6 border">
+                <div class="mb-6">
+                    <div class="text-sm font-semibold mb-2">Search Location</div>
+                    <input type="text" value="Denver, CO 80202" class="w-full border rounded-2xl px-4 py-2.5 text-sm">
+                </div>
+
+                <div class="mb-6">
+                    <div class="text-sm font-semibold mb-3">Filters</div>
+                    <div class="space-y-3 text-sm">
+                        <label class="flex items-center gap-2"><input type="checkbox" checked class="accent-[#0EA5E9]"> Household Income $75k+</label>
+                        <label class="flex items-center gap-2"><input type="checkbox" checked class="accent-[#0EA5E9]"> Homeowners</label>
+                        <label class="flex items-center gap-2"><input type="checkbox" class="accent-[#0EA5E9]"> Recent Movers</label>
+                        <label class="flex items-center gap-2"><input type="checkbox" class="accent-[#0EA5E9]"> Business Owners</label>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-sm mb-1.5">
+                        <span>Radius</span>
+                        <span id="radius-value">2.5 mi</span>
+                    </div>
+                    <input type="range" id="radius" min="0.5" max="5" step="0.5" value="2.5" class="w-full accent-[#0EA5E9]">
+                </div>
+            </div>
+
+            <!-- Map -->
+            <div class="lg:col-span-6">
+                <div id="map" class="map-container w-full h-[520px] bg-gray-100 rounded-3xl"></div>
+            </div>
+
+            <!-- Right Panel -->
+            <div class="lg:col-span-3 bg-white rounded-3xl p-6 border flex flex-col">
+                <div>
+                    <div class="text-sm font-semibold mb-2">Selected Areas</div>
+                    <div id="selected-areas" class="min-h-[80px] text-sm text-gray-600">
+                        Click areas on the map to select
+                    </div>
+                </div>
+
+                <div class="mt-auto pt-6 border-t">
+                    <div class="flex justify-between mb-1">
+                        <span class="text-sm">Estimated Reach</span>
+                        <span class="font-semibold tabular-nums" id="reach">0</span>
+                    </div>
+                    <div class="flex justify-between mb-4">
+                        <span class="text-sm">Total Cost</span>
+                        <span class="font-semibold text-xl tabular-nums" id="live-cost">$0</span>
+                    </div>
+
+                    <button onclick="continueToDesign()" 
+                            class="w-full bg-[#0EA5E9] hover:bg-[#0284C8] text-white font-semibold py-3.5 rounded-3xl">
+                        Continue to Design &amp; Order
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let map;
+        function initMap() {
+            map = L.map('map').setView([39.7392, -104.9903], 11);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+            // Demo clickable areas
+            const demoAreas = [
+                {lat: 39.7392, lng: -104.9903, name: "Downtown Denver", reach: 4820},
+                {lat: 39.75, lng: -105.01, name: "Highland", reach: 2890},
+                {lat: 39.72, lng: -104.95, name: "Cherry Creek", reach: 3140}
+            ];
+
+            demoAreas.forEach(area => {
+                const circle = L.circle([area.lat, area.lng], {
+                    color: '#0EA5E9', fillColor: '#0EA5E9', fillOpacity: 0.2, radius: 1800
+                }).addTo(map);
+
+                circle.on('click', () => {
+                    alert(`Selected: ${area.name}\n\n(This is a prototype. In the real tool this would add the area to your selection and update the sidebar live.)`);
+                });
+            });
+        }
+
+        function continueToDesign() {
+            alert("Prototype: This would proceed to the Design/Upload step with your current targeting saved.");
+        }
+
+        window.onload = function() {
+            initMap();
+        }
+    </script>
+</body>
+</html>

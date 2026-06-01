@@ -1,6 +1,7 @@
 "use client";
 
 import type { TargetingFilters } from "@/components/targeting/types";
+import type { MarketingMapVariant } from "./marketing-map-variant";
 import { marketingMapPanelLabelClass } from "./marketing-map-styles";
 
 function isIncome75k(filters?: TargetingFilters) {
@@ -14,15 +15,22 @@ function isMovers(filters?: TargetingFilters) {
 type Props = {
   filters?: TargetingFilters;
   onChange: (filters: TargetingFilters | undefined) => void;
+  variant?: MarketingMapVariant;
   className?: string;
 };
 
 const CHECKBOX_CLASS = "h-4 w-4 shrink-0 rounded border-gray-300 accent-[#0EA5E9]";
 
-/** redesign/map-tool.html — active filters only (no disabled placeholder rows) */
-export function MarketingDemographicFilters({ filters, onChange, className }: Props) {
+/** redesign/index.html + map-tool.html — demographic filter checkboxes */
+export function MarketingDemographicFilters({
+  filters,
+  onChange,
+  variant = "homepage",
+  className,
+}: Props) {
   const incomeOn = isIncome75k(filters);
   const moversOn = isMovers(filters);
+  const sectionLabel = variant === "homepage" ? "Demographics" : "Filters";
 
   const setIncome = (checked: boolean) => {
     const next: TargetingFilters = { ...filters };
@@ -42,9 +50,13 @@ export function MarketingDemographicFilters({ filters, onChange, className }: Pr
 
   return (
     <div className={className}>
-      <p className={marketingMapPanelLabelClass}>Filters</p>
-      <div className="space-y-3 text-sm text-gray-700">
-        <label className="flex cursor-pointer items-center gap-2">
+      <p className={marketingMapPanelLabelClass}>{sectionLabel}</p>
+      <div
+        className={
+          variant === "homepage" ? "space-y-2 text-sm text-gray-700" : "space-y-3 text-sm text-gray-700"
+        }
+      >
+        <label className="flex cursor-pointer items-center gap-x-2">
           <input
             type="checkbox"
             checked={incomeOn}
@@ -53,15 +65,27 @@ export function MarketingDemographicFilters({ filters, onChange, className }: Pr
           />
           <span>Household Income $75k+</span>
         </label>
-        <label className="flex cursor-pointer items-center gap-2">
+        <label className="flex items-center gap-x-2 opacity-60" title="Coming soon">
+          <input type="checkbox" checked disabled className={CHECKBOX_CLASS} />
+          <span>Homeowners</span>
+        </label>
+        <label className="flex cursor-pointer items-center gap-x-2">
           <input
             type="checkbox"
             checked={moversOn}
             onChange={(e) => setMovers(e.target.checked)}
             className={CHECKBOX_CLASS}
           />
-          <span>Recent Movers</span>
+          <span>
+            {variant === "homepage" ? "Recent Movers (last 12 mo)" : "Recent Movers"}
+          </span>
         </label>
+        {variant === "standalone" ? (
+          <label className="flex items-center gap-x-2 opacity-60" title="Coming soon">
+            <input type="checkbox" disabled className={CHECKBOX_CLASS} />
+            <span>Business Owners</span>
+          </label>
+        ) : null}
       </div>
     </div>
   );

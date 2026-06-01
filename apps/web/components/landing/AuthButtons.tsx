@@ -67,6 +67,8 @@ function StartTargetingLink({ className }: { className?: string }) {
 
 const heroCtaClass = "btn-hero-primary auth-button w-full sm:w-auto justify-center";
 const MARKETING_ORDER_CTA = "Start an Order";
+/** redesign/index.html — Final CTA primary button */
+const MARKETING_FINAL_CTA = "Start Your First Campaign";
 
 const marketingNavPrimaryClass =
   "inline-flex min-h-[44px] items-center justify-center rounded-3xl bg-[#0A2540] px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-black";
@@ -100,8 +102,8 @@ export function AuthButtons({ variant = "nav", onAction, ctaIcon }: AuthButtonsP
     }
     if (variant === "marketing-final") {
       return (
-        <Link href="/sign-up" className={marketingNavPrimaryClass + " px-10 py-4 text-lg"}>
-          {MARKETING_ORDER_CTA}
+        <Link href="/sign-up" className={`${marketingNavPrimaryClass} px-10 py-4 text-lg`}>
+          {MARKETING_FINAL_CTA}
         </Link>
       );
     }
@@ -219,13 +221,13 @@ export function AuthButtons({ variant = "nav", onAction, ctaIcon }: AuthButtonsP
               type="button"
               className={`${marketingNavPrimaryClass} px-10 py-4 text-lg`}
             >
-              {MARKETING_ORDER_CTA}
+              {MARKETING_FINAL_CTA}
             </button>
           </SignUpButton>
         </SignedOut>
         <SignedIn>
           <Link href="/campaigns/new" className={`${marketingNavPrimaryClass} px-10 py-4 text-lg`}>
-            {MARKETING_ORDER_CTA}
+            {MARKETING_FINAL_CTA}
           </Link>
         </SignedIn>
       </>

@@ -1,6 +1,10 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalDependencies": [".env.local"],
+  "globalDependencies": [
+    ".env.local",
+    "apps/web/postcss.config.mjs",
+    "apps/web/tailwind.config.ts"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
