@@ -13,10 +13,14 @@ export {
   marketingSectionPy,
   marketingContainer,
   marketingContainerNarrow,
+  marketingMapSectionPy,
   marketingEyebrow,
   marketingTitleLg,
   marketingTitleMd,
   marketingTitleCta,
+  marketingTitleProducts,
   marketingHeroTitle,
+  marketingProductCard,
+  marketingNavyBand,
 } from "./marketing-design-system";
 export { MarketingFooter } from "./MarketingFooter";

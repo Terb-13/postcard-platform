@@ -1,42 +1,100 @@
 /**
- * Marketing homepage design tokens — aligned to redesign/index.html.
- * Use these instead of per-component clamps and ad-hoc shadows.
+ * Marketing Site Design System
+ * 
+ * This is modeled directly after the visual language and quality in
+ * redesign/index.html and redesign/map-tool.html.
+ * 
+ * Use these for all marketing pages and components.
  */
 
-/** Standard section vertical rhythm (prototype: py-20) */
-export const marketingSectionPy = "py-20";
+export const colors = {
+  navy: '#0A2540',
+  cream: '#fafaf9',
+  teal: '#0EA5E9',
+  white: '#ffffff',
+  text: '#0f172a',
+  textSecondary: '#475569',
+  textMuted: '#64748b',
+  border: '#e7e5e4',
+};
 
-/** Map section only — prototype uses pt-16 pb-20 on white */
-export const marketingMapSectionPy = "pt-16 pb-20";
+/** Generous, premium section padding (prototype uses py-20) */
+export const section = 'py-20';
 
-export const marketingContainer = "mx-auto max-w-7xl px-8";
+/** Map tool section (prototype uses slightly different rhythm) */
+export const mapSection = 'pt-16 pb-20';
 
-/** Narrow centered band (Final CTA) */
-export const marketingContainerNarrow = "mx-auto max-w-4xl px-8";
+/** Standard wide container */
+export const container = 'max-w-7xl mx-auto px-8';
 
+/** Narrow centered container (Final CTA style) */
+export const containerNarrow = 'max-w-4xl mx-auto px-8';
+
+/** Eyebrow label — clean and confident */
+export const eyebrow =
+  'text-xs font-semibold uppercase tracking-[1.5px] text-[#0EA5E9]';
+
+/** Large section titles — matching prototype's confident scale */
+export const titleLg = 'text-5xl font-semibold tracking-tighter text-[#0A2540]';
+
+/** Value props style headline */
+export const titleMd = 'text-4xl font-semibold tracking-tight text-[#0A2540]';
+
+/** Final CTA headline — very strong */
+export const titleCta = 'text-6xl font-semibold tracking-tighter text-[#0A2540]';
+
+/** Hero headline — large and impactful */
+export const heroTitle =
+  'text-6xl lg:text-7xl font-semibold tracking-[-0.04em] leading-[1.05] text-white';
+
+/** Product card — clean, minimal hover, premium */
+export const productCard =
+  'group bg-white border border-gray-200 rounded-3xl p-6 transition-colors hover:border-[#0EA5E9]/40';
+
+/** Navy band (Social Proof style) */
+export const navyBand = 'bg-[#0A2540] text-white/90';
+
+/** Teal accent for interactive elements */
+export const teal = 'text-[#0EA5E9]';
+export const tealHover = 'hover:text-[#0284C8]';
+
+/** Light, premium card shadow (prototype is relatively flat) */
+export const cardShadow = 'shadow-sm';
+
+/** Consistent generous body text treatment (premium, readable, less text-heavy) */
+export const bodyText = 'text-base leading-[1.7] text-gray-600';
+
+/* =========================================================
+   MARKETING ALIASES (expected by components + barrel)
+   These are the authoritative tokens modeled on redesign/index.html
+   ========================================================= */
+
+export const marketingContainer = 'max-w-7xl mx-auto px-8';
+export const marketingContainerNarrow = 'max-w-4xl mx-auto px-8';
+export const marketingSectionPy = 'py-20';
+export const marketingMapSectionPy = 'pt-16 pb-20';
+
+/** Eyebrow — prototype exact: text-[#0EA5E9] uppercase tracking-[1.5px] xs semibold */
 export const marketingEyebrow =
-  "text-xs font-semibold uppercase tracking-[0.15em] text-[#0EA5E9]";
+  'text-xs font-semibold uppercase tracking-[1.5px] text-[#0EA5E9]';
 
-/** Major section titles — prototype text-5xl tracking-tighter */
-export const marketingTitleLg =
-  "text-5xl font-semibold tracking-tighter text-[#0A2540]";
+/** Products / How / Map title — text-5xl semibold tracking-tighter */
+export const marketingTitleLg = 'text-5xl font-semibold tracking-tighter text-[#0A2540]';
+export const marketingTitleProducts = 'text-5xl font-semibold tracking-tight text-[#0A2540]';
 
-/** Value props headline — prototype text-4xl tracking-tight */
-export const marketingTitleMd =
-  "text-4xl font-semibold tracking-tight text-[#0A2540]";
+/** Value props headline */
+export const marketingTitleMd = 'text-4xl font-semibold tracking-tight text-[#0A2540]';
 
-/** Final CTA — prototype text-6xl tracking-tighter */
-export const marketingTitleCta =
-  "text-6xl font-semibold tracking-tighter text-[#0A2540]";
+/** Final CTA super headline */
+export const marketingTitleCta = 'text-6xl font-semibold tracking-tighter text-[#0A2540]';
 
-/** Product grid title — prototype text-5xl tracking-tight */
-export const marketingTitleProducts =
-  "text-5xl font-semibold tracking-tight text-[#0A2540]";
-
-/** Hero H1 — prototype text-7xl */
+/** Hero h1 — matches prototype text-7xl leading tight */
 export const marketingHeroTitle =
-  "text-[clamp(2.75rem,6vw,4.5rem)] font-semibold leading-[1.05] tracking-tighter lg:text-7xl";
+  'text-6xl lg:text-7xl font-semibold tracking-[-0.025em] leading-[1.05] text-white';
 
-/** Prototype product card — light hover, no scale */
+/** Product card — white, rounded-3xl, border, hover teal tint, prototype hover */
 export const marketingProductCard =
-  "rounded-3xl border border-gray-200 bg-white p-6 transition-colors hover:border-[#0EA5E9]/30";
+  'card bg-white border border-gray-200 rounded-3xl p-6 hover:border-[#0EA5E9]/30 transition-all';
+
+/** Navy social proof band */
+export const marketingNavyBand = 'bg-[#0A2540] text-white/90';

@@ -9,7 +9,7 @@ const NAV_LINKS = [
   { href: "#products", label: "Products" },
   { href: "#how-it-works", label: "How it Works" },
   { href: "#map-tool", label: "Map Tool" },
-  { href: "/direct-mail-marketing", label: "Resources" },
+  { href: "/direct-mail-marketing", label: "Solutions" },
 ] as const;
 
 export function MarketingNav() {

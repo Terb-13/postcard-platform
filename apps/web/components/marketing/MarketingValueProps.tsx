@@ -1,6 +1,6 @@
 import {
+  bodyText,
   marketingContainer,
-  marketingEyebrow,
   marketingSectionPy,
   marketingTitleMd,
 } from "./marketing-design-system";
@@ -38,16 +38,18 @@ export function MarketingValueProps() {
     >
       <div className={marketingContainer}>
         <header className="mb-12 text-center">
-          <p className={`${marketingEyebrow} mb-3`}>Why Postcard</p>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[1.5px] text-[#0EA5E9]">
+            WHY POSTCARD
+          </p>
           <h2 className={marketingTitleMd}>Built for results, not guesswork.</h2>
         </header>
 
-        <div className="grid gap-8 md:grid-cols-4">
+        <div className="grid gap-10 md:grid-cols-4">
           {VALUE_PROPS.map((item) => (
             <article key={item.index}>
               <p className="mb-3 text-3xl font-semibold text-[#0EA5E9]">{item.index}</p>
-              <h3 className="mb-2 text-xl font-semibold text-[#0A2540]">{item.title}</h3>
-              <p className="text-gray-600">{item.description}</p>
+              <p className="mb-2 text-xl font-semibold text-[#0A2540]">{item.title}</p>
+              <p className={bodyText}>{item.description}</p>
             </article>
           ))}
         </div>

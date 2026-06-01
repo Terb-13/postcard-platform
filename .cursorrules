@@ -1,0 +1,30 @@
+# Postcard Platform - Marketing Site Design Rules
+
+## Primary Directive
+The design in the `redesign/` folder is the single source of truth for the public marketing site (homepage and marketing pages).
+
+- `redesign/index.html` is the authoritative reference for homepage structure, visual hierarchy, section order, image usage, and overall experience.
+- `redesign/map-tool.html` is the authoritative reference for the interactive targeting/map experience on the marketing site.
+- Other files in `redesign/` (direct-mail-marketing.html, every-door-direct-mail.html, templates.html, etc.) define the design language for secondary marketing pages.
+
+## Core Principles
+- Design leads. The prototype experience in `redesign/` takes priority.
+- You may freely restructure the marketing site: create new components, new folders (e.g. `components/marketing/`), change section order, and deprecate old `Landing*` components if it better matches the prototype.
+- Do NOT default to preserving the old component architecture (`LandingHero`, `LandingProblem`, `LandingSolution`, etc.) when it conflicts with the prototype.
+- Keep and wrap the existing technical stack (tRPC, TargetingMap, campaign wizard, Clerk, etc.) inside new marketing-focused components. Do not rewrite core logic just for layout reasons.
+- When in doubt, reference the actual HTML prototypes in `redesign/` before making structural or visual decisions.
+
+## Key Files You Must Consult
+Always read these when working on marketing pages:
+- `redesign/CURSOR_FULL_DESIGN_DIRECTIVE.md`
+- `redesign/index.html`
+- `redesign/map-tool.html`
+- `redesign/DESIGN_FIRST_ARCHITECTURE.md`
+- `redesign/MARKETING_SITE_COMPONENT_ARCHITECTURE.md`
+
+## Image Usage
+Use the latest approved images in `apps/web/public/images/`. Prioritize the buyer-as-hero versions and the new product cards (eddm-product.jpg, targeted-product.jpg, saturation-product.jpg, newmover-product.jpg) where they match the prototype.
+
+## Response Behavior
+- If a request conflicts with the prototype in `redesign/`, flag it and propose changes that align with the prototype instead of defaulting to the current codebase structure.
+- Be explicit when the old component names/order would limit fidelity to the prototype.

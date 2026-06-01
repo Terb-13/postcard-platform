@@ -47,14 +47,14 @@ export function MarketingProductsGrid() {
       <div className={marketingContainer}>
         <div className="mb-10 flex items-end justify-between">
           <div>
-            <p className={`${marketingEyebrow} mb-0 tracking-[0.1em]`}>Solutions</p>
+            <p className={`${marketingEyebrow} mb-0 tracking-[1.5px]`}>Solutions</p>
             <h2 className={marketingTitleProducts}>Popular Products</h2>
           </div>
           <Link
             href="/direct-mail-marketing"
             className="hidden text-sm font-medium text-[#0EA5E9] hover:underline md:block"
           >
-            Browse all products →
+            Browse all solutions →
           </Link>
         </div>
 
