@@ -78,6 +78,8 @@ model Campaign {
   quantity              Int
   /// EDDM | TARGETED — drives post-checkout finalize path
   productType           String   @default("EDDM")
+  /// Canonical product slug from /products catalog (e.g. every-door-direct-mail)
+  productSlug           String?
   dropDate              DateTime?
   notes                 String?
   status                String   @default("DRAFT") // DRAFT | READY_FOR_PAYMENT | PAID | IN_PRODUCTION | COMPLETED
