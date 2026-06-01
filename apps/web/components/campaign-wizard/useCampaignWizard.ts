@@ -3,6 +3,12 @@
 import { useCallback, useMemo, useState } from "react";
 import type { TargetingSelection } from "@/components/targeting";
 import {
+  parseCampaignWizardParams,
+  resolveSizeForProduct,
+  type PostcardSize,
+  type Product,
+} from "@/lib/products";
+import {
   WIZARD_STEPS,
   campaignBasicsSchema,
   type WizardStepId,
@@ -26,7 +32,10 @@ export type CampaignPricing = {
 export type CampaignWizardState = {
   name: string;
   description: string;
-  size: "4x6" | "5x7" | "6x9" | "6x11";
+  size: PostcardSize;
+  product: Product | null;
+  /** Size from URL — used to highlight pre-selection in BasicsStep */
+  preselectedSize: PostcardSize | null;
   targeting: TargetingSelection;
   artwork: ArtworkFile | null;
   dropDate: string;
@@ -44,6 +53,8 @@ const DEFAULT_STATE: CampaignWizardState = {
   name: "",
   description: "",
   size: "6x11",
+  product: null,
+  preselectedSize: null,
   targeting: { zctas: [] },
   artwork: null,
   dropDate: "",
@@ -51,22 +62,49 @@ const DEFAULT_STATE: CampaignWizardState = {
   pricing: null,
 };
 
+function buildInitialState(
+  initialState?: Partial<CampaignWizardState>,
+  searchParams?: URLSearchParams | { get: (key: string) => string | null }
+): CampaignWizardState {
+  const base = { ...DEFAULT_STATE, ...initialState };
+
+  if (!searchParams) return base;
+
+  const { product, size } = parseCampaignWizardParams(searchParams);
+  if (!product) {
+    return {
+      ...base,
+      size: size ?? base.size,
+      preselectedSize: size,
+    };
+  }
+
+  const resolvedSize = resolveSizeForProduct(product, size ?? base.size);
+  return {
+    ...base,
+    product,
+    size: resolvedSize,
+    preselectedSize: size ?? resolvedSize,
+  };
+}
+
 type UseCampaignWizardOptions = {
   initialStep?: number;
   initialState?: Partial<CampaignWizardState>;
+  /** When set, ?product= & ?size= are applied on top of initialState */
+  searchParams?: URLSearchParams | { get: (key: string) => string | null };
   onSubmit?: (payload: CampaignWizardSubmitPayload) => void | Promise<void>;
 };
 
 export function useCampaignWizard(options: UseCampaignWizardOptions = {}) {
-  const { initialStep = 0, initialState, onSubmit } = options;
+  const { initialStep = 0, initialState, searchParams, onSubmit } = options;
 
   const [stepIndex, setStepIndex] = useState(() =>
     Math.min(Math.max(0, initialStep), STEP_IDS.length - 1)
   );
-  const [state, setState] = useState<CampaignWizardState>({
-    ...DEFAULT_STATE,
-    ...initialState,
-  });
+  const [state, setState] = useState<CampaignWizardState>(() =>
+    buildInitialState(initialState, searchParams)
+  );
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [stepError, setStepError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);

@@ -28,6 +28,11 @@ import { CheckoutStep } from "./steps/CheckoutStep";
 import { WizardFeedback } from "./WizardFeedback";
 import { WizardStepHeader } from "./WizardStepHeader";
 import { WizardMobileNav } from "./WizardMobileNav";
+import {
+  appendWizardProductParams,
+  parseCampaignWizardParams,
+  type PostcardSize,
+} from "@/lib/products";
 
 const STEP_IDS = WIZARD_STEPS.map((s) => s.id);
 
@@ -40,6 +45,11 @@ export function CampaignWizard() {
   const initialStep = Math.min(
     Math.max(0, parseInt(searchParams.get("step") ?? "0", 10) || 0),
     STEP_IDS.length - 1
+  );
+
+  const wizardProductParams = useMemo(
+    () => parseCampaignWizardParams(searchParams),
+    [searchParams]
   );
 
   const [stepIndex, setStepIndex] = useState(initialStep);
@@ -58,11 +68,51 @@ export function CampaignWizard() {
     resolver: zodResolver(campaignBasicsSchema),
     defaultValues: {
       name: "",
-      size: "6x11",
+      size: wizardProductParams.size ?? "6x11",
     },
   });
 
   const size = basicsForm.watch("size");
+  const productFromUrl = wizardProductParams.product;
+  const preselectedSize = wizardProductParams.size;
+
+  const urlParamsAppliedRef = useRef(false);
+
+  const syncWizardUrl = useCallback(
+    (overrides?: { step?: number; size?: PostcardSize; campaignId?: string | null }) => {
+      const params = new URLSearchParams(searchParams.toString());
+      const nextStep = overrides?.step ?? stepIndex;
+      const nextCampaignId = overrides?.campaignId !== undefined ? overrides.campaignId : campaignId;
+      const nextSize =
+        overrides?.size ?? (basicsForm.getValues("size") as PostcardSize);
+
+      params.set("step", String(nextStep));
+      if (nextCampaignId) params.set("campaignId", nextCampaignId);
+      else params.delete("campaignId");
+
+      appendWizardProductParams(params, productFromUrl, nextSize);
+      router.replace(`/campaigns/new?${params.toString()}`, { scroll: false });
+    },
+    [basicsForm, campaignId, productFromUrl, router, searchParams, stepIndex]
+  );
+
+  useEffect(() => {
+    if (campaignId || urlParamsAppliedRef.current) return;
+    urlParamsAppliedRef.current = true;
+
+    if (wizardProductParams.size) {
+      basicsForm.setValue("size", wizardProductParams.size);
+    }
+  }, [basicsForm, campaignId, wizardProductParams.size]);
+
+  const handleSizeChange = useCallback(
+    (nextSize: PostcardSize) => {
+      if (productFromUrl || preselectedSize) {
+        syncWizardUrl({ size: nextSize });
+      }
+    },
+    [preselectedSize, productFromUrl, syncWizardUrl]
+  );
 
   const { data: campaign, refetch: refetchCampaign, isLoading: campaignLoading } =
     trpc.campaign.getById.useQuery({ id: campaignId! }, { enabled: !!campaignId });
@@ -138,12 +188,9 @@ export function CampaignWizard() {
       setStepIndex(clamped);
       setStepError(null);
       setTargetingValidationError(null);
-      const params = new URLSearchParams();
-      params.set("step", String(clamped));
-      if (campaignId) params.set("campaignId", campaignId);
-      router.replace(`/campaigns/new?${params.toString()}`, { scroll: false });
+      syncWizardUrl({ step: clamped });
     },
-    [campaignId, router]
+    [syncWizardUrl]
   );
 
   const ensureCampaignDraft = useCallback(async () => {
@@ -167,12 +214,14 @@ export function CampaignWizard() {
         notes: notes || null,
       });
       await refetchCampaign();
+      syncWizardUrl({ size: basics.size as PostcardSize, campaignId });
       return campaignId;
     }
 
     const created = await createCampaign.mutateAsync({
       name: basics.name,
       size: basics.size,
+      productType: productFromUrl?.productType,
       dropDate: dropDate || undefined,
       notes: notes || undefined,
       targeting:
@@ -185,10 +234,11 @@ export function CampaignWizard() {
           : undefined,
     });
     setCampaignId(created.id);
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("campaignId", created.id);
-    params.set("step", String(stepIndex));
-    router.replace(`/campaigns/new?${params.toString()}`, { scroll: false });
+    syncWizardUrl({
+      campaignId: created.id,
+      size: basics.size as PostcardSize,
+      step: stepIndex,
+    });
     return created.id;
   }, [
     basicsForm,
@@ -196,10 +246,10 @@ export function CampaignWizard() {
     createCampaign,
     dropDate,
     notes,
+    productFromUrl,
     refetchCampaign,
-    router,
-    searchParams,
     stepIndex,
+    syncWizardUrl,
     targeting,
     updateDraft,
   ]);
@@ -341,7 +391,9 @@ export function CampaignWizard() {
             >
               ← Campaigns
             </Link>
-            <h1 className="heading-md mt-0.5 truncate sm:mt-1">New campaign</h1>
+            <h1 className="heading-md mt-0.5 truncate sm:mt-1">
+              {productFromUrl ? `New ${productFromUrl.shortTitle} campaign` : "New campaign"}
+            </h1>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             {saveStatus === "saved" && (
@@ -391,7 +443,14 @@ export function CampaignWizard() {
               key={currentStepId}
               className="animate-in wizard-step-enter"
             >
-              {currentStepId === "basics" && <BasicsStep form={basicsForm} />}
+              {currentStepId === "basics" && (
+                <BasicsStep
+                  form={basicsForm}
+                  product={productFromUrl}
+                  preselectedSize={preselectedSize}
+                  onSizeChange={handleSizeChange}
+                />
+              )}
 
               {currentStepId === "targeting" && (
                 <TargetingStep
