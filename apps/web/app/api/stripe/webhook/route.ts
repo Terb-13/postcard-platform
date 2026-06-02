@@ -2,9 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/db";
 import { sendEmail, emailTemplates } from "@/lib/email";
-import { targetingPayloadBlock } from "@/lib/targeting-summary";
-import { ensureMailingJobForCampaign } from "@postcard-platform/api/services/mailing-finalize.service";
-import type { Prisma } from "@prisma/client";
+import { activateOrderForProduction } from "@postcard-platform/api/lib/activate-order-for-production";
 
 export const runtime = "nodejs";
 
@@ -45,78 +43,24 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ received: true });
       }
 
-      // Idempotency: if already paid + has a production job, do nothing
-      const existingJob = await prisma.productionJob.findUnique({
-        where: { campaignId },
+      const purchaserEmail =
+        (session.customer_details?.email as string | undefined) ??
+        (session.customer_email as string | undefined) ??
+        null;
+
+      const { productionJob, created } = await activateOrderForProduction(prisma, campaign, {
+        amountPaidCents: session.amount_total ?? undefined,
+        purchaserEmail,
+        paymentIntentId,
+        actor: "system:stripe-webhook",
       });
 
-      if (existingJob) {
+      if (!created) {
         console.log(`Stripe webhook: Campaign ${campaignId} already has a production job. Skipping.`);
         return NextResponse.json({ received: true });
       }
 
-      // 1. Mark campaign as paid
-      await prisma.campaign.update({
-        where: { id: campaignId },
-        data: {
-          status: "PAID",
-          stripePaymentIntentId: paymentIntentId,
-          paidAt: new Date(),
-          amountPaidCents: session.amount_total ?? null,
-        },
-      });
-
-      // 2. Auto-assign to first active production partner
-      const firstActivePartner = await prisma.productionPartner.findFirst({
-        where: { isActive: true },
-        orderBy: { createdAt: "asc" },
-      });
-
-      const targetingMeta = campaign.targetingMetadata ?? campaign.savedMap?.metadata;
-      const targeting = targetingPayloadBlock(targetingMeta);
-
-      const jobPayload = {
-        campaignName: campaign.name,
-        size: campaign.size,
-        quantity: campaign.quantity,
-        dropDate: campaign.dropDate?.toISOString() ?? null,
-        totalPriceCents: campaign.totalPriceCents,
-        notes: campaign.notes,
-        ...(targeting ? { targeting } : {}),
-      } satisfies Record<string, unknown>;
-
-      // 3. Create the ProductionJob
-      const productionJob = await prisma.productionJob.create({
-        data: {
-          campaignId: campaign.id,
-          productionPartnerId: firstActivePartner?.id ?? null,
-          status: "RECEIVED",
-          payload: jobPayload as Prisma.InputJsonValue,
-        },
-      });
-
-      // 3b. Fulfillment job (real route/list counts + final pricing — finalized via /api/campaigns/[id]/finalize)
-      const mailingJob = await ensureMailingJobForCampaign(campaign);
-
-      // 4. Advance campaign to IN_PRODUCTION
-      await prisma.campaign.update({
-        where: { id: campaign.id },
-        data: { status: "IN_PRODUCTION" },
-      });
-
-      // 5. Create audit event
-      await prisma.jobEvent.create({
-        data: {
-          productionJobId: productionJob.id,
-          status: "RECEIVED",
-          note: firstActivePartner
-            ? `Auto-created after payment. Assigned to ${firstActivePartner.name}`
-            : "Auto-created after payment. Awaiting partner assignment.",
-          actor: "system:stripe-webhook",
-        },
-      });
-
-      // 6. Send confirmation email
+      // Send confirmation email
       const orgUser = await prisma.user.findFirst({
         where: { organizationId: campaign.organizationId },
         orderBy: { createdAt: "asc" },
@@ -131,11 +75,18 @@ export async function POST(req: NextRequest) {
           subject: template.subject,
           html: template.html,
         });
+      } else if (purchaserEmail && process.env.RESEND_API_KEY) {
+        const amountDollars = ((session.amount_total as number) || 0) / 100;
+        const template = emailTemplates.paymentReceived(campaign.name, amountDollars);
+
+        await sendEmail({
+          to: purchaserEmail,
+          subject: template.subject,
+          html: template.html,
+        });
       }
 
-      console.log(
-        `✅ Campaign ${campaignId} paid. ProductionJob ${productionJob.id}, MailingJob ${mailingJob.id} created.`
-      );
+      console.log(`✅ Campaign ${campaignId} paid. ProductionJob ${productionJob.id} created.`);
     } catch (err) {
       console.error("Error processing Stripe webhook for campaign", campaignId, err);
       // Still return 200 so Stripe doesn't retry forever

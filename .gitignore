@@ -17,5 +17,7 @@ prisma/migrations/
 .DS_Store
 *.log
 .vercel
+supabase/.temp/
 .env*
+!.env.example
 .turbo/

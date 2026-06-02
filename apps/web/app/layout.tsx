@@ -3,6 +3,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { TRPCProvider } from "@/lib/trpc/provider";
+import { GuestClaimOnAuth } from "@/components/auth/GuestClaimOnAuth";
 
 // Gate the entire Clerk tree on the publishable key so the public marketing site
 // never throws a client-side exception on Preview deploys before the keys are added.
@@ -67,11 +68,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             }}
           >
             {/* No intrusive global header — landing owns its premium nav, auth pages are full immersive experiences, and protected app routes manage their own chrome. */}
-            <TRPCProvider>{children}</TRPCProvider>
+            <TRPCProvider>
+              <GuestClaimOnAuth />
+              {children}
+            </TRPCProvider>
           </ClerkProvider>
         ) : (
           // Graceful public-only mode (no Clerk keys yet) — beautiful marketing only
-          <TRPCProvider>{children}</TRPCProvider>
+          <TRPCProvider>
+            <GuestClaimOnAuth />
+            {children}
+          </TRPCProvider>
         )}
       </body>
     </html>

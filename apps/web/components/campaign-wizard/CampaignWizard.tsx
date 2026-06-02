@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { SignedIn, SignedOut } from "@clerk/nextjs";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -430,12 +431,22 @@ export function CampaignWizard() {
       <header className="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-surface)]/90 backdrop-blur">
         <div className="container flex max-w-5xl items-center justify-between gap-3 py-3 sm:gap-4 sm:py-4">
           <div className="min-w-0">
-            <Link
-              href="/campaigns"
-              className="text-sm text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text)]"
-            >
-              ← Campaigns
-            </Link>
+            <SignedIn>
+              <Link
+                href="/campaigns"
+                className="text-sm text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text)]"
+              >
+                ← Campaigns
+              </Link>
+            </SignedIn>
+            <SignedOut>
+              <Link
+                href="/products"
+                className="text-sm text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-text)]"
+              >
+                ← Products
+              </Link>
+            </SignedOut>
             <h1 className="heading-md mt-0.5 truncate sm:mt-1">
               {activeProduct ? `New ${activeProduct.shortTitle} campaign` : "New campaign"}
             </h1>

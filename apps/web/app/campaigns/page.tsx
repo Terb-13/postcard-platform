@@ -64,9 +64,14 @@ export default function MyCampaignsPage() {
               Upload artwork, get it reviewed, pay, and track production.
             </p>
           </div>
-          <Link href="/campaigns/new">
-            <Button>+ New Campaign</Button>
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href="/account/orders">
+              <Button variant="secondary">Order history</Button>
+            </Link>
+            <Link href="/campaigns/new">
+              <Button>+ New Campaign</Button>
+            </Link>
+          </div>
         </div>
       </header>
 

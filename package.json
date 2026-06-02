@@ -12,7 +12,12 @@
     "build": "npx turbo run build",
     "db:generate": "npx turbo run db:generate",
     "db:push": "npx turbo run db:push",
-    "db:studio": "prisma studio --schema=packages/db/prisma/schema.prisma"
+    "db:studio": "prisma studio --schema=packages/db/prisma/schema.prisma",
+    "db:migrate:remote": "bash scripts/db-migrate-remote.sh",
+    "db:env:sync": "node scripts/sync-db-env.mjs",
+    "db:migrate:baseline": "bash scripts/baseline-prisma-migrations.sh",
+    "supabase": "supabase",
+    "supabase:link": "supabase link --project-ref onrvdowfqexfchjhysbm"
   },
   "devDependencies": {
     "turbo": "^2.3.0",

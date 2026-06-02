@@ -210,8 +210,8 @@ export const targetingRouter = router({
       }
     }),
 
-  /** Campaign wizard — authenticated audience + pricing preview from ZCTAs and/or drawn geoJson */
-  estimateAudience: protectedProcedure
+  /** Campaign wizard — audience + pricing preview from ZCTAs and/or drawn geoJson */
+  estimateAudience: publicProcedure
     .input(
       z.object({
         zctas: zctaArraySchema.optional(),

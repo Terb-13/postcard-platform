@@ -80,6 +80,8 @@ model Campaign {
   productType           String   @default("EDDM")
   /// Canonical product slug from /products catalog (e.g. every-door-direct-mail)
   productSlug           String?
+  /// Anonymous wizard session — set until user creates an account
+  guestSessionId        String?
   dropDate              DateTime?
   notes                 String?
   status                String   @default("DRAFT") // DRAFT | READY_FOR_PAYMENT | PAID | IN_PRODUCTION | COMPLETED
@@ -98,6 +100,8 @@ model Campaign {
 
   paidAt                DateTime?
   amountPaidCents       Int?
+  /// Email from Stripe checkout (guest or account purchaser)
+  purchaserEmail        String?
 
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
@@ -108,6 +112,8 @@ model Campaign {
   mailingJob       MailingJob?
 
   @@index([organizationId, status])
+  @@index([organizationId, paidAt])
+  @@index([guestSessionId])
   @@index([status])
 }
 

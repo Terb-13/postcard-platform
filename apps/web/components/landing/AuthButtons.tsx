@@ -48,11 +48,27 @@ function FallbackButton({
   );
 }
 
+function StartCampaignLink({
+  className,
+  children,
+  onAction,
+}: {
+  className?: string;
+  children: ReactNode;
+  onAction?: () => void;
+}) {
+  return (
+    <Link href="/campaigns/new" className={className} onClick={onAction}>
+      {children}
+    </Link>
+  );
+}
+
 function StartTargetingLink({ className }: { className?: string }) {
   return (
     <>
       <SignedOut>
-        <Link href="/sign-up" className={className}>
+        <Link href="/campaigns/new" className={className}>
           Start Targeting
         </Link>
       </SignedOut>
@@ -91,7 +107,7 @@ export function AuthButtons({ variant = "nav", onAction, ctaIcon }: AuthButtonsP
             Log in
           </Link>
           <Link
-            href="/sign-up"
+            href="/campaigns/new"
             className={stack ? `${marketingNavPrimaryClass} w-full` : marketingNavPrimaryClass}
             onClick={onAction}
           >
@@ -102,7 +118,7 @@ export function AuthButtons({ variant = "nav", onAction, ctaIcon }: AuthButtonsP
     }
     if (variant === "marketing-final") {
       return (
-        <Link href="/sign-up" className={`${marketingNavPrimaryClass} px-10 py-4 text-lg`}>
+        <Link href="/campaigns/new" className={`${marketingNavPrimaryClass} px-10 py-4 text-lg`}>
           {MARKETING_FINAL_CTA}
         </Link>
       );
@@ -119,7 +135,7 @@ export function AuthButtons({ variant = "nav", onAction, ctaIcon }: AuthButtonsP
             Sign in
           </Link>
           <Link
-            href="/sign-up"
+            href="/campaigns/new"
             className={stack ? "btn-nav-primary w-full justify-center" : "btn-nav-primary"}
             onClick={onAction}
           >
@@ -131,7 +147,7 @@ export function AuthButtons({ variant = "nav", onAction, ctaIcon }: AuthButtonsP
     if (variant === "demo") {
       return (
         <Link
-          href="/sign-up"
+          href="/campaigns/new"
           className="btn-primary auth-button inline-flex items-center gap-2 text-[15px]"
         >
           Build your own campaign →
@@ -140,7 +156,7 @@ export function AuthButtons({ variant = "nav", onAction, ctaIcon }: AuthButtonsP
     }
     if (variant === "hero") {
       return (
-        <Link href="/sign-up" className={heroCtaClass}>
+        <Link href="/campaigns/new" className={heroCtaClass}>
           {MARKETING_ORDER_CTA}
           {ctaIcon}
         </Link>
@@ -178,15 +194,12 @@ export function AuthButtons({ variant = "nav", onAction, ctaIcon }: AuthButtonsP
               Log in
             </button>
           </SignInButton>
-          <SignUpButton mode="modal" fallbackRedirectUrl="/campaigns/new">
-            <button
-              type="button"
-              className={stack ? `${marketingNavPrimaryClass} w-full` : marketingNavPrimaryClass}
-              onClick={onAction}
-            >
-              {MARKETING_ORDER_CTA}
-            </button>
-          </SignUpButton>
+          <StartCampaignLink
+            className={stack ? `${marketingNavPrimaryClass} w-full` : marketingNavPrimaryClass}
+            onAction={onAction}
+          >
+            {MARKETING_ORDER_CTA}
+          </StartCampaignLink>
         </SignedOut>
         <SignedIn>
           <Link
@@ -215,21 +228,9 @@ export function AuthButtons({ variant = "nav", onAction, ctaIcon }: AuthButtonsP
   if (variant === "marketing-final") {
     return (
       <>
-        <SignedOut>
-          <SignUpButton mode="modal" fallbackRedirectUrl="/campaigns/new">
-            <button
-              type="button"
-              className={`${marketingNavPrimaryClass} px-10 py-4 text-lg`}
-            >
-              {MARKETING_FINAL_CTA}
-            </button>
-          </SignUpButton>
-        </SignedOut>
-        <SignedIn>
-          <Link href="/campaigns/new" className={`${marketingNavPrimaryClass} px-10 py-4 text-lg`}>
-            {MARKETING_FINAL_CTA}
-          </Link>
-        </SignedIn>
+        <StartCampaignLink className={`${marketingNavPrimaryClass} px-10 py-4 text-lg`}>
+          {MARKETING_FINAL_CTA}
+        </StartCampaignLink>
       </>
     );
   }
@@ -248,17 +249,21 @@ export function AuthButtons({ variant = "nav", onAction, ctaIcon }: AuthButtonsP
               Sign in
             </button>
           </SignInButton>
-          <SignUpButton mode="modal" fallbackRedirectUrl="/campaigns/new">
-            <button
-              type="button"
-              className={stack ? "btn-nav-primary w-full" : "btn-nav-primary"}
-              onClick={onAction}
-            >
-              Start Targeting
-            </button>
-          </SignUpButton>
+          <StartCampaignLink
+            className={stack ? "btn-nav-primary w-full" : "btn-nav-primary"}
+            onAction={onAction}
+          >
+            Start Targeting
+          </StartCampaignLink>
         </SignedOut>
         <SignedIn>
+          <Link
+            href="/account/orders"
+            className={stack ? "btn-nav-secondary w-full justify-center" : "btn-nav-secondary"}
+            onClick={onAction}
+          >
+            Orders
+          </Link>
           <Link
             href="/campaigns"
             className={stack ? "btn-nav-secondary w-full justify-center" : "btn-nav-secondary"}
@@ -284,21 +289,12 @@ export function AuthButtons({ variant = "nav", onAction, ctaIcon }: AuthButtonsP
   if (variant === "demo") {
     return (
       <>
-        <SignedOut>
-          <SignUpButton mode="modal" fallbackRedirectUrl="/campaigns/new">
-            <button className="btn-primary auth-button inline-flex items-center gap-2 text-[15px]">
-              Build your own campaign →
-            </button>
-          </SignUpButton>
-        </SignedOut>
-        <SignedIn>
-          <Link
-            href="/campaigns/new"
-            className="btn-primary auth-button inline-flex items-center gap-2 text-[15px]"
-          >
-            Build your own campaign →
-          </Link>
-        </SignedIn>
+        <Link
+          href="/campaigns/new"
+          className="btn-primary auth-button inline-flex items-center gap-2 text-[15px]"
+        >
+          Build your own campaign →
+        </Link>
       </>
     );
   }
@@ -307,11 +303,9 @@ export function AuthButtons({ variant = "nav", onAction, ctaIcon }: AuthButtonsP
     return (
       <>
         <SignedOut>
-          <SignUpButton mode="modal" fallbackRedirectUrl="/campaigns/new">
-            <button className="btn-primary btn-cta auth-button px-12 text-[15px]">
-              Start your first campaign free
-            </button>
-          </SignUpButton>
+          <StartCampaignLink className="btn-primary btn-cta auth-button px-12 text-[15px]">
+            Start your first campaign free
+          </StartCampaignLink>
           <SignInButton mode="modal" fallbackRedirectUrl="/campaigns">
             <button className="btn-secondary border-white/30 text-white hover:bg-white/10 px-9 text-[15px]">
               I already have an account
@@ -339,20 +333,10 @@ export function AuthButtons({ variant = "nav", onAction, ctaIcon }: AuthButtonsP
   // Hero variant — commercial landing CTA
   return (
     <>
-      <SignedOut>
-        <SignUpButton mode="modal" fallbackRedirectUrl="/campaigns/new">
-          <button type="button" className={heroCtaClass}>
-            {MARKETING_ORDER_CTA}
-            {ctaIcon}
-          </button>
-        </SignUpButton>
-      </SignedOut>
-      <SignedIn>
-        <Link href="/campaigns/new" className={heroCtaClass}>
+        <StartCampaignLink className={heroCtaClass}>
           {MARKETING_ORDER_CTA}
           {ctaIcon}
-        </Link>
-      </SignedIn>
+        </StartCampaignLink>
     </>
   );
 }
@@ -360,7 +344,7 @@ export function AuthButtons({ variant = "nav", onAction, ctaIcon }: AuthButtonsP
 export function StartTargetingCta({ className }: { className?: string }) {
   if (!hasClerk) {
     return (
-      <Link href="/sign-up" className={className}>
+      <Link href="/campaigns/new" className={className}>
         Start Targeting
       </Link>
     );

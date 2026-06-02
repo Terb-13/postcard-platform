@@ -4,10 +4,18 @@ import type { NextRequest } from "next/server";
 
 const isProtectedRoute = createRouteMatcher([
   "/dashboard(.*)",
-  "/campaigns(.*)",
   "/maps(.*)",
   "/ops(.*)",
+  "/account(.*)",
 ]);
+
+/** Campaign list + detail require auth; wizard is public (guest checkout supported). */
+const isProtectedCampaignRoute = createRouteMatcher([
+  "/campaigns",
+  "/campaigns/((?!new).*)",
+]);
+
+const isPublicCampaignWizard = createRouteMatcher(["/campaigns/new"]);
 
 const hasClerkKeys =
   !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY &&
@@ -15,6 +23,11 @@ const hasClerkKeys =
 
 const clerkHandler = clerkMiddleware(async (auth, req) => {
   try {
+    if (isPublicCampaignWizard(req)) return;
+    if (isProtectedCampaignRoute(req)) {
+      await auth.protect();
+      return;
+    }
     if (isProtectedRoute(req)) {
       await auth.protect();
     }

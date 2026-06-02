@@ -6,6 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 import { WizardStepHeader } from "../WizardStepHeader";
+import {
+  CampaignHistoryLink,
+  GuestCheckoutAccountPrompt,
+} from "../GuestCheckoutAccountPrompt";
 
 type Props = {
   campaign?: {
@@ -67,30 +71,26 @@ export function CheckoutStep({ campaign, onPay, isPaying }: Props) {
           <p className="font-semibold">Artwork review required</p>
           <p className="mt-2 leading-relaxed opacity-90">
             Our ops team will review your PDF within a few hours. You&apos;ll receive an email when
-            it&apos;s approved — then return here or go to{" "}
-            <Link href="/campaigns" className="font-medium underline">
-              My Campaigns
-            </Link>{" "}
-            to pay.
+            it&apos;s approved — then return here to pay.
           </p>
         </div>
-      ) : canPay ? (
-        <Button size="lg" className="min-h-[52px] w-full" onClick={onPay} disabled={isPaying}>
-          {isPaying ? "Redirecting to Stripe…" : "Pay with Stripe"}
-        </Button>
       ) : (
-        <p className="text-center text-sm text-[var(--color-text-muted)]">
-          This campaign has already been paid or is in production.
-        </p>
+        <>
+          <GuestCheckoutAccountPrompt campaignId={campaign?.id} />
+          {canPay ? (
+            <Button size="lg" className="min-h-[52px] w-full" onClick={onPay} disabled={isPaying}>
+              {isPaying ? "Redirecting to Stripe…" : "Pay with Stripe"}
+            </Button>
+          ) : (
+            <p className="text-center text-sm text-[var(--color-text-muted)]">
+              This campaign has already been paid or is in production.
+            </p>
+          )}
+        </>
       )}
 
       <div className="text-center">
-        <Link
-          href="/campaigns"
-          className="text-sm text-[var(--color-accent)] hover:underline"
-        >
-          View all campaigns →
-        </Link>
+        <CampaignHistoryLink className="text-sm text-[var(--color-accent)] hover:underline" />
       </div>
     </div>
   );

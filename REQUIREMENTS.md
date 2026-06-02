@@ -20,8 +20,17 @@ This document lists everything needed to run the full platform in development an
 Copy `.env.example` to `.env.local` (or your platform's equivalent) and fill in:
 
 ```env
-# Database
+# Database (Supabase Postgres recommended — see supabase/README.md)
 DATABASE_URL="postgresql://..."
+# Optional: direct URL for Prisma migrations (Supabase pooler vs direct)
+DIRECT_URL="postgresql://..."
+
+# Supabase API (same project as DATABASE_URL)
+NEXT_PUBLIC_SUPABASE_URL="https://....supabase.co"
+SUPABASE_SERVICE_ROLE_KEY="eyJ..."
+
+# Optional: enable "Create test order" on deployed previews (no Stripe)
+ALLOW_TEST_ORDERS=true
 
 # Clerk Authentication
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
@@ -145,11 +154,11 @@ This project is designed to deploy easily to Vercel.
 ### Database for Vercel
 
 You cannot use a local Postgres. Use one of these:
-- **Neon** (recommended – generous free tier + Vercel integration)
-- **Supabase**
+- **Supabase** (recommended — see [supabase/README.md](./supabase/README.md))
+- **Neon**
 - **Railway**
 
-After creating the database, copy the connection string into `DATABASE_URL`.
+After creating the database, copy the **transaction pooler** connection string into `DATABASE_URL` for Vercel/serverless. Use the direct connection for local `prisma migrate`.
 
 ### After Deploy
 

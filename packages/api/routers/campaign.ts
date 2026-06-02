@@ -1,12 +1,16 @@
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
-import { protectedProcedure, router } from "../trpc";
+import { protectedProcedure, campaignProcedure, assertCampaignAccess, router } from "../trpc";
 import { TRPCError } from "@trpc/server";
 import { inngest } from "../inngest/client";
 import { stripe } from "../lib/stripe";
 import { getACSStats } from "../lib/census";
 import { mapCensusError } from "../lib/census-errors";
 import { calculateCampaignPricing } from "../lib/pricing";
+import { claimGuestCampaigns } from "../lib/claim-guest-campaigns";
+import { isValidGuestSessionId } from "../lib/guest-org";
+import { createTestOrderForOrganization } from "../lib/test-order";
+import { isTestOrdersEnabled } from "../lib/activate-order-for-production";
 
 async function loadTargetingStats(zctas: string[]) {
   try {
@@ -34,7 +38,7 @@ const targetingInputSchema = z
 
 export const campaignRouter = router({
   // Create a new draft campaign (optionally with Census targeting)
-  create: protectedProcedure
+  create: campaignProcedure
     .input(
       z.object({
         name: z.string().min(1),
@@ -94,7 +98,7 @@ export const campaignRouter = router({
 
         const savedMap = await ctx.prisma.savedMap.create({
           data: {
-            organizationId: ctx.user.organizationId,
+            organizationId: ctx.organizationId,
             name: input.targeting.savedMapName ?? `${input.name} targeting`,
             geoJson,
             metadata: targetingMetadata,
@@ -105,7 +109,8 @@ export const campaignRouter = router({
 
       const campaign = await ctx.prisma.campaign.create({
         data: {
-          organizationId: ctx.user.organizationId,
+          organizationId: ctx.organizationId,
+          guestSessionId: ctx.user ? null : ctx.guestSessionId,
           name: input.name,
           size: input.size,
           productType: input.productType ?? "EDDM",
@@ -125,7 +130,7 @@ export const campaignRouter = router({
     }),
 
   // Update draft campaign during wizard (before payment)
-  updateDraft: protectedProcedure
+  updateDraft: campaignProcedure
     .input(
       z.object({
         id: z.string(),
@@ -144,9 +149,10 @@ export const campaignRouter = router({
         where: { id: input.id },
       });
 
-      if (!existing || existing.organizationId !== ctx.user.organizationId) {
+      if (!existing) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Campaign not found" });
       }
+      assertCampaignAccess(existing, ctx);
       if (existing.status !== "DRAFT") {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -212,7 +218,7 @@ export const campaignRouter = router({
         } else {
           const savedMap = await ctx.prisma.savedMap.create({
             data: {
-              organizationId: ctx.user.organizationId,
+              organizationId: ctx.organizationId,
               name: input.targeting.savedMapName ?? `${existing.name} targeting`,
               geoJson,
               metadata: targetingMeta,
@@ -259,8 +265,111 @@ export const campaignRouter = router({
     });
   }),
 
+  /** After sign-in, attach guest wizard campaigns to the user's organization. */
+  claimGuestCampaigns: protectedProcedure
+    .input(z.object({ guestSessionId: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      if (!isValidGuestSessionId(input.guestSessionId)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid guest session id",
+        });
+      }
+
+      return claimGuestCampaigns(
+        ctx.prisma,
+        input.guestSessionId.trim(),
+        ctx.user.organizationId
+      );
+    }),
+
+  /** Paid and fulfilled campaigns for order history (Phase A). */
+  getOrderHistory: protectedProcedure.query(async ({ ctx }) => {
+    return ctx.prisma.campaign.findMany({
+      where: {
+        organizationId: ctx.user.organizationId,
+        status: { in: ["PAID", "IN_PRODUCTION", "COMPLETED"] },
+      },
+      orderBy: [{ paidAt: "desc" }, { createdAt: "desc" }],
+      select: {
+        id: true,
+        name: true,
+        size: true,
+        quantity: true,
+        productType: true,
+        productSlug: true,
+        status: true,
+        paidAt: true,
+        amountPaidCents: true,
+        totalPriceCents: true,
+        purchaserEmail: true,
+        dropDate: true,
+        createdAt: true,
+        productionJobs: {
+          take: 1,
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            status: true,
+            trackingNumber: true,
+            shippedAt: true,
+            deliveredAt: true,
+            productionPartner: { select: { name: true } },
+          },
+        },
+      },
+    });
+  }),
+
+  /** Full order + production timeline (customer order detail page). */
+  getOrderDetail: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ input, ctx }) => {
+      const campaign = await ctx.prisma.campaign.findFirst({
+        where: {
+          id: input.id,
+          organizationId: ctx.user.organizationId,
+          status: { in: ["PAID", "IN_PRODUCTION", "COMPLETED"] },
+        },
+        include: {
+          savedMap: true,
+          artwork: {
+            include: { thumbnails: { orderBy: { page: "asc" } } },
+          },
+          mailingJob: true,
+          productionJobs: {
+            include: {
+              productionPartner: { select: { id: true, name: true, contactEmail: true } },
+              events: { orderBy: { createdAt: "desc" } },
+            },
+          },
+        },
+      });
+
+      if (!campaign) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
+      }
+
+      return campaign;
+    }),
+
+  /** Dev/demo: simulate paid order + production job without Stripe. */
+  createTestOrder: protectedProcedure
+    .input(
+      z.object({
+        campaignId: z.string().optional(),
+        name: z.string().optional(),
+        simulateShipped: z.boolean().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      return createTestOrderForOrganization(ctx.prisma, ctx.user.organizationId, input);
+    }),
+
+  canCreateTestOrder: protectedProcedure.query(() => isTestOrdersEnabled()),
+
   // Upload or replace artwork for a campaign. Client sends pageCount for instant feedback.
-  uploadArtwork: protectedProcedure
+  uploadArtwork: campaignProcedure
     .input(
       z.object({
         campaignId: z.string(),
@@ -275,9 +384,10 @@ export const campaignRouter = router({
         where: { id: input.campaignId },
       });
 
-      if (!campaign || campaign.organizationId !== ctx.user.organizationId) {
+      if (!campaign) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Campaign not found" });
       }
+      assertCampaignAccess(campaign, ctx);
 
       const artwork = await ctx.prisma.artwork.upsert({
         where: { campaignId: input.campaignId },
@@ -315,7 +425,7 @@ export const campaignRouter = router({
     }),
 
   // Mark campaign ready and create Stripe Checkout session
-  createCheckoutSession: protectedProcedure
+  createCheckoutSession: campaignProcedure
     .input(z.object({ campaignId: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const campaign = await ctx.prisma.campaign.findUnique({
@@ -323,9 +433,10 @@ export const campaignRouter = router({
         include: { artwork: true },
       });
 
-      if (!campaign || campaign.organizationId !== ctx.user.organizationId) {
+      if (!campaign) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Campaign not found" });
       }
+      assertCampaignAccess(campaign, ctx);
       if (!campaign.artwork || campaign.artwork.status !== "APPROVED") {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -345,8 +456,8 @@ export const campaignRouter = router({
       const session = await stripe.checkout.sessions.create({
         mode: "payment",
         success_url: `${process.env.NEXT_PUBLIC_APP_URL}/production/success?session_id={CHECKOUT_SESSION_ID}&campaignId=${campaign.id}`,
-        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/campaigns`,
-        customer_email: ctx.user.email,
+        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/campaigns/new?campaignId=${campaign.id}&step=4`,
+        ...(ctx.user?.email ? { customer_email: ctx.user.email } : {}),
         line_items: [
           {
             price_data: {
@@ -362,7 +473,8 @@ export const campaignRouter = router({
         ],
         metadata: {
           campaignId: campaign.id,
-          organizationId: ctx.user.organizationId,
+          organizationId: ctx.organizationId,
+          ...(ctx.guestSessionId ? { guestSessionId: ctx.guestSessionId } : {}),
         },
       });
 
@@ -400,7 +512,7 @@ export const campaignRouter = router({
     }),
 
   // Simple get one (for detail pages if needed later)
-  getById: protectedProcedure
+  getById: campaignProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input, ctx }) => {
       const campaign = await ctx.prisma.campaign.findUnique({
@@ -411,9 +523,10 @@ export const campaignRouter = router({
           productionJobs: true,
         },
       });
-      if (!campaign || campaign.organizationId !== ctx.user.organizationId) {
+      if (!campaign) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Not found" });
       }
+      assertCampaignAccess(campaign, ctx);
       return campaign;
     }),
 

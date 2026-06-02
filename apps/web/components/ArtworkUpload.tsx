@@ -2,6 +2,8 @@
 
 import { UploadButton } from "@/lib/uploadthing";
 import { trpc } from "@/lib/trpc/client";
+import { GUEST_SESSION_HEADER } from "@postcard-platform/api/lib/guest-org";
+import { getGuestSessionId } from "@/lib/guest-session";
 
 interface ArtworkUploadProps {
   campaignId: string;
@@ -47,6 +49,9 @@ export function ArtworkUpload({ campaignId, onUploadComplete }: ArtworkUploadPro
     <div>
       <UploadButton
         endpoint="artworkUploader"
+        headers={{
+          [GUEST_SESSION_HEADER]: getGuestSessionId(),
+        }}
         onClientUploadComplete={handleUploadComplete}
         onUploadError={(error: Error) => {
           alert(`Upload failed: ${error.message}`);
