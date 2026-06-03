@@ -5,9 +5,6 @@ import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { hasClerkPublishableKey } from "@/lib/clerk-config";
 
-/**
- * After Clerk sign-in, provision the Prisma user via Bearer token + cookies.
- */
 export function SyncAccountOnSignIn() {
   if (!hasClerkPublishableKey) return null;
   return <SyncAccountOnSignInInner />;
@@ -32,8 +29,12 @@ function SyncAccountOnSignInInner() {
         credentials: "include",
         headers,
       });
-      if (res.ok) router.refresh();
-      else synced.current = false;
+      if (res.ok) {
+        router.refresh();
+      } else {
+        synced.current = false;
+        console.warn("[sync] account sync failed", res.status);
+      }
     })().catch(() => {
       synced.current = false;
     });

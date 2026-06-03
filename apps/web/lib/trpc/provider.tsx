@@ -16,6 +16,8 @@ function createTrpcClient(getToken: GetToken) {
     links: [
       httpBatchLink({
         url: "/api/trpc",
+        /** Send session token on POST so Authorization is not dropped (GET batching). */
+        methodOverride: "POST",
         fetch(url, options) {
           return fetch(url, { ...options, credentials: "include" });
         },
@@ -51,10 +53,23 @@ function TRPCProviderInner({
 
 function TRPCProviderWithClerk({ children }: { children: React.ReactNode }) {
   const { getToken, isLoaded } = useAuth();
+
   const getTokenStable = useMemo<GetToken>(
-    () => async () => (isLoaded ? await getToken() : null),
+    () => async () => {
+      if (!isLoaded) return null;
+      return getToken();
+    },
     [getToken, isLoaded]
   );
+
+  if (!isLoaded) {
+    return (
+      <div className="min-h-[40vh] flex items-center justify-center text-[var(--color-text-muted)] text-sm">
+        Loading…
+      </div>
+    );
+  }
+
   return <TRPCProviderInner getToken={getTokenStable}>{children}</TRPCProviderInner>;
 }
 
