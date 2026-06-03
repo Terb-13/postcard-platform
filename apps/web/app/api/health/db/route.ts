@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
+import { prisma } from "@/lib/db";
 
 export const runtime = "nodejs";
 
@@ -10,12 +12,8 @@ export async function GET() {
       process.env.POSTGRES_URL?.trim()
   );
 
-  let clerk: { isAuthenticated: boolean; userId: string | null } = {
-    isAuthenticated: false,
-    userId: null,
-  };
+  let clerk = { isAuthenticated: false, userId: null as string | null };
   try {
-    const { auth } = await import("@clerk/nextjs/server");
     const clerkAuth = await auth();
     clerk = {
       isAuthenticated: clerkAuth.isAuthenticated,
@@ -25,7 +23,7 @@ export async function GET() {
     return NextResponse.json(
       {
         hasDbUrl,
-        clerkError: e instanceof Error ? e.message.slice(0, 200) : "auth failed",
+        clerkError: e instanceof Error ? e.message.slice(0, 300) : "auth failed",
       },
       { status: 500 }
     );
@@ -36,16 +34,14 @@ export async function GET() {
   let prismaUser: { id: string; email: string } | null = null;
 
   try {
-    const { prisma } = await import("@/lib/db");
     await prisma.$queryRaw`SELECT 1`;
     dbOk = true;
 
     if (clerk.userId) {
-      const u = await prisma.user.findUnique({
+      prismaUser = await prisma.user.findUnique({
         where: { clerkId: clerk.userId },
         select: { id: true, email: true },
       });
-      prismaUser = u;
     }
   } catch (e) {
     dbError = e instanceof Error ? e.message : String(e);
