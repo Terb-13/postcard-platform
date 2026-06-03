@@ -61,17 +61,16 @@ export default function MyCampaignsPage() {
           <div>
             <h1 className="heading-md">My Campaigns</h1>
             <p className="text-small text-[var(--color-text-muted)] mt-1">
-              Upload artwork, get it reviewed, pay, and track production.
+              Create campaigns, upload artwork, and pay. After payment, track production under{" "}
+              <Link href="/account/orders" className="text-[var(--color-accent)] hover:underline">
+                Your orders
+              </Link>
+              .
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Link href="/account/orders">
-              <Button variant="secondary">Order history</Button>
-            </Link>
-            <Link href="/campaigns/new">
-              <Button>+ New Campaign</Button>
-            </Link>
-          </div>
+          <Link href="/campaigns/new">
+            <Button>+ New Campaign</Button>
+          </Link>
         </div>
       </header>
 
@@ -143,12 +142,16 @@ export default function MyCampaignsPage() {
                           {createCheckout.isPending ? "Redirecting…" : "Pay & Send to Production"}
                         </Button>
                       )}
-                      <Link
-                        href={`/production?campaign=${campaign.id}`}
-                        className="text-sm text-[var(--color-accent)] hover:underline px-3 py-2"
-                      >
-                        View in Production →
-                      </Link>
+                      {(campaign.status === "PAID" ||
+                        campaign.status === "IN_PRODUCTION" ||
+                        campaign.status === "COMPLETED") && (
+                        <Link
+                          href={`/account/orders/${campaign.id}`}
+                          className="text-sm text-[var(--color-accent)] hover:underline px-3 py-2"
+                        >
+                          Track order →
+                        </Link>
+                      )}
                     </div>
                   </div>
 

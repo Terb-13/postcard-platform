@@ -6,10 +6,11 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
 import { resolveProductFromCampaign } from "@/lib/products";
-import { ProductionTimeline } from "@/components/ProductionTimeline";
+import { OrderTrackingPanel } from "@/components/orders/OrderTrackingPanel";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+
+const POLL_MS = 20_000;
 
 function formatCurrency(cents: number | null | undefined): string {
   if (cents == null) return "—";
@@ -33,7 +34,10 @@ export default function OrderDetailPage() {
 
   const { data: order, isLoading, error } = trpc.campaign.getOrderDetail.useQuery(
     { id },
-    { enabled: Boolean(id) }
+    {
+      enabled: Boolean(id),
+      refetchInterval: POLL_MS,
+    }
   );
 
   if (isLoading) {
@@ -52,7 +56,7 @@ export default function OrderDetailPage() {
       <div className="min-h-screen bg-[var(--color-bg)] container max-w-5xl py-10">
         <p className="text-[var(--color-text-secondary)]">Order not found.</p>
         <Link href="/account/orders" className="text-[var(--color-accent)] mt-4 inline-block">
-          ← Back to order history
+          ← Back to orders
         </Link>
       </div>
     );
@@ -63,7 +67,6 @@ export default function OrderDetailPage() {
     productType: order.productType,
     size: order.size,
   });
-  const job = order.productionJobs[0];
   const amountCents = order.amountPaidCents ?? order.totalPriceCents;
 
   return (
@@ -74,27 +77,34 @@ export default function OrderDetailPage() {
             href="/account/orders"
             className="text-sm text-[var(--color-accent)] hover:underline mb-3 inline-block"
           >
-            ← Order history
+            ← All orders
           </Link>
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="heading-md">{order.name}</h1>
-            <Badge variant="accent">{order.status.replace(/_/g, " ")}</Badge>
+            <Badge variant="accent">{order.tracking.headline}</Badge>
           </div>
           <p className="text-small text-[var(--color-text-muted)] mt-1">
-            {product?.title ?? order.productType} · {order.size} ·{" "}
-            {order.quantity.toLocaleString()} pieces
+            Order #{order.id.slice(-8).toUpperCase()} · {product?.title ?? order.productType} ·{" "}
+            {order.size} · {order.quantity.toLocaleString()} pieces
+          </p>
+          <p className="text-xs text-[var(--color-text-muted)] mt-2">
+            Updates automatically every 20 seconds
           </p>
         </div>
       </header>
 
       <main className="container max-w-5xl py-8 space-y-6">
         <Card className="p-6">
+          <OrderTrackingPanel tracking={order.tracking} />
+        </Card>
+
+        <Card className="p-6">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--color-text-muted)] mb-4">
-            Payment
+            Order summary
           </h2>
           <dl className="grid sm:grid-cols-2 gap-4 text-sm">
             <div>
-              <dt className="text-[var(--color-text-muted)]">Paid at</dt>
+              <dt className="text-[var(--color-text-muted)]">Paid</dt>
               <dd className="font-medium">{formatDateTime(order.paidAt)}</dd>
             </div>
             <div>
@@ -113,75 +123,23 @@ export default function OrderDetailPage() {
                 <dd className="font-medium">{formatDateTime(order.dropDate)}</dd>
               </div>
             )}
+            {order.artwork && (
+              <div>
+                <dt className="text-[var(--color-text-muted)]">Artwork</dt>
+                <dd className="font-medium">{order.artwork.status}</dd>
+              </div>
+            )}
           </dl>
-        </Card>
-
-        <Card className="p-6">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--color-text-muted)] mb-4">
-            Production & shipping
-          </h2>
-
-          {job?.productionPartner?.name && (
-            <p className="text-sm text-[var(--color-text-secondary)] mb-4">
-              Print partner: <strong>{job.productionPartner.name}</strong>
-            </p>
-          )}
-
-          <ProductionTimeline campaign={order} />
-
-          {job?.trackingNumber && (
-            <div className="mt-6 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-alt)] p-4">
-              <p className="text-xs font-medium text-[var(--color-text-muted)] mb-1">Tracking number</p>
-              <p className="font-mono text-sm text-[var(--color-text-primary)]">{job.trackingNumber}</p>
-              {job.shippedAt && (
-                <p className="text-xs text-[var(--color-text-muted)] mt-2">
-                  Shipped {formatDateTime(job.shippedAt)}
-                </p>
-              )}
-              <a
-                href={`https://www.google.com/search?q=${encodeURIComponent(job.trackingNumber)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block mt-3 text-sm text-[var(--color-accent)] hover:underline"
-              >
-                Track shipment →
-              </a>
-            </div>
-          )}
-
-          {job?.events && job.events.length > 0 && (
-            <div className="mt-6">
-              <h3 className="text-sm font-medium mb-3">Activity log</h3>
-              <ul className="space-y-2">
-                {job.events.map((event) => (
-                  <li
-                    key={event.id}
-                    className="text-sm border-l-2 border-[var(--color-border)] pl-3 py-1"
-                  >
-                    <span className="font-medium">{event.status.replace(/_/g, " ")}</span>
-                    {event.note && (
-                      <span className="text-[var(--color-text-muted)]"> — {event.note}</span>
-                    )}
-                    <span className="block text-xs text-[var(--color-text-muted)]">
-                      {formatDateTime(event.createdAt)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
         </Card>
 
         {order.mailingJob && (
           <Card className="p-6">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--color-text-muted)] mb-2">
-              Fulfillment (routes / list)
+              Mail list & routes
             </h2>
             <p className="text-sm text-[var(--color-text-secondary)]">
-              Status: <Badge>{order.mailingJob.status}</Badge>
-              {order.mailingJob.type && (
-                <span className="ml-2 text-[var(--color-text-muted)]">{order.mailingJob.type}</span>
-              )}
+              Fulfillment status: <Badge>{order.mailingJob.status}</Badge>
+              <span className="ml-2 text-[var(--color-text-muted)]">{order.mailingJob.type}</span>
             </p>
           </Card>
         )}

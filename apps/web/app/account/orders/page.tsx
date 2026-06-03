@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CreateTestOrderButton } from "@/components/account/CreateTestOrderButton";
+import { OrderTrackingTimeline } from "@/components/orders/OrderTrackingTimeline";
 
 function formatCurrency(cents: number | null | undefined): string {
   if (cents == null) return "—";
@@ -25,12 +26,14 @@ function formatDate(value: Date | string | null | undefined): string {
 }
 
 export default function OrderHistoryPage() {
-  const { data: orders, isLoading } = trpc.campaign.getOrderHistory.useQuery();
+  const { data: orders, isLoading } = trpc.campaign.getOrderHistory.useQuery(undefined, {
+    refetchInterval: 30_000,
+  });
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[var(--color-bg)]">
-        <AccountHeader />
+        <OrdersPageHeader />
         <div className="container max-w-5xl py-8 space-y-4">
           <div className="h-32 bg-[var(--color-border)] rounded-2xl animate-pulse" />
           <div className="h-32 bg-[var(--color-border)] rounded-2xl animate-pulse" />
@@ -41,7 +44,7 @@ export default function OrderHistoryPage() {
 
   return (
     <div className="min-h-screen bg-[var(--color-bg)]">
-      <AccountHeader />
+      <OrdersPageHeader />
 
       <main className="container max-w-5xl py-8">
         {!orders || orders.length === 0 ? (
@@ -57,63 +60,33 @@ export default function OrderHistoryPage() {
               const productLabel = product?.title ?? order.productType;
 
               const amountCents = order.amountPaidCents ?? order.totalPriceCents;
-              const job = order.productionJobs[0];
+              const { tracking } = order;
 
               return (
                 <Card key={order.id} className="p-6 hover:translate-y-0">
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                    <div className="space-y-2">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
+                    <div className="space-y-2 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
                           {order.name}
                         </h2>
-                        <Badge variant="accent">{order.status.replace(/_/g, " ")}</Badge>
+                        <Badge variant="accent">{tracking.headline}</Badge>
                       </div>
-                      <p className="text-sm text-[var(--color-text-muted)]">
-                        {productLabel} · {order.size} · {order.quantity.toLocaleString()} pieces
+                      <p className="text-sm text-[var(--color-text-muted)]">{tracking.detail}</p>
+                      <p className="text-xs text-[var(--color-text-muted)]">
+                        {productLabel} · {order.size} · {order.quantity.toLocaleString()} · Paid{" "}
+                        {formatDate(order.paidAt)} · {formatCurrency(amountCents)}
                       </p>
-                      <dl className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-2 text-sm mt-3">
-                        <div>
-                          <dt className="text-[var(--color-text-muted)]">Paid</dt>
-                          <dd className="font-medium">{formatDate(order.paidAt)}</dd>
-                        </div>
-                        <div>
-                          <dt className="text-[var(--color-text-muted)]">Amount</dt>
-                          <dd className="font-medium">{formatCurrency(amountCents)}</dd>
-                        </div>
-                        {order.dropDate && (
-                          <div>
-                            <dt className="text-[var(--color-text-muted)]">Drop date</dt>
-                            <dd className="font-medium">{formatDate(order.dropDate)}</dd>
-                          </div>
-                        )}
-                        {job?.productionPartner?.name && (
-                          <div>
-                            <dt className="text-[var(--color-text-muted)]">Partner</dt>
-                            <dd className="font-medium">{job.productionPartner.name}</dd>
-                          </div>
-                        )}
-                        {job?.trackingNumber && (
-                          <div className="sm:col-span-2">
-                            <dt className="text-[var(--color-text-muted)]">Tracking</dt>
-                            <dd className="font-medium font-mono text-sm">{job.trackingNumber}</dd>
-                          </div>
-                        )}
-                      </dl>
                     </div>
 
                     <div className="flex flex-wrap gap-2 shrink-0">
                       <Link href={`/account/orders/${order.id}`}>
-                        <Button>Order details</Button>
-                      </Link>
-                      <Link href={`/production?campaign=${order.id}`}>
-                        <Button variant="secondary">Track production</Button>
-                      </Link>
-                      <Link href="/campaigns">
-                        <Button variant="ghost">View in campaigns</Button>
+                        <Button>Track order</Button>
                       </Link>
                     </div>
                   </div>
+
+                  <OrderTrackingTimeline tracking={tracking} compact />
                 </Card>
               );
             })}
@@ -124,27 +97,14 @@ export default function OrderHistoryPage() {
   );
 }
 
-function AccountHeader() {
+function OrdersPageHeader() {
   return (
     <header className="border-b border-[var(--color-border)] bg-[var(--color-surface)]">
-      <div className="container max-w-5xl py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-text-muted)] mb-1">
-            Account
-          </p>
-          <h1 className="heading-md">Order history</h1>
-          <p className="text-small text-[var(--color-text-muted)] mt-1">
-            Paid campaigns and production status.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link href="/campaigns">
-            <Button variant="secondary">My campaigns</Button>
-          </Link>
-          <Link href="/campaigns/new">
-            <Button>New campaign</Button>
-          </Link>
-        </div>
+      <div className="container max-w-5xl py-6">
+        <h1 className="heading-md">Your orders</h1>
+        <p className="text-small text-[var(--color-text-muted)] mt-1">
+          Track production, shipping, and delivery for paid campaigns.
+        </p>
       </div>
     </header>
   );

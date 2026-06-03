@@ -203,6 +203,17 @@ export function AuthButtons({ variant = "nav", onAction, ctaIcon }: AuthButtonsP
         </SignedOut>
         <SignedIn>
           <Link
+            href="/account/orders"
+            className={
+              stack
+                ? "inline-flex min-h-[44px] w-full items-center justify-center rounded-3xl px-5 py-2.5 text-sm font-medium hover:bg-gray-100"
+                : "rounded-3xl px-5 py-2.5 text-sm font-medium hover:bg-gray-100"
+            }
+            onClick={onAction}
+          >
+            Your orders
+          </Link>
+          <Link
             href="/campaigns"
             className={
               stack
@@ -211,7 +222,7 @@ export function AuthButtons({ variant = "nav", onAction, ctaIcon }: AuthButtonsP
             }
             onClick={onAction}
           >
-            My Campaigns
+            My campaigns
           </Link>
           <Link
             href="/campaigns/new"

@@ -89,8 +89,10 @@ export async function activateOrderForProduction(
 }
 
 export function isTestOrdersEnabled(): boolean {
-  return (
-    process.env.ALLOW_TEST_ORDERS === "true" ||
-    process.env.NODE_ENV === "development"
-  );
+  if (process.env.ALLOW_TEST_ORDERS === "true") return true;
+  if (process.env.ALLOW_TEST_ORDERS === "false") return false;
+  if (process.env.NODE_ENV === "development") return true;
+  // Vercel preview: enable unless explicitly disabled
+  if (process.env.VERCEL_ENV === "preview") return true;
+  return false;
 }

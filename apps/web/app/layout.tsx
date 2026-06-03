@@ -4,10 +4,10 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { TRPCProvider } from "@/lib/trpc/provider";
 import { GuestClaimOnAuth } from "@/components/auth/GuestClaimOnAuth";
+import { hasClerkPublishableKey } from "@/lib/clerk-config";
 
-// Gate the entire Clerk tree on the publishable key so the public marketing site
-// never throws a client-side exception on Preview deploys before the keys are added.
-const hasClerkKeys = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+// Gate ClerkProvider on the publishable key so marketing pages work before keys exist.
+const hasClerkKeys = hasClerkPublishableKey;
 
 // Make the entire app dynamic so `next build` does not attempt static prerender of pages that use Clerk (and other env-dependent clients like Resend/Stripe at import time). This allows clean `turbo run build --filter=web` without a .env.local file.
 export const dynamic = "force-dynamic";
@@ -75,10 +75,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </ClerkProvider>
         ) : (
           // Graceful public-only mode (no Clerk keys yet) — beautiful marketing only
-          <TRPCProvider>
-            <GuestClaimOnAuth />
-            {children}
-          </TRPCProvider>
+          <TRPCProvider>{children}</TRPCProvider>
         )}
       </body>
     </html>

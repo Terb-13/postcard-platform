@@ -7,6 +7,7 @@ const isProtectedRoute = createRouteMatcher([
   "/maps(.*)",
   "/ops(.*)",
   "/account(.*)",
+  "/production(.*)",
 ]);
 
 /** Campaign list + detail require auth; wizard is public (guest checkout supported). */

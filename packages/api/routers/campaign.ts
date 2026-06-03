@@ -11,6 +11,7 @@ import { claimGuestCampaigns } from "../lib/claim-guest-campaigns";
 import { isValidGuestSessionId } from "../lib/guest-org";
 import { createTestOrderForOrganization } from "../lib/test-order";
 import { isTestOrdersEnabled } from "../lib/activate-order-for-production";
+import { trackingForCampaign } from "../lib/order-tracking-helpers";
 
 async function loadTargetingStats(zctas: string[]) {
   try {
@@ -283,9 +284,9 @@ export const campaignRouter = router({
       );
     }),
 
-  /** Paid and fulfilled campaigns for order history (Phase A). */
+  /** Paid orders with customer-facing tracking summary (list + cards). */
   getOrderHistory: protectedProcedure.query(async ({ ctx }) => {
-    return ctx.prisma.campaign.findMany({
+    const orders = await ctx.prisma.campaign.findMany({
       where: {
         organizationId: ctx.user.organizationId,
         status: { in: ["PAID", "IN_PRODUCTION", "COMPLETED"] },
@@ -305,6 +306,7 @@ export const campaignRouter = router({
         purchaserEmail: true,
         dropDate: true,
         createdAt: true,
+        artwork: { select: { status: true } },
         productionJobs: {
           take: 1,
           orderBy: { createdAt: "desc" },
@@ -315,10 +317,20 @@ export const campaignRouter = router({
             shippedAt: true,
             deliveredAt: true,
             productionPartner: { select: { name: true } },
+            events: {
+              orderBy: { createdAt: "desc" },
+              take: 3,
+              select: { id: true, status: true, note: true, createdAt: true },
+            },
           },
         },
       },
     });
+
+    return orders.map((order) => ({
+      ...order,
+      tracking: trackingForCampaign(order),
+    }));
   }),
 
   /** Full order + production timeline (customer order detail page). */
@@ -350,7 +362,54 @@ export const campaignRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
       }
 
-      return campaign;
+      return {
+        ...campaign,
+        tracking: trackingForCampaign(campaign),
+      };
+    }),
+
+  /** Lightweight poll endpoint for order detail pages (same payload as getOrderDetail). */
+  getOrderTracking: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ input, ctx }) => {
+      const campaign = await ctx.prisma.campaign.findFirst({
+        where: {
+          id: input.id,
+          organizationId: ctx.user.organizationId,
+          status: { in: ["PAID", "IN_PRODUCTION", "COMPLETED"] },
+        },
+        select: {
+          id: true,
+          status: true,
+          paidAt: true,
+          artwork: { select: { status: true } },
+          productionJobs: {
+            take: 1,
+            orderBy: { createdAt: "desc" },
+            select: {
+              id: true,
+              status: true,
+              trackingNumber: true,
+              shippedAt: true,
+              deliveredAt: true,
+              productionPartner: { select: { name: true } },
+              events: {
+                orderBy: { createdAt: "desc" },
+                select: { id: true, status: true, note: true, createdAt: true },
+              },
+            },
+          },
+        },
+      });
+
+      if (!campaign) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Order not found" });
+      }
+
+      return {
+        campaignId: campaign.id,
+        tracking: trackingForCampaign(campaign),
+      };
     }),
 
   /** Dev/demo: simulate paid order + production job without Stripe. */

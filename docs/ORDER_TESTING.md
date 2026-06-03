@@ -1,25 +1,41 @@
-# Order & production testing (without Stripe)
+# Customer order tracking (proof without Stripe)
 
-## Customer test orders
+## Customer URLs
 
-When `NODE_ENV=development` or `ALLOW_TEST_ORDERS=true` on Vercel:
+| URL | Purpose |
+|-----|---------|
+| `/account/orders` | All paid orders + live status summary |
+| `/account/orders/[id]` | Full tracking: timeline, carrier link, activity log |
+| `/production?campaign=…` | Redirects to order detail (legacy) |
 
-1. Sign in with Clerk.
-2. Open **Order history** (`/account/orders`).
-3. Click **Create test order** (or **Test order + tracking** for a shipped sample with tracking `1Z999AA10123456784`).
-4. Open **Order details** for timeline, activity log, and tracking.
+## API (tRPC — signed in)
 
-Production status updates also flow through:
+- `campaign.getOrderHistory` — list with `tracking` (headline, progress, carrier URL)
+- `campaign.getOrderDetail` — full order + `tracking` + artwork + mailing job
+- `campaign.getOrderTracking` — lightweight poll payload (same `tracking` shape)
+- `campaign.createTestOrder` — dev/demo order without Stripe
 
-- **Ops** (`/ops`) — `admin.jobs.updateStatus` with tracking number (requires OWNER/ADMIN/OPERATIONS role).
-- **Partner API** — `POST /api/production/jobs/[jobId]/status` with `x-production-key` header.
+Tracking is computed server-side in `packages/api/lib/order-tracking.ts` from campaign status, artwork review, and `ProductionJob` (status, tracking number, events).
 
-## Ops checklist
+## Proof flow (no Stripe)
 
-1. Ensure a **Production Partner** exists (seeded as `Default Print Partner` on new Supabase DBs).
-2. Assign your user `OPERATIONS` or `ADMIN` in the `User` table if `/ops` returns forbidden.
-3. Use the job drawer to move status: RECEIVED → SENT_TO_PROVIDER → SHIPPED (add tracking) → DELIVERED.
+1. Vercel: `ALLOW_TEST_ORDERS=true` (Preview + local; omit on public production).
+2. Sign in → **Your orders** (`/account/orders`).
+3. **Create test order** or **Test order + tracking**.
+4. Open **Track order** — timeline updates; shipped test uses UPS-style sample tracking.
+5. In **Ops** (`/ops`), move job status and add a real tracking number — customer page refreshes within ~20s.
 
-## Stripe (later)
+## Ops updates → customer view
 
-Set `STRIPE_*` keys and webhook URL; checkout uses the same `activateOrderForProduction` path as test orders.
+When ops uses **Update status** with `SHIPPED` + tracking number (or partner API posts status), customers see:
+
+- New timeline step (Shipped / Delivered)
+- Carrier-specific tracking link (UPS / USPS / FedEx when pattern matches)
+- Activity log entries from `JobEvent`
+
+## Recommended next (after proof)
+
+1. **Stripe** — real checkout; webhook already shares `activateOrderForProduction`.
+2. **Email** — Resend on status changes (shipped template exists in admin router).
+3. **Stripe Customer Portal** — optional receipts/refunds.
+4. **Public track-by-email** — lookup without account (later).
