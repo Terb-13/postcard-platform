@@ -14,6 +14,9 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
       links: [
         httpBatchLink({
           url: "/api/trpc",
+          fetch(url, options) {
+            return fetch(url, { ...options, credentials: "include" });
+          },
           headers() {
             const guestSessionId = ensureGuestSessionId();
             return guestSessionId

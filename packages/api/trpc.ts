@@ -8,11 +8,14 @@ import type { PrismaClient, User } from "@prisma/client";
 export type TRPCContext = {
   prisma: PrismaClient;
   user: User | null;
+  /** Set when Clerk session is valid but Prisma user row is missing (DB/sync issue). */
+  clerkUserId: string | null;
   guestSessionId: string | null;
 };
 
 interface CreateContextOptions {
   user: User | null;
+  clerkUserId?: string | null;
   guestSessionId?: string | null;
 }
 
@@ -24,6 +27,7 @@ export const createTRPCContext = async (opts: CreateContextOptions): Promise<TRP
   return {
     prisma,
     user: opts.user,
+    clerkUserId: opts.clerkUserId ?? null,
     guestSessionId,
   };
 };
@@ -69,6 +73,13 @@ export const campaignProcedure = t.procedure.use(async ({ ctx, next }) => {
  */
 export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
   if (!ctx.user) {
+    if (ctx.clerkUserId) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message:
+          "Signed in with Clerk, but your account could not be loaded from the database. Try refreshing the page.",
+      });
+    }
     throw new TRPCError({ code: "UNAUTHORIZED", message: "You must be logged in" });
   }
 

@@ -23,10 +23,13 @@ export function LoadDemoDataButton({ variant = "primary", redirectToOrders = tru
       }
     },
     onError: (e) => {
+      const code = e.data?.code;
       const extra =
-        e.data?.code === "UNAUTHORIZED"
+        code === "UNAUTHORIZED"
           ? "\n\nTip: Open https://postcard-platform-web.vercel.app and sign in there. Preview deploy URLs often lack server env vars."
-          : "";
+          : code === "INTERNAL_SERVER_ERROR"
+            ? "\n\nYou're likely already signed in — refresh the page or open Your orders."
+            : "";
       alert(e.message + extra);
     },
   });

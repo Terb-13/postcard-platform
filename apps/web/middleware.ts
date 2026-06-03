@@ -19,6 +19,8 @@ const isProtectedCampaignRoute = createRouteMatcher([
 const isPublicCampaignWizard = createRouteMatcher(["/campaigns/new"]);
 
 const isPublicApiRoute = createRouteMatcher([
+  "/api/auth/sync",
+  "/api/trpc(.*)",
   "/api/webhooks/clerk(.*)",
   "/api/stripe/webhook(.*)",
   "/api/inngest(.*)",

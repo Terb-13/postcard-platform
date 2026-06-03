@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import type { User } from "@prisma/client";
 
 /** Match middleware.ts — auth() throws if only the publishable key is set. */
-const hasClerkMiddleware =
+export const hasClerkMiddleware =
   Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) &&
   Boolean(process.env.CLERK_SECRET_KEY);
 
@@ -15,24 +15,28 @@ const hasClerkMiddleware =
 export async function getCurrentUser(): Promise<User | null> {
   if (!hasClerkMiddleware) return null;
 
-  const { userId } = await auth();
+  const { userId, isAuthenticated } = await auth();
+  if (!isAuthenticated || !userId) return null;
 
-  if (!userId) return null;
+  return resolvePrismaUserForClerkId(userId);
+}
 
+/** Load or create the Prisma user row for a known Clerk user id. */
+export async function resolvePrismaUserForClerkId(clerkId: string): Promise<User | null> {
   const existing = await prisma.user.findUnique({
-    where: { clerkId: userId },
+    where: { clerkId },
     include: { organization: true },
   });
 
   if (existing) return existing;
 
   const clerkUser = await currentUser();
-  if (!clerkUser) return null;
+  if (!clerkUser || clerkUser.id !== clerkId) return null;
 
   const email =
     clerkUser.emailAddresses.find((e) => e.id === clerkUser.primaryEmailAddressId)?.emailAddress ??
     clerkUser.emailAddresses[0]?.emailAddress ??
-    `user-${userId}@users.postcard.local`;
+    `user-${clerkId}@users.postcard.local`;
 
   try {
     const org = await prisma.organization.create({
@@ -43,7 +47,7 @@ export async function getCurrentUser(): Promise<User | null> {
 
     return await prisma.user.create({
       data: {
-        clerkId: userId,
+        clerkId,
         email,
         firstName: clerkUser.firstName,
         lastName: clerkUser.lastName,
@@ -52,10 +56,10 @@ export async function getCurrentUser(): Promise<User | null> {
       },
       include: { organization: true },
     });
-  } catch {
-    // Race: another request may have created the user
+  } catch (error) {
+    console.error("[auth] Failed to provision Prisma user", { clerkId, error });
     return prisma.user.findUnique({
-      where: { clerkId: userId },
+      where: { clerkId },
       include: { organization: true },
     });
   }
