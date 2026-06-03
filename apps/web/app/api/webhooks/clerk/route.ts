@@ -4,6 +4,29 @@ import { prisma } from "@/lib/db";
 
 export const runtime = "nodejs";
 
+type ClerkEmailAddress = { id?: string; email_address?: string };
+
+type ClerkUserPayload = {
+  id: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  email_addresses?: ClerkEmailAddress[];
+  primary_email_address_id?: string | null;
+};
+
+/** Clerk "Send example" payloads often omit nested emails; real events usually include them. */
+function resolveEmail(data: ClerkUserPayload): string {
+  const addresses = data.email_addresses ?? [];
+  const primaryId = data.primary_email_address_id;
+  if (primaryId) {
+    const primary = addresses.find((e) => e.id === primaryId);
+    if (primary?.email_address) return primary.email_address;
+  }
+  const first = addresses[0]?.email_address;
+  if (first) return first;
+  return `user-${data.id}@users.postcard.local`;
+}
+
 export async function POST(req: NextRequest) {
   const webhookSecret = process.env.CLERK_WEBHOOK_SECRET?.trim();
   if (!webhookSecret) {
@@ -19,35 +42,52 @@ export async function POST(req: NextRequest) {
 
   const wh = new Webhook(webhookSecret);
 
-  let evt: any;
+  let evt: { type: string; data: ClerkUserPayload };
   try {
-    evt = wh.verify(payload, headers);
+    evt = wh.verify(payload, headers) as { type: string; data: ClerkUserPayload };
   } catch (err) {
     console.error("Webhook verification failed", err);
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
-  const { id, email_addresses, first_name } = evt.data;
+  const { id, first_name, last_name } = evt.data;
   const eventType = evt.type;
 
   if (eventType === "user.created") {
-    const email = email_addresses[0]?.email_address;
+    const existing = await prisma.user.findUnique({ where: { clerkId: id } });
+    if (existing) {
+      return NextResponse.json({ success: true, duplicate: true });
+    }
 
-    // Create Organization + User in Prisma
-    const org = await prisma.organization.create({
-      data: {
-        name: `${first_name || "New"}'s Company`,
-      },
-    });
+    const email = resolveEmail(evt.data);
 
-    await prisma.user.create({
-      data: {
-        clerkId: id,
-        email,
-        organizationId: org.id,
-        role: "OWNER",
-      },
-    });
+    try {
+      await prisma.$transaction(async (tx) => {
+        const org = await tx.organization.create({
+          data: {
+            name: first_name ? `${first_name}'s Company` : "My Company",
+          },
+        });
+
+        await tx.user.create({
+          data: {
+            clerkId: id,
+            email,
+            firstName: first_name ?? undefined,
+            lastName: last_name ?? undefined,
+            organizationId: org.id,
+            role: "OWNER",
+          },
+        });
+      });
+    } catch (err) {
+      console.error("Clerk webhook user.created failed", err);
+      const duplicate = await prisma.user.findUnique({ where: { clerkId: id } });
+      if (duplicate) {
+        return NextResponse.json({ success: true, duplicate: true });
+      }
+      return NextResponse.json({ error: "Failed to provision user" }, { status: 500 });
+    }
   }
 
   return NextResponse.json({ success: true });
