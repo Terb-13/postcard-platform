@@ -31,7 +31,7 @@ const hasClerkKeys =
 
 const clerkHandler = clerkMiddleware(async (auth, req) => {
   try {
-    if (isPublicApiRoute(req) || isPublicCampaignWizard(req)) return;
+    if (isWebhookApiRoute(req) || isPublicCampaignWizard(req)) return;
     if (isProtectedCampaignRoute(req)) {
       await auth.protect();
       return;

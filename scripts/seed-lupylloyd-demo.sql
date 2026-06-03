@@ -1,4 +1,29 @@
--- Demo data for lupylloyd@gmail.com (org_lupylloyd_demo / user_3EP9VyVe7h4zDnfXY7BXKWNPoju)
+-- Demo data for lupylloyd@gmail.com (Clerk user_3EP9VyVe7h4zDnfXY7BXKWNPoju)
+-- Run: npm run db:seed:demo
+
+INSERT INTO "Organization" (id, name, "createdAt", "updatedAt")
+VALUES ('org_lupylloyd_demo', 'Brett''s Company', NOW(), NOW())
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO "User" (
+  id, "clerkId", email, "firstName", "lastName", role, "organizationId", "createdAt", "updatedAt"
+) VALUES (
+  'user_lupylloyd_demo',
+  'user_3EP9VyVe7h4zDnfXY7BXKWNPoju',
+  'lupylloyd@gmail.com',
+  'Brett',
+  'Lloyd',
+  'OWNER',
+  'org_lupylloyd_demo',
+  NOW(),
+  NOW()
+)
+ON CONFLICT ("clerkId") DO UPDATE SET
+  email = EXCLUDED.email,
+  "organizationId" = EXCLUDED."organizationId",
+  "firstName" = EXCLUDED."firstName",
+  "lastName" = EXCLUDED."lastName";
+
 INSERT INTO "ProductionPartner" (id, name, "apiKey", "isActive", "createdAt")
 VALUES ('seed_default_partner', 'Default Print Partner', 'seed_change_in_ops', true, NOW())
 ON CONFLICT (id) DO NOTHING;
