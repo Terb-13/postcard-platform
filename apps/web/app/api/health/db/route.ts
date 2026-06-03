@@ -36,6 +36,10 @@ export async function GET(req: Request) {
     hasDbUrl,
     dbOk,
     dbError: dbError ? dbError.slice(0, 300) : null,
+    clerkEnv: {
+      hasSecretKey: Boolean(process.env.CLERK_SECRET_KEY?.trim()),
+      hasPublishableKey: Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.trim()),
+    },
     clerk: {
       isAuthenticated: clerk.isAuthenticated,
       userId: clerk.userId ? `${clerk.userId.slice(0, 14)}…` : null,

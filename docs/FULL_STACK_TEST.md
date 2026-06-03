@@ -49,6 +49,16 @@ Expect: all ✓ checks.
 
 ### 4. Vercel env (dashboard or CLI)
 
+**Turbo monorepo:** `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` must be listed in `turbo.json` (`globalEnv` + `build.env`) or the production build inlines empty Clerk env on API routes. After changing env, redeploy with **Clear build cache**.
+
+Check runtime (no secrets in response):
+
+```bash
+curl -s https://postcard-platform-web.vercel.app/api/health/db | jq '.clerkEnv'
+# expect: { "hasSecretKey": true, "hasPublishableKey": true }
+```
+
+
 ```bash
 vercel link          # once, in repo root
 vercel env ls        # production + preview

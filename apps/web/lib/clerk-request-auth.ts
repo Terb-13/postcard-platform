@@ -33,17 +33,24 @@ function partiesFromRequest(req: Request): string[] {
 /**
  * Authenticate an incoming Request without clerkMiddleware ALS (Vercel serverless).
  */
-export async function authenticateClerkRequest(req: Request): Promise<ClerkRequestAuth> {
-  const secretKey = process.env.CLERK_SECRET_KEY?.trim();
-  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.trim();
+function getClerkSecretKey(): string | undefined {
+  return process.env.CLERK_SECRET_KEY?.trim() || undefined;
+}
 
-  if (!secretKey || !publishableKey) {
-    console.warn("[clerk] Missing CLERK_SECRET_KEY or NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY");
-    return { isAuthenticated: false, userId: null };
-  }
+function getClerkPublishableKey(): string | undefined {
+  return process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.trim() || undefined;
+}
+
+export async function authenticateClerkRequest(req: Request): Promise<ClerkRequestAuth> {
+  const secretKey = getClerkSecretKey();
+  const publishableKey = getClerkPublishableKey();
 
   const bearer = req.headers.get("authorization")?.trim();
   if (bearer?.toLowerCase().startsWith("bearer ")) {
+    if (!secretKey) {
+      console.warn("[clerk] Bearer token present but CLERK_SECRET_KEY missing on server");
+      return { isAuthenticated: false, userId: null };
+    }
     const token = bearer.slice(7).trim();
     if (token) {
       try {
@@ -56,6 +63,14 @@ export async function authenticateClerkRequest(req: Request): Promise<ClerkReque
         console.warn("[clerk] verifyToken failed:", error);
       }
     }
+  }
+
+  if (!secretKey || !publishableKey) {
+    console.warn("[clerk] Missing server Clerk env", {
+      hasSecretKey: Boolean(secretKey),
+      hasPublishableKey: Boolean(publishableKey),
+    });
+    return { isAuthenticated: false, userId: null };
   }
 
   try {

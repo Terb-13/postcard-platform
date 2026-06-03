@@ -16,8 +16,6 @@ function createTrpcClient(getToken: GetToken) {
     links: [
       httpBatchLink({
         url: "/api/trpc",
-        /** Send session token on POST so Authorization is not dropped (GET batching). */
-        methodOverride: "POST",
         fetch(url, options) {
           return fetch(url, { ...options, credentials: "include" });
         },
