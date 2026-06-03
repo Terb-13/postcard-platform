@@ -18,13 +18,19 @@ const isProtectedCampaignRoute = createRouteMatcher([
 
 const isPublicCampaignWizard = createRouteMatcher(["/campaigns/new"]);
 
+const isPublicApiRoute = createRouteMatcher([
+  "/api/webhooks/clerk(.*)",
+  "/api/stripe/webhook(.*)",
+  "/api/inngest(.*)",
+]);
+
 const hasClerkKeys =
   !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY &&
   !!process.env.CLERK_SECRET_KEY;
 
 const clerkHandler = clerkMiddleware(async (auth, req) => {
   try {
-    if (isPublicCampaignWizard(req)) return;
+    if (isPublicApiRoute(req) || isPublicCampaignWizard(req)) return;
     if (isProtectedCampaignRoute(req)) {
       await auth.protect();
       return;

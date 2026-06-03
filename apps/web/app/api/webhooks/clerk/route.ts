@@ -4,9 +4,12 @@ import { prisma } from "@/lib/db";
 
 export const runtime = "nodejs";
 
-const webhookSecret = process.env.CLERK_WEBHOOK_SECRET!;
-
 export async function POST(req: NextRequest) {
+  const webhookSecret = process.env.CLERK_WEBHOOK_SECRET?.trim();
+  if (!webhookSecret) {
+    return NextResponse.json({ error: "CLERK_WEBHOOK_SECRET not configured" }, { status: 503 });
+  }
+
   const payload = await req.text();
   const headers = {
     "svix-id": req.headers.get("svix-id")!,
