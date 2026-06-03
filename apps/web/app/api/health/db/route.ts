@@ -32,6 +32,8 @@ export async function GET(req: Request) {
     dbError = e instanceof Error ? e.message : String(e);
   }
 
+  const clerkEnvKeys = Object.keys(process.env).filter((k) => k.includes("CLERK"));
+
   return NextResponse.json({
     hasDbUrl,
     dbOk,
@@ -39,6 +41,7 @@ export async function GET(req: Request) {
     clerkEnv: {
       hasSecretKey: Boolean(process.env.CLERK_SECRET_KEY?.trim()),
       hasPublishableKey: Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.trim()),
+      keysPresent: clerkEnvKeys,
     },
     clerk: {
       isAuthenticated: clerk.isAuthenticated,

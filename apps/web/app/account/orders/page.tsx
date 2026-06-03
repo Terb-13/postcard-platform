@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { CreateTestOrderButton } from "@/components/account/CreateTestOrderButton";
 import { LoadDemoDataButton } from "@/components/account/LoadDemoDataButton";
 import { OrderTrackingTimeline } from "@/components/orders/OrderTrackingTimeline";
+import { OrderArtworkDisclosure } from "@/components/orders/OrderArtworkDisclosure";
 
 function formatCurrency(cents: number | null | undefined): string {
   if (cents == null) return "—";
@@ -66,7 +67,7 @@ export default function OrderHistoryPage() {
               return (
                 <Card key={order.id} className="p-6 hover:translate-y-0">
                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
-                    <div className="space-y-2 flex-1">
+                    <div className="space-y-2 flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
                           {order.name}
@@ -88,6 +89,15 @@ export default function OrderHistoryPage() {
                   </div>
 
                   <OrderTrackingTimeline tracking={tracking} compact />
+
+                  {order.artwork && (
+                    <OrderArtworkDisclosure
+                      className="mt-4"
+                      size={order.size}
+                      thumbnailUrl={order.artwork.thumbnailUrl}
+                      thumbnails={order.artwork.thumbnails}
+                    />
+                  )}
                 </Card>
               );
             })}

@@ -307,7 +307,13 @@ export const campaignRouter = router({
         purchaserEmail: true,
         dropDate: true,
         createdAt: true,
-        artwork: { select: { status: true } },
+        artwork: {
+          select: {
+            status: true,
+            thumbnailUrl: true,
+            thumbnails: { orderBy: { page: "asc" }, select: { page: true, url: true } },
+          },
+        },
         productionJobs: {
           take: 1,
           orderBy: { createdAt: "desc" },

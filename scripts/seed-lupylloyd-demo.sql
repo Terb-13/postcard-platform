@@ -94,3 +94,87 @@ INSERT INTO "MailingJob" (
 ) VALUES (
   'mail_ship_lupy', 'camp_ship_lupy', 'TARGETED', 'PENDING', 9900, NOW(), NOW()
 ) ON CONFLICT (id) DO NOTHING;
+
+-- Demo artwork (PNG URLs in Supabase Storage — run: npm run db:seed:demo:artwork)
+-- https://onrvdowfqexfchjhysbm.supabase.co/storage/v1/object/public/campaign-artwork/demo/...
+
+INSERT INTO "Artwork" (
+  id, "campaignId", status, "fileUrl", "thumbnailUrl", "pageCount", "fileName", "uploadedAt"
+) VALUES (
+  'art_draft_lupy',
+  'camp_draft_lupy',
+  'UPLOADED',
+  'https://onrvdowfqexfchjhysbm.supabase.co/storage/v1/object/public/campaign-artwork/demo/camp_draft_lupy-front.png',
+  'https://onrvdowfqexfchjhysbm.supabase.co/storage/v1/object/public/campaign-artwork/demo/camp_draft_lupy-front.png',
+  2,
+  'camp_draft_lupy-front.png',
+  NOW()
+) ON CONFLICT ("campaignId") DO UPDATE SET
+  "fileUrl" = EXCLUDED."fileUrl",
+  "thumbnailUrl" = EXCLUDED."thumbnailUrl",
+  "pageCount" = EXCLUDED."pageCount",
+  "fileName" = EXCLUDED."fileName";
+
+INSERT INTO "ArtworkThumbnail" (id, "artworkId", page, url, "createdAt")
+VALUES
+  ('thumb_draft_f', 'art_draft_lupy', 1,
+   'https://onrvdowfqexfchjhysbm.supabase.co/storage/v1/object/public/campaign-artwork/demo/camp_draft_lupy-front.png',
+   NOW()),
+  ('thumb_draft_b', 'art_draft_lupy', 2,
+   'https://onrvdowfqexfchjhysbm.supabase.co/storage/v1/object/public/campaign-artwork/demo/camp_draft_lupy-back.png',
+   NOW())
+ON CONFLICT ("artworkId", page) DO UPDATE SET url = EXCLUDED.url;
+
+INSERT INTO "Artwork" (
+  id, "campaignId", status, "fileUrl", "thumbnailUrl", "pageCount", "fileName", "uploadedAt"
+) VALUES (
+  'art_prod_lupy',
+  'camp_prod_lupy',
+  'APPROVED',
+  'https://onrvdowfqexfchjhysbm.supabase.co/storage/v1/object/public/campaign-artwork/demo/camp_prod_lupy-front.png',
+  'https://onrvdowfqexfchjhysbm.supabase.co/storage/v1/object/public/campaign-artwork/demo/camp_prod_lupy-front.png',
+  2,
+  'camp_prod_lupy-front.png',
+  NOW()
+) ON CONFLICT ("campaignId") DO UPDATE SET
+  "fileUrl" = EXCLUDED."fileUrl",
+  "thumbnailUrl" = EXCLUDED."thumbnailUrl",
+  "pageCount" = EXCLUDED."pageCount",
+  "fileName" = EXCLUDED."fileName";
+
+INSERT INTO "ArtworkThumbnail" (id, "artworkId", page, url, "createdAt")
+VALUES
+  ('thumb_prod_f', 'art_prod_lupy', 1,
+   'https://onrvdowfqexfchjhysbm.supabase.co/storage/v1/object/public/campaign-artwork/demo/camp_prod_lupy-front.png',
+   NOW()),
+  ('thumb_prod_b', 'art_prod_lupy', 2,
+   'https://onrvdowfqexfchjhysbm.supabase.co/storage/v1/object/public/campaign-artwork/demo/camp_prod_lupy-back.png',
+   NOW())
+ON CONFLICT ("artworkId", page) DO UPDATE SET url = EXCLUDED.url;
+
+INSERT INTO "Artwork" (
+  id, "campaignId", status, "fileUrl", "thumbnailUrl", "pageCount", "fileName", "uploadedAt"
+) VALUES (
+  'art_ship_lupy',
+  'camp_ship_lupy',
+  'APPROVED',
+  'https://onrvdowfqexfchjhysbm.supabase.co/storage/v1/object/public/campaign-artwork/demo/camp_ship_lupy-front.png',
+  'https://onrvdowfqexfchjhysbm.supabase.co/storage/v1/object/public/campaign-artwork/demo/camp_ship_lupy-front.png',
+  2,
+  'camp_ship_lupy-front.png',
+  NOW()
+) ON CONFLICT ("campaignId") DO UPDATE SET
+  "fileUrl" = EXCLUDED."fileUrl",
+  "thumbnailUrl" = EXCLUDED."thumbnailUrl",
+  "pageCount" = EXCLUDED."pageCount",
+  "fileName" = EXCLUDED."fileName";
+
+INSERT INTO "ArtworkThumbnail" (id, "artworkId", page, url, "createdAt")
+VALUES
+  ('thumb_ship_f', 'art_ship_lupy', 1,
+   'https://onrvdowfqexfchjhysbm.supabase.co/storage/v1/object/public/campaign-artwork/demo/camp_ship_lupy-front.png',
+   NOW()),
+  ('thumb_ship_b', 'art_ship_lupy', 2,
+   'https://onrvdowfqexfchjhysbm.supabase.co/storage/v1/object/public/campaign-artwork/demo/camp_ship_lupy-back.png',
+   NOW())
+ON CONFLICT ("artworkId", page) DO UPDATE SET url = EXCLUDED.url;

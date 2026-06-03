@@ -125,6 +125,16 @@ DIRECT_URL="postgresql://postgres.onrvdowfqexfchjhysbm:...@...supabase.com:5432/
 
 ---
 
+## Storage (demo campaign artwork)
+
+Public bucket **`campaign-artwork`** holds demo postcard PNGs under `demo/`.
+
+1. Generate images with [docs/GROK_DEMO_ARTWORK_PROMPTS.md](../docs/GROK_DEMO_ARTWORK_PROMPTS.md)
+2. Save to `apps/web/public/demo-artwork/`
+3. Run `npm run db:seed:demo:artwork` (creates bucket if needed, uploads, syncs Prisma)
+
+---
+
 ## Verify
 
 ```bash

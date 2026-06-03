@@ -7,6 +7,7 @@ import { useParams } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
 import { resolveProductFromCampaign } from "@/lib/products";
 import { OrderTrackingPanel } from "@/components/orders/OrderTrackingPanel";
+import { OrderArtworkPreview } from "@/components/orders/OrderArtworkPreview";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 
@@ -94,6 +95,19 @@ export default function OrderDetailPage() {
       </header>
 
       <main className="container max-w-5xl py-8 space-y-6">
+        {order.artwork && (
+          <Card className="p-6">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--color-text-muted)] mb-4">
+              Postcard artwork
+            </h2>
+            <OrderArtworkPreview
+              size={order.size}
+              thumbnailUrl={order.artwork.thumbnailUrl}
+              thumbnails={order.artwork.thumbnails}
+            />
+          </Card>
+        )}
+
         <Card className="p-6">
           <OrderTrackingPanel tracking={order.tracking} />
         </Card>

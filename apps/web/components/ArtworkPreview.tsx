@@ -147,11 +147,11 @@ export function ArtworkPreview({
   // Use pre-generated thumbnail if available for this page (preferred fast path)
   if (effectiveThumbnail) {
     return (
-      <div className={className}>
+      <div className={`overflow-hidden ${className}`}>
         <img
           src={effectiveThumbnail}
           alt={`Artwork page ${pageNumber}`}
-          className="rounded border object-contain bg-white w-full"
+          className="mx-auto max-h-[min(280px,50vh)] w-full rounded border bg-white object-contain"
         />
         {rejectionNotes && (
           <div className="mt-2 rounded border border-red-200 bg-red-50 p-2 text-sm text-red-700">

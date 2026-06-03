@@ -18,7 +18,8 @@
     "db:migrate:baseline": "bash scripts/baseline-prisma-migrations.sh",
     "supabase": "supabase",
     "supabase:link": "supabase link --project-ref onrvdowfqexfchjhysbm",
-    "db:seed:demo": "supabase db query --linked -f scripts/seed-lupylloyd-demo.sql"
+    "db:seed:demo": "supabase db query --linked -f scripts/seed-lupylloyd-demo.sql",
+    "db:seed:demo:artwork": "node scripts/seed-demo-artwork.mjs"
   },
   "devDependencies": {
     "turbo": "^2.3.0",

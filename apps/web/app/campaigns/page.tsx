@@ -12,6 +12,7 @@ import {
 } from "@/lib/products";
 import { ArtworkPreview } from "@/components/ArtworkPreview";
 import { ArtworkUpload } from "@/components/ArtworkUpload";
+import { CampaignArtworkDisclosure } from "@/components/orders/OrderArtworkDisclosure";
 import { ProductionTimeline } from "@/components/ProductionTimeline";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -167,60 +168,85 @@ export default function MyCampaignsPage() {
                     </div>
                   </div>
 
-                  <div className="mt-5 border-t border-[var(--color-border)] pt-5">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="text-sm font-medium">Artwork</div>
-                      {artwork && (
-                        <div className="text-xs text-[var(--color-text-muted)]">
-                          {artwork.fileName}{" "}
-                          {knownPageCount
-                            ? `· ${knownPageCount} page${knownPageCount > 1 ? "s" : ""}`
-                            : ""}
-                        </div>
-                      )}
+                  {(campaign.status === "PAID" ||
+                    campaign.status === "IN_PRODUCTION" ||
+                    job) && (
+                    <div className="mt-5 border-t border-[var(--color-border)] pt-5">
+                      <div className="text-sm font-medium mb-3">Production timeline</div>
+                      <ProductionTimeline campaign={campaign} />
                     </div>
+                  )}
+
+                  <div className="mt-5 border-t border-[var(--color-border)] pt-5">
+                    <div className="text-sm font-medium mb-3">Artwork</div>
 
                     {artwork ? (
                       <div className="space-y-3">
-                        <ArtworkPreview
-                          fileUrl={artwork.fileUrl!}
+                        <CampaignArtworkDisclosure
+                          size={campaign.size}
                           thumbnailUrl={artwork.thumbnailUrl}
-                          thumbnails={thumbnailsMap}
+                          thumbnails={artwork.thumbnails}
+                          fileName={artwork.fileName}
                           pageCount={knownPageCount}
-                          isGeneratingThumbnails={
-                            isGenerating ||
-                            (!artwork.thumbnails?.length && !!artwork.fileUrl)
+                          fallbackPreview={
+                            !artwork.thumbnailUrl && !artwork.thumbnails?.length ? (
+                              <ArtworkPreview
+                                fileUrl={artwork.fileUrl!}
+                                thumbnailUrl={artwork.thumbnailUrl}
+                                thumbnails={thumbnailsMap}
+                                pageCount={knownPageCount}
+                                isGeneratingThumbnails={
+                                  isGenerating ||
+                                  (!artwork.thumbnails?.length && !!artwork.fileUrl)
+                                }
+                                rejectionNotes={isRejected ? artwork.notes : null}
+                                className="w-full"
+                                onPageCountChange={(c) => handlePageCount(campaign.id, c)}
+                              />
+                            ) : undefined
                           }
-                          rejectionNotes={isRejected ? artwork.notes : null}
-                          className="max-h-[320px] w-full"
-                          onPageCountChange={(c) => handlePageCount(campaign.id, c)}
+                          footer={
+                            <>
+                              {(isDraft || isRejected) && (
+                                <div className="flex flex-wrap items-center gap-3">
+                                  {isRejected && (
+                                    <span className="text-red-600 text-xs">
+                                      Re-upload corrected artwork
+                                    </span>
+                                  )}
+                                  <ArtworkUpload
+                                    campaignId={campaign.id}
+                                    onUploadComplete={() => {
+                                      handleUploadComplete(campaign.id);
+                                      refetch();
+                                    }}
+                                  />
+                                </div>
+                              )}
+                              {artwork.notes && !isRejected && (
+                                <div className="text-xs bg-[var(--color-bg-alt)] border border-[var(--color-border)] rounded-xl p-3 text-[var(--color-text-secondary)]">
+                                  Ops notes: {artwork.notes}
+                                </div>
+                              )}
+                              {isRejected && artwork.notes && (
+                                <div className="rounded border border-red-200 bg-red-50 p-2 text-sm text-red-700">
+                                  <strong>Review notes:</strong> {artwork.notes}
+                                </div>
+                              )}
+                            </>
+                          }
                         />
 
                         <div className="flex flex-wrap items-center gap-3 text-sm">
                           <Badge variant={artwork.status === "APPROVED" ? "accent" : undefined}>
                             {artwork.status}
                           </Badge>
-                          {isRejected && (
-                            <span className="text-red-600 text-xs">
-                              Re-upload corrected artwork below
+                          {(isDraft || isRejected) && (
+                            <span className="text-xs text-[var(--color-text-muted)]">
+                              Expand artwork above to preview or replace your file
                             </span>
                           )}
-                          <div className="ml-auto">
-                            <ArtworkUpload
-                              campaignId={campaign.id}
-                              onUploadComplete={() => {
-                                handleUploadComplete(campaign.id);
-                                refetch();
-                              }}
-                            />
-                          </div>
                         </div>
-
-                        {artwork.notes && !isRejected && (
-                          <div className="text-xs bg-[var(--color-bg-alt)] border border-[var(--color-border)] rounded-xl p-3 text-[var(--color-text-secondary)]">
-                            Ops notes: {artwork.notes}
-                          </div>
-                        )}
                       </div>
                     ) : (
                       <div className="rounded-2xl border border-dashed border-[var(--color-border)] p-6 text-center bg-[var(--color-bg-alt)]/40">
@@ -240,15 +266,6 @@ export default function MyCampaignsPage() {
                       </div>
                     )}
                   </div>
-
-                  {(campaign.status === "PAID" ||
-                    campaign.status === "IN_PRODUCTION" ||
-                    job) && (
-                    <div className="mt-5 border-t border-[var(--color-border)] pt-5">
-                      <div className="text-sm font-medium mb-3">Production Timeline</div>
-                      <ProductionTimeline campaign={campaign} />
-                    </div>
-                  )}
                 </Card>
               );
             })}

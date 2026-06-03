@@ -21,3 +21,8 @@ supabase/.temp/
 .env*
 !.env.example
 .turbo/
+
+# Demo postcard PNGs live in Supabase Storage (see docs/GROK_DEMO_ARTWORK_PROMPTS.md)
+apps/web/public/demo-artwork/*.png
+apps/web/public/demo-artwork/*.jpg
+apps/web/public/demo-artwork/*.webp
