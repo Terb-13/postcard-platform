@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CreateTestOrderButton } from "@/components/account/CreateTestOrderButton";
+import { LoadDemoDataButton } from "@/components/account/LoadDemoDataButton";
 import { OrderTrackingTimeline } from "@/components/orders/OrderTrackingTimeline";
 
 function formatCurrency(cents: number | null | undefined): string {
@@ -116,11 +117,14 @@ function EmptyOrdersState() {
       <h2 className="heading-sm mb-2">No orders yet</h2>
       <p className="text-[var(--color-text-secondary)] mb-6">
         When you pay for a campaign, it will show up here with payment details and production
-        tracking. No Stripe yet? Create a test order to preview the flow.
+        tracking.
       </p>
-      <div className="flex flex-col sm:flex-row gap-3 justify-center">
-        <CreateTestOrderButton variant="primary" />
-        <CreateTestOrderButton simulateShipped label="Test order + tracking" />
+      <div className="flex flex-col gap-3 justify-center items-center">
+        <LoadDemoDataButton />
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <CreateTestOrderButton variant="secondary" />
+          <CreateTestOrderButton simulateShipped label="Test order + tracking" />
+        </div>
       </div>
       <Link href="/campaigns/new" className="inline-block mt-6">
         <Button variant="secondary" size="lg">

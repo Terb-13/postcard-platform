@@ -12,6 +12,7 @@ import { isValidGuestSessionId } from "../lib/guest-org";
 import { createTestOrderForOrganization } from "../lib/test-order";
 import { isTestOrdersEnabled } from "../lib/activate-order-for-production";
 import { trackingForCampaign } from "../lib/order-tracking-helpers";
+import { seedDemoDataForOrganization } from "../lib/seed-demo-data";
 
 async function loadTargetingStats(zctas: string[]) {
   try {
@@ -426,6 +427,11 @@ export const campaignRouter = router({
     }),
 
   canCreateTestOrder: protectedProcedure.query(() => isTestOrdersEnabled()),
+
+  /** Load sample draft + orders for the signed-in account (safe on production demos). */
+  seedDemoData: protectedProcedure.mutation(async ({ ctx }) => {
+    return seedDemoDataForOrganization(ctx.prisma, ctx.user.organizationId);
+  }),
 
   // Upload or replace artwork for a campaign. Client sends pageCount for instant feedback.
   uploadArtwork: campaignProcedure

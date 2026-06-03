@@ -16,6 +16,7 @@ import { ProductionTimeline } from "@/components/ProductionTimeline";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { LoadDemoDataButton } from "@/components/account/LoadDemoDataButton";
 
 export default function MyCampaignsPage() {
   const { data: campaigns, isLoading, refetch } = trpc.campaign.getMine.useQuery();
@@ -266,12 +267,17 @@ function EmptyCampaignsState() {
       </div>
       <h2 className="heading-sm mb-2">No campaigns yet</h2>
       <p className="text-[var(--color-text-secondary)] mb-6">
-        Create your first targeted postcard campaign. Pick ZIP codes on the map, upload artwork,
-        and send when you&apos;re ready.
+        Create your first targeted postcard campaign, or load sample data to preview orders and
+        tracking.
       </p>
-      <Link href="/campaigns/new">
-        <Button size="lg">Create your first campaign</Button>
-      </Link>
+      <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        <LoadDemoDataButton redirectToOrders={false} />
+        <Link href="/campaigns/new">
+          <Button size="lg" variant="secondary">
+            Create your first campaign
+          </Button>
+        </Link>
+      </div>
     </div>
   );
 }
