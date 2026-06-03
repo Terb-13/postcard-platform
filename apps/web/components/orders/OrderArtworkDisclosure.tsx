@@ -2,14 +2,15 @@
 
 import { useId, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import { OrderArtworkPreview } from "@/components/orders/OrderArtworkPreview";
-
-type ThumbnailRow = { page: number; url: string };
+import {
+  OrderArtworkPreview,
+  type ArtworkThumbnailInput,
+} from "@/components/orders/OrderArtworkPreview";
 
 type OrderArtworkDisclosureProps = {
   size?: string | null;
   thumbnailUrl?: string | null;
-  thumbnails?: ThumbnailRow[] | null;
+  thumbnails?: ArtworkThumbnailInput[] | null;
   className?: string;
   /** Shown below the preview when expanded (e.g. upload, status). */
   footer?: ReactNode;
@@ -19,10 +20,10 @@ type OrderArtworkDisclosureProps = {
 
 function hasArtwork(
   thumbnailUrl?: string | null,
-  thumbnails?: ThumbnailRow[] | null
+  thumbnails?: ArtworkThumbnailInput[] | null
 ): boolean {
   if (thumbnailUrl) return true;
-  return Boolean(thumbnails?.some((t) => t.url));
+  return Boolean(thumbnails?.some((t) => t.page != null && t.url));
 }
 
 export function OrderArtworkDisclosure({
@@ -111,7 +112,7 @@ export function CampaignArtworkDisclosure({
 }: {
   size?: string | null;
   thumbnailUrl?: string | null;
-  thumbnails?: ThumbnailRow[] | null;
+  thumbnails?: ArtworkThumbnailInput[] | null;
   fileUrl?: string | null;
   fileName?: string | null;
   pageCount?: number;

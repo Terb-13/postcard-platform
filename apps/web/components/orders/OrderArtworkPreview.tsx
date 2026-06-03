@@ -6,20 +6,23 @@ import {
   type PostcardSide,
 } from "@/components/campaign-wizard/ArtworkPreview";
 
-type ThumbnailRow = { page: number; url: string };
+/** Matches tRPC/Prisma artwork thumbnail rows (page + url may be optional in inferred types). */
+export type ArtworkThumbnailInput = { page?: number | null; url?: string | null };
 
 type OrderArtworkPreviewProps = {
   size?: string | null;
   thumbnailUrl?: string | null;
-  thumbnails?: ThumbnailRow[] | null;
+  thumbnails?: ArtworkThumbnailInput[] | null;
   className?: string;
   compact?: boolean;
 };
 
-function thumbnailsMap(rows: ThumbnailRow[] | null | undefined): Record<number, string> {
+function thumbnailsMap(
+  rows: ArtworkThumbnailInput[] | null | undefined
+): Record<number, string> {
   if (!rows?.length) return {};
   return rows.reduce<Record<number, string>>((acc, t) => {
-    acc[t.page] = t.url;
+    if (t.page != null && t.url) acc[t.page] = t.url;
     return acc;
   }, {});
 }
