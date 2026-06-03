@@ -1,24 +1,42 @@
 import { PrismaClient } from "@prisma/client";
 
-/** Vercel + Supabase integration exposes POSTGRES_PRISMA_URL; Prisma expects DATABASE_URL. */
-if (!process.env.DATABASE_URL?.trim()) {
-  if (process.env.POSTGRES_PRISMA_URL?.trim()) {
-    process.env.DATABASE_URL = process.env.POSTGRES_PRISMA_URL;
-  } else if (process.env.POSTGRES_URL?.trim()) {
-    process.env.DATABASE_URL = process.env.POSTGRES_URL;
-  }
+function resolveDatabaseUrl(): string | undefined {
+  const direct = process.env.DATABASE_URL?.trim();
+  if (direct && !direct.includes("REPLACE_ME")) return direct;
+
+  const prismaUrl = process.env.POSTGRES_PRISMA_URL?.trim();
+  if (prismaUrl) return prismaUrl;
+
+  const postgresUrl = process.env.POSTGRES_URL?.trim();
+  if (postgresUrl) return postgresUrl;
+
+  return undefined;
+}
+
+const databaseUrl = resolveDatabaseUrl();
+if (databaseUrl) {
+  process.env.DATABASE_URL = databaseUrl;
 }
 
 declare global {
-  // allow global `var` declarations
   // eslint-disable-next-line no-var
   var prisma: PrismaClient | undefined;
 }
 
-export const prisma =
-  global.prisma ||
-  new PrismaClient({
+function createPrismaClient() {
+  const url = resolveDatabaseUrl();
+  return new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
+    ...(url
+      ? {
+          datasources: {
+            db: { url },
+          },
+        }
+      : {}),
   });
+}
+
+export const prisma = global.prisma ?? createPrismaClient();
 
 if (process.env.NODE_ENV !== "production") global.prisma = prisma;
