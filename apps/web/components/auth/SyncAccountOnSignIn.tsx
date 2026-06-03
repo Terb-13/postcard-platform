@@ -3,13 +3,18 @@
 import { useEffect, useRef } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
+import { hasClerkPublishableKey } from "@/lib/clerk-config";
 
 /**
- * After Clerk sign-in, hit a server route that provisions the Prisma user
- * (same logic as tRPC context). Helps when the first tRPC batch ran before cookies settled.
+ * After Clerk sign-in, provision the Prisma user via Bearer token + cookies.
  */
 export function SyncAccountOnSignIn() {
-  const { isLoaded, isSignedIn } = useAuth();
+  if (!hasClerkPublishableKey) return null;
+  return <SyncAccountOnSignInInner />;
+}
+
+function SyncAccountOnSignInInner() {
+  const { isLoaded, isSignedIn, getToken } = useAuth();
   const router = useRouter();
   const synced = useRef(false);
 
@@ -17,14 +22,22 @@ export function SyncAccountOnSignIn() {
     if (!isLoaded || !isSignedIn || synced.current) return;
     synced.current = true;
 
-    void fetch("/api/auth/sync", { method: "POST", credentials: "include" })
-      .then((res) => {
-        if (res.ok) router.refresh();
-      })
-      .catch(() => {
-        synced.current = false;
+    void (async () => {
+      const token = await getToken();
+      const headers: HeadersInit = {};
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      const res = await fetch("/api/auth/sync", {
+        method: "POST",
+        credentials: "include",
+        headers,
       });
-  }, [isLoaded, isSignedIn, router]);
+      if (res.ok) router.refresh();
+      else synced.current = false;
+    })().catch(() => {
+      synced.current = false;
+    });
+  }, [isLoaded, isSignedIn, getToken, router]);
 
   return null;
 }

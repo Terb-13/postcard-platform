@@ -60,10 +60,7 @@ export default function MyCampaignsPage() {
     return (
       <div className="min-h-screen bg-[var(--color-bg)]">
         <div className="container max-w-5xl py-10">
-          <AuthRequiredCard
-            message={error.message}
-            hint="Use the production app URL (postcard-platform-web.vercel.app). Preview deployments need Clerk and database env vars on Vercel."
-          />
+          <AuthRequiredCard message={error.message} />
         </div>
       </div>
     );
