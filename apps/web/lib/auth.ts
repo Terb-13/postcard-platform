@@ -1,5 +1,6 @@
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
+import { authenticateClerkRequest } from "@/lib/clerk-request-auth";
 
 import type { User } from "@prisma/client";
 
@@ -9,16 +10,26 @@ export const hasClerkMiddleware =
   Boolean(process.env.CLERK_SECRET_KEY);
 
 /**
- * Gets the current Prisma User record for the logged in Clerk user.
- * Auto-provisions org + user when Clerk session exists but webhook sync is pending.
+ * Resolve Clerk user id from a Route Handler / tRPC Request (no middleware ALS).
+ */
+export async function getClerkUserIdFromRequest(req: Request): Promise<string | null> {
+  const { isAuthenticated, userId } = await authenticateClerkRequest(req);
+  return isAuthenticated && userId ? userId : null;
+}
+
+/**
+ * Gets the current Prisma User for App Router server components (uses auth()).
  */
 export async function getCurrentUser(): Promise<User | null> {
   if (!hasClerkMiddleware) return null;
 
-  const { userId, isAuthenticated } = await auth();
-  if (!isAuthenticated || !userId) return null;
-
-  return resolvePrismaUserForClerkId(userId);
+  try {
+    const { userId, isAuthenticated } = await auth();
+    if (!isAuthenticated || !userId) return null;
+    return resolvePrismaUserForClerkId(userId);
+  } catch {
+    return null;
+  }
 }
 
 /** Load or create the Prisma user row for a known Clerk user id. */
@@ -30,18 +41,28 @@ export async function resolvePrismaUserForClerkId(clerkId: string): Promise<User
 
   if (existing) return existing;
 
-  const clerkUser = await currentUser();
-  if (!clerkUser || clerkUser.id !== clerkId) return null;
+  let email: string;
+  let firstName: string | null = null;
+  let lastName: string | null = null;
 
-  const email =
-    clerkUser.emailAddresses.find((e) => e.id === clerkUser.primaryEmailAddressId)?.emailAddress ??
-    clerkUser.emailAddresses[0]?.emailAddress ??
-    `user-${clerkId}@users.postcard.local`;
+  try {
+    const client = await clerkClient();
+    const clerkUser = await client.users.getUser(clerkId);
+    email =
+      clerkUser.emailAddresses.find((e) => e.id === clerkUser.primaryEmailAddressId)?.emailAddress ??
+      clerkUser.emailAddresses[0]?.emailAddress ??
+      `user-${clerkId}@users.postcard.local`;
+    firstName = clerkUser.firstName;
+    lastName = clerkUser.lastName;
+  } catch (error) {
+    console.error("[auth] Clerk users.getUser failed", { clerkId, error });
+    return null;
+  }
 
   try {
     const org = await prisma.organization.create({
       data: {
-        name: clerkUser.firstName ? `${clerkUser.firstName}'s Company` : "My Company",
+        name: firstName ? `${firstName}'s Company` : "My Company",
       },
     });
 
@@ -49,8 +70,8 @@ export async function resolvePrismaUserForClerkId(clerkId: string): Promise<User
       data: {
         clerkId,
         email,
-        firstName: clerkUser.firstName,
-        lastName: clerkUser.lastName,
+        firstName: firstName ?? undefined,
+        lastName: lastName ?? undefined,
         organizationId: org.id,
         role: "OWNER",
       },
@@ -63,6 +84,21 @@ export async function resolvePrismaUserForClerkId(clerkId: string): Promise<User
       include: { organization: true },
     });
   }
+}
+
+/**
+ * Prisma user for an API Request (tRPC, sync route, etc.).
+ */
+export async function resolvePrismaUserFromRequest(req: Request): Promise<{
+  user: User | null;
+  clerkUserId: string | null;
+}> {
+  const clerkUserId = await getClerkUserIdFromRequest(req);
+  if (!clerkUserId) {
+    return { user: null, clerkUserId: null };
+  }
+  const user = await resolvePrismaUserForClerkId(clerkUserId);
+  return { user, clerkUserId };
 }
 
 /**

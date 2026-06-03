@@ -1,33 +1,18 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
+import { authenticateClerkRequest } from "@/lib/clerk-request-auth";
 
 export const runtime = "nodejs";
 
 /** Lightweight prod diagnostic — no secrets in response. */
-export async function GET() {
+export async function GET(req: Request) {
   const hasDbUrl = Boolean(
     process.env.DATABASE_URL?.trim() ||
       process.env.POSTGRES_PRISMA_URL?.trim() ||
       process.env.POSTGRES_URL?.trim()
   );
 
-  let clerk = { isAuthenticated: false, userId: null as string | null };
-  try {
-    const clerkAuth = await auth();
-    clerk = {
-      isAuthenticated: clerkAuth.isAuthenticated,
-      userId: clerkAuth.userId,
-    };
-  } catch (e) {
-    return NextResponse.json(
-      {
-        hasDbUrl,
-        clerkError: e instanceof Error ? e.message.slice(0, 300) : "auth failed",
-      },
-      { status: 500 }
-    );
-  }
+  const clerk = await authenticateClerkRequest(req);
 
   let dbOk = false;
   let dbError: string | null = null;

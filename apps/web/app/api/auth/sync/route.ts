@@ -1,17 +1,15 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
-import { resolvePrismaUserForClerkId } from "@/lib/auth";
+import { resolvePrismaUserFromRequest } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
-export async function POST() {
-  const { userId, isAuthenticated } = await auth();
-  if (!isAuthenticated || !userId) {
-    return NextResponse.json({ error: "Not signed in" }, { status: 401 });
-  }
-
+export async function POST(req: Request) {
   try {
-    const user = await resolvePrismaUserForClerkId(userId);
+    const { user, clerkUserId } = await resolvePrismaUserFromRequest(req);
+
+    if (!clerkUserId) {
+      return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+    }
     if (!user) {
       return NextResponse.json({ error: "Could not provision user" }, { status: 500 });
     }
