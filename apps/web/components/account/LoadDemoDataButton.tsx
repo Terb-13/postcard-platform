@@ -22,7 +22,13 @@ export function LoadDemoDataButton({ variant = "primary", redirectToOrders = tru
         router.refresh();
       }
     },
-    onError: (e) => alert(e.message),
+    onError: (e) => {
+      const extra =
+        e.data?.code === "UNAUTHORIZED"
+          ? "\n\nTip: Open https://postcard-platform-web.vercel.app and sign in there. Preview deploy URLs often lack server env vars."
+          : "";
+      alert(e.message + extra);
+    },
   });
 
   return (

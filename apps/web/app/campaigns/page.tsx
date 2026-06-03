@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { LoadDemoDataButton } from "@/components/account/LoadDemoDataButton";
 
 export default function MyCampaignsPage() {
-  const { data: campaigns, isLoading, refetch } = trpc.campaign.getMine.useQuery();
+  const { data: campaigns, isLoading, isError, error, refetch } = trpc.campaign.getMine.useQuery();
 
   const createCheckout = trpc.campaign.createCheckoutSession.useMutation({
     onSuccess: (res) => {
@@ -50,6 +50,19 @@ export default function MyCampaignsPage() {
           <div className="h-10 w-64 bg-[var(--color-border)] rounded-xl animate-pulse" />
           <div className="h-48 bg-[var(--color-border)] rounded-2xl animate-pulse" />
           <div className="h-48 bg-[var(--color-border)] rounded-2xl animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="min-h-screen bg-[var(--color-bg)]">
+        <div className="container max-w-5xl py-10">
+          <AuthRequiredCard
+            message={error.message}
+            hint="Use the production app URL (postcard-platform-web.vercel.app). Preview deployments need Clerk and database env vars on Vercel."
+          />
         </div>
       </div>
     );
@@ -249,6 +262,26 @@ export default function MyCampaignsPage() {
           notified by email when artwork is approved or needs changes.
         </p>
       </main>
+    </div>
+  );
+}
+
+function AuthRequiredCard({ message, hint }: { message: string; hint?: string }) {
+  return (
+    <div className="rounded-3xl border border-[var(--color-border)] bg-white p-10 sm:p-14 text-center max-w-lg mx-auto">
+      <h2 className="heading-sm mb-2">Sign in required</h2>
+      <p className="text-[var(--color-text-secondary)] mb-4">{message}</p>
+      {hint ? <p className="text-small text-[var(--color-text-muted)] mb-6">{hint}</p> : null}
+      <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        <Link href="/sign-in">
+          <Button size="lg">Sign in</Button>
+        </Link>
+        <a href="https://postcard-platform-web.vercel.app/campaigns">
+          <Button size="lg" variant="secondary">
+            Open production app
+          </Button>
+        </a>
+      </div>
     </div>
   );
 }
