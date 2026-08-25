@@ -18,9 +18,10 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users     User[]
-  campaigns Campaign[]
-  savedMaps SavedMap[]
+  users      User[]
+  campaigns  Campaign[]
+  savedMaps  SavedMap[]
+  mcpApiKeys McpApiKey[]
 }
 
 model User {
@@ -34,6 +35,8 @@ model User {
   organization   Organization @relation(fields: [organizationId], references: [id])
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  mcpApiKeys     McpApiKey[]
 
   @@index([clerkId])
   @@index([organizationId])
@@ -258,4 +261,29 @@ model JobEvent {
   createdAt       DateTime @default(now())
 
   @@index([productionJobId, createdAt])
+}
+
+/// Org-scoped credential for MCP agents. Store only the SHA-256 hash of the plaintext key.
+model McpApiKey {
+  id             String    @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String?
+  user           User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  name           String
+  keyHash        String    @unique
+  keyPrefix      String
+  /// JSON string array, e.g. ["read","draft","spend","fulfill"]
+  scopes         Json
+  spendCapCents  Int       @default(0)
+  spentCents     Int       @default(0)
+  lastUsedAt     DateTime?
+  expiresAt      DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([organizationId])
+  @@index([keyPrefix])
 }
