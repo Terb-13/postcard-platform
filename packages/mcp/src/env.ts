@@ -14,6 +14,7 @@ const candidates = [
   resolve(repoRoot, "apps/web/.env"),
   resolve(repoRoot, "packages/db/.env"),
   resolve(packageRoot, ".env"),
+  resolve(packageRoot, ".env.cursor-dev-key.local"),
 ];
 
 export function loadEnv(): void {
