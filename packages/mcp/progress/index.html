@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Postcard MCP — live progress</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0f1419;
+        --panel: #171d24;
+        --line: #2a3440;
+        --text: #e8eef4;
+        --muted: #93a1b0;
+        --pass: #3dd68c;
+        --warn: #f5c451;
+        --fail: #ff6b6b;
+        --info: #6cb6ff;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.45;
+      }
+      header {
+        padding: 24px 28px 8px;
+        border-bottom: 1px solid var(--line);
+      }
+      h1 { margin: 0 0 6px; font-size: 22px; }
+      .sub { color: var(--muted); font-size: 14px; }
+      main { padding: 20px 28px 48px; display: grid; gap: 18px; }
+      .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 14px 16px;
+      }
+      .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+      .status { font-weight: 650; margin-top: 6px; }
+      .pass { color: var(--pass); }
+      .warn { color: var(--warn); }
+      .fail { color: var(--fail); }
+      .info { color: var(--info); }
+      table { width: 100%; border-collapse: collapse; font-size: 14px; }
+      th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+      th { color: var(--muted); font-weight: 600; }
+      pre {
+        margin: 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-size: 12px;
+        color: #d5deea;
+      }
+      .gap {
+        border-left: 3px solid var(--warn);
+        padding-left: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Postcard MCP progress</h1>
+      <p class="sub">Auto-refreshes every 3s from <code>state.json</code>. Human tRPC/UX stays unchanged.</p>
+    </header>
+    <main>
+      <section class="row" id="bar"></section>
+      <section class="card gap">
+        <div class="label">Current gap</div>
+        <p id="gap">Loading…</p>
+        <p class="sub" id="updated"></p>
+      </section>
+      <section class="card">
+        <div class="label">Pieces</div>
+        <table>
+          <thead><tr><th>Piece</th><th>Status</th><th>Gap</th></tr></thead>
+          <tbody id="pieces"></tbody>
+        </table>
+      </section>
+      <section class="card">
+        <div class="label">Tools</div>
+        <table>
+          <thead><tr><th>Name</th><th>Kind</th><th>Wraps</th><th>Safety</th></tr></thead>
+          <tbody id="tools"></tbody>
+        </table>
+      </section>
+      <section class="card">
+        <div class="label">Test results</div>
+        <table>
+          <thead><tr><th>Suite</th><th>Result</th><th>Notes</th></tr></thead>
+          <tbody id="tests"></tbody>
+        </table>
+      </section>
+    </main>
+    <script>
+      const tone = (value) => {
+        const v = String(value || "").toLowerCase();
+        if (["pass", "passed", "done", "complete", "wins"].includes(v)) return "pass";
+        if (["fail", "failed", "blocked"].includes(v)) return "fail";
+        if (["pending", "in_progress", "gap"].includes(v)) return "warn";
+        return "info";
+      };
+      async function load() {
+        try {
+          const res = await fetch("./state.json?ts=" + Date.now(), { cache: "no-store" });
+          const state = await res.json();
+          document.getElementById("gap").textContent = state.currentGap || "None recorded.";
+          document.getElementById("updated").textContent = "Updated " + (state.updatedAt || "unknown");
+          const bar = state.bar || {};
+          document.getElementById("bar").innerHTML = ["sdk", "equivalence", "safety"]
+            .map((k) => `<div class="card"><div class="label">${k}</div><div class="status ${tone(bar[k])}">${bar[k] || "pending"}</div></div>`)
+            .join("");
+          document.getElementById("pieces").innerHTML = (state.pieces || [])
+            .map((p) => `<tr><td>${p.title}</td><td class="${tone(p.status)}">${p.status}</td><td>${p.gap || ""}</td></tr>`)
+            .join("");
+          document.getElementById("tools").innerHTML = (state.tools || []).length
+            ? state.tools.map((t) => `<tr><td><code>${t.name}</code></td><td>${t.kind}</td><td>${t.wraps}</td><td>${t.safety}</td></tr>`).join("")
+            : `<tr><td colspan="4" class="sub">No tools registered yet.</td></tr>`;
+          document.getElementById("tests").innerHTML = (state.testResults || []).length
+            ? state.testResults.map((t) => `<tr><td>${t.name}</td><td class="${tone(t.result)}">${t.result}</td><td>${t.notes || ""}</td></tr>`).join("")
+            : `<tr><td colspan="3" class="sub">No test results yet.</td></tr>`;
+        } catch (err) {
+          document.getElementById("gap").textContent = "Could not load state.json: " + err;
+        }
+      }
+      load();
+      setInterval(load, 3000);
+    </script>
+  </body>
+</html>

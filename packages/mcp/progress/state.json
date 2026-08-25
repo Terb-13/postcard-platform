@@ -1,0 +1,45 @@
+{
+  "updatedAt": "2026-08-25T15:18:00.000Z",
+  "phase": "wins-the-bar",
+  "bar": {
+    "sdk": "pass",
+    "equivalence": "pass",
+    "safety": "pass"
+  },
+  "pieces": [
+    {"id": "progress", "title": "Live progress page", "status": "done", "gap": "http://127.0.0.1:3333/progress"},
+    {"id": "foundation", "title": "Package, transports, org-scoped API keys, tRPC caller", "status": "done", "gap": "Apply migration then issue-key"},
+    {"id": "read-tools", "title": "Discovery, Census audience, cost estimate", "status": "done", "gap": ""},
+    {"id": "write-tools", "title": "Campaign + artwork (dry-run default)", "status": "done", "gap": ""},
+    {"id": "spend-tools", "title": "Checkout + mailing finalize + Drummond handoff", "status": "done", "gap": ""},
+    {"id": "tests", "title": "Equivalence and safety tests", "status": "done", "gap": "18/18 including live Census A/B"}
+  ],
+  "tools": [
+    {"name": "get_workflow_guide", "kind": "read", "wraps": "n/a — agent planning text", "safety": "read-only"},
+    {"name": "list_products", "kind": "read", "wraps": "apps/web/lib/products.ts slugs", "safety": "read-only"},
+    {"name": "get_spend_status", "kind": "read", "wraps": "McpApiKey spend fields", "safety": "read-only"},
+    {"name": "search_zips", "kind": "read", "wraps": "targeting.searchZips", "safety": "read-only"},
+    {"name": "estimate_audience", "kind": "read", "wraps": "targeting.estimateAudience", "safety": "estimate-only"},
+    {"name": "estimate_audience_from_zctas", "kind": "read", "wraps": "targeting.estimateAudienceFromZctas", "safety": "estimate-only"},
+    {"name": "get_census_stats", "kind": "read", "wraps": "targeting.getCensusStatsForZctas", "safety": "estimate-only"},
+    {"name": "calculate_cost", "kind": "read", "wraps": "mailing.calculatePricing → pricing.service", "safety": "estimate-only"},
+    {"name": "preview_eddm_routes", "kind": "read", "wraps": "mailing.eddmRoutes → eddm.service", "safety": "estimate-only"},
+    {"name": "list_campaigns", "kind": "read", "wraps": "campaign.getMine", "safety": "org-scoped read"},
+    {"name": "get_campaign", "kind": "read", "wraps": "campaign.getById", "safety": "org-scoped read"},
+    {"name": "get_order", "kind": "read", "wraps": "campaign.getOrderDetail", "safety": "org-scoped read"},
+    {"name": "get_mailing_job", "kind": "read", "wraps": "mailing.getByCampaignId", "safety": "org-scoped read"},
+    {"name": "get_payment_readiness", "kind": "read", "wraps": "campaign.getById (inspect artwork/status)", "safety": "read-only — does not create Stripe session"},
+    {"name": "create_campaign", "kind": "draft", "wraps": "campaign.create", "safety": "dryRun=true default; dryRun=false writes DRAFT only"},
+    {"name": "update_campaign_draft", "kind": "draft", "wraps": "campaign.updateDraft", "safety": "dryRun=true default"},
+    {"name": "attach_artwork", "kind": "draft", "wraps": "campaign.uploadArtwork", "safety": "dryRun=true default; does not approve artwork"},
+    {"name": "prepare_checkout", "kind": "spend", "wraps": "campaign.createCheckoutSession", "safety": "confirm=true + spend scope + spend cap required"},
+    {"name": "finalize_mailing", "kind": "fulfill", "wraps": "mailing.finalize → finalizeMailingJob → handoffToDrummond", "safety": "confirm=true required; runHandoff defaults false; confirmHandoff for Drummond/R2"}
+  ],
+  "testResults": [
+    {"name": "vitest", "result": "pass", "notes": "18/18 including live Census A/B vs targeting.estimateAudience and unfiltered create pricing"},
+    {"name": "HTTP /health + /progress", "result": "pass", "notes": "200"},
+    {"name": "HTTP POST /mcp no auth", "result": "pass", "notes": "401 jsonrpc -32001"},
+    {"name": "critic rounds 1–5", "result": "pass", "notes": "Round 5: WINS THE BAR"}
+  ],
+  "currentGap": "WINS THE BAR. Spend cap is now an atomic UPDATE ... WHERE remaining >= amount. Cursor-dev key prefix mcp_0IjRZkev (read,draft, cap 0)."
+}
