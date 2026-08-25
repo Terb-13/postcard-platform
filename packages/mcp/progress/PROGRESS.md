@@ -15,12 +15,15 @@
 - Live A/B: targeted `create_campaign` dry-run quantity/total === unfiltered `getCensusStatsForZctas` pricing (same as `campaign.create`)
 - HTTP: `/health` 200, `/progress` 200, `POST /mcp` without Bearer → 401
 
-## Residual risk
+## Spend cap
 
-Spend cap is read-then-increment (not a single SQL compare-and-swap). Concurrent `prepare_checkout` on one key could both pass the cap check.
+`reserveSpend` uses a single `UPDATE ... WHERE remaining >= amount RETURNING`. Checkout reserves before Stripe and releases if `createCheckoutSession` throws.
+
+## Cursor-dev key
+
+Prefix `mcp_0IjRZkev` — scopes `read,draft`, spend cap $0, org `org_lupylloyd_demo`. Plaintext is in the gitignored `packages/mcp/.env.cursor-dev-key.local`.
 
 ## Next for you
 
-1. Apply `packages/db/prisma/migrations/20260825140000_add_mcp_api_key`
-2. `npm run issue-key -w @postcard-platform/mcp -- --org-id … --user-email …`
-3. Point Cursor / Claude Desktop at `packages/mcp` (see README)
+1. Point Cursor / Claude Desktop at `packages/mcp` (see README) with `MCP_API_KEY` from the local key file
+2. Smoke `http://127.0.0.1:3333/progress` and one dry-run new-mover flow

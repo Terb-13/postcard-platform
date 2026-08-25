@@ -41,5 +41,5 @@
     {"name": "HTTP POST /mcp no auth", "result": "pass", "notes": "401 jsonrpc -32001"},
     {"name": "critic rounds 1–5", "result": "pass", "notes": "Round 5: WINS THE BAR"}
   ],
-  "currentGap": "WINS THE BAR. Residual: spend cap is read-then-increment (not a single compare-and-swap)."
+  "currentGap": "WINS THE BAR. Spend cap is now an atomic UPDATE ... WHERE remaining >= amount. Cursor-dev key prefix mcp_0IjRZkev (read,draft, cap 0)."
 }
