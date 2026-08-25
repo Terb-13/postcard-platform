@@ -1,12 +1,18 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { calculateCampaignPricing } from "../../api/lib/pricing.ts";
 import { calculatePricing } from "../../api/services/pricing.service.ts";
 
 vi.mock("./auth.ts", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./auth.ts")>();
-  return { ...actual, recordSpend: vi.fn().mockResolvedValue(undefined) };
+  return {
+    ...actual,
+    reserveSpend: vi.fn().mockResolvedValue({ reservedCents: 25000, spentCents: 25000, remainingSpendCents: 75000 }),
+    releaseSpend: vi.fn().mockResolvedValue(undefined),
+    recordSpend: vi.fn().mockResolvedValue(undefined),
+  };
 });
 
+import { releaseSpend, reserveSpend, SpendCapError } from "./auth.ts";
 import type { ResolvedApiKey } from "./auth.ts";
 import type { ToolRuntime } from "./context.ts";
 import {
@@ -49,6 +55,16 @@ function auth(overrides: Partial<ResolvedApiKey> = {}): ResolvedApiKey {
 function runtime(caller: Record<string, unknown>, authOverrides?: Partial<ResolvedApiKey>): ToolRuntime {
   return { auth: auth(authOverrides), caller: caller as ToolRuntime["caller"] };
 }
+
+beforeEach(() => {
+  vi.mocked(reserveSpend).mockClear();
+  vi.mocked(releaseSpend).mockClear();
+  vi.mocked(reserveSpend).mockResolvedValue({
+    reservedCents: 25000,
+    spentCents: 25000,
+    remainingSpendCents: 75000,
+  });
+});
 
 describe("safety defaults", () => {
   it("create_campaign dry-runs by default and does not call campaign.create", async () => {
@@ -273,11 +289,52 @@ describe("tRPC equivalence wrappers", () => {
       { campaignId: "c1", confirm: true }
     );
     expect(createCheckoutSession).toHaveBeenCalledWith({ campaignId: "c1" });
+    expect(reserveSpend).toHaveBeenCalledWith("key_1", 25000);
+    expect(releaseSpend).not.toHaveBeenCalled();
     expect(result.structuredContent).toMatchObject({
       ok: true,
       procedure: "campaign.createCheckoutSession",
       data: { url: "https://checkout.stripe.com/c/cs_test", reservedSpendCents: 25000 },
     });
+  });
+
+  it("prepare_checkout releases the reservation when Stripe throws", async () => {
+    const createCheckoutSession = vi.fn().mockRejectedValue(new Error("stripe down"));
+    const getById = vi.fn().mockResolvedValue({
+      id: "c1",
+      size: "6x9",
+      quantity: 500,
+      productType: "TARGETED",
+      totalPriceCents: 25000,
+    });
+    const result = await handlePrepareCheckout(
+      runtime({ campaign: { createCheckoutSession, getById } }),
+      { campaignId: "c1", confirm: true }
+    );
+    expect(reserveSpend).toHaveBeenCalledWith("key_1", 25000);
+    expect(releaseSpend).toHaveBeenCalledWith("key_1", 25000);
+    expect(result.isError).toBe(true);
+  });
+
+  it("prepare_checkout does not call Stripe when the atomic reserve fails", async () => {
+    vi.mocked(reserveSpend).mockRejectedValueOnce(
+      new SpendCapError("Insufficient remaining spend cap for 25000 cents, or the key is revoked / has spendCapCents=0.")
+    );
+    const createCheckoutSession = vi.fn();
+    const getById = vi.fn().mockResolvedValue({
+      id: "c1",
+      size: "6x9",
+      quantity: 500,
+      productType: "TARGETED",
+      totalPriceCents: 25000,
+    });
+    const result = await handlePrepareCheckout(
+      runtime({ campaign: { createCheckoutSession, getById } }),
+      { campaignId: "c1", confirm: true }
+    );
+    expect(createCheckoutSession).not.toHaveBeenCalled();
+    expect(releaseSpend).not.toHaveBeenCalled();
+    expect(result.structuredContent).toMatchObject({ code: "SPEND_CAP" });
   });
 
   it("prepare_checkout refuses a zero spend cap", async () => {

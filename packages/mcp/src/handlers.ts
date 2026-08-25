@@ -1,5 +1,5 @@
 import { calculateCampaignPricing } from "../../api/lib/pricing.ts";
-import { recordSpend } from "./auth.ts";
+import { releaseSpend, reserveSpend, SpendCapError } from "./auth.ts";
 import { resolveProduct, WORKFLOW_GUIDE, PRODUCT_CATALOG, POSTCARD_SIZES } from "./catalog.ts";
 import type { ToolRuntime } from "./context.ts";
 import { fail, ok } from "./result.ts";
@@ -421,19 +421,36 @@ export async function handlePrepareCheckout(rt: ToolRuntime, input: { campaignId
   const confirmErr = requireConfirm(input.confirm, "prepare_checkout (Stripe Checkout session)");
   if (confirmErr) return confirmErr;
 
+  let campaign;
   try {
-    const campaign = await rt.caller.campaign.getById({ id: input.campaignId });
-    const { totalPriceCents: total } = checkoutTotalCents(campaign);
-    const capErr = requireSpendRoom(rt.auth, total);
-    if (capErr) return capErr;
+    campaign = await rt.caller.campaign.getById({ id: input.campaignId });
+  } catch (err) {
+    return trpcError(err);
+  }
 
+  const { totalPriceCents: total } = checkoutTotalCents(campaign);
+  const capErr = requireSpendRoom(rt.auth, total);
+  if (capErr) return capErr;
+
+  let reservedCents = 0;
+  try {
+    const reserved = await reserveSpend(rt.auth.id, total);
+    reservedCents = reserved.reservedCents;
+  } catch (err) {
+    if (err instanceof SpendCapError) {
+      return fail(err.message, err.code);
+    }
+    return trpcError(err);
+  }
+
+  try {
     const result = await rt.caller.campaign.createCheckoutSession({ campaignId: input.campaignId });
-    await recordSpend(rt.auth.id, total);
     return ok(
-      { ...result, reservedSpendCents: total },
+      { ...result, reservedSpendCents: reservedCents },
       { dryRun: false, procedure: "campaign.createCheckoutSession", confirm: true }
     );
   } catch (err) {
+    await releaseSpend(rt.auth.id, reservedCents);
     return trpcError(err);
   }
 }

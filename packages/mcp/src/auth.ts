@@ -105,12 +105,68 @@ async function loadOrgActor(organizationId: string): Promise<User | null> {
   });
 }
 
-export async function recordSpend(apiKeyId: string, amountCents: number): Promise<void> {
+export class SpendCapError extends Error {
+  readonly code = "SPEND_CAP" as const;
+
+  constructor(message: string) {
+    super(message);
+    this.name = "SpendCapError";
+  }
+}
+
+export type ReservedSpend = {
+  reservedCents: number;
+  spentCents: number;
+  remainingSpendCents: number;
+};
+
+/**
+ * Atomically increment spentCents only if the remaining cap covers amountCents.
+ * Concurrent callers cannot both succeed past the cap.
+ */
+export async function reserveSpend(apiKeyId: string, amountCents: number): Promise<ReservedSpend> {
+  if (amountCents <= 0) {
+    return { reservedCents: 0, spentCents: 0, remainingSpendCents: 0 };
+  }
+
+  const rows = await prisma.$queryRaw<Array<{ spentCents: number; spendCapCents: number }>>`
+    UPDATE "McpApiKey"
+    SET "spentCents" = "spentCents" + ${amountCents},
+        "updatedAt" = NOW()
+    WHERE id = ${apiKeyId}
+      AND "revokedAt" IS NULL
+      AND "spendCapCents" > 0
+      AND "spentCents" + ${amountCents} <= "spendCapCents"
+    RETURNING "spentCents", "spendCapCents"
+  `;
+
+  if (rows.length === 0) {
+    throw new SpendCapError(
+      `Insufficient remaining spend cap for ${amountCents} cents, or the key is revoked / has spendCapCents=0.`
+    );
+  }
+
+  const row = rows[0];
+  return {
+    reservedCents: amountCents,
+    spentCents: row.spentCents,
+    remainingSpendCents: Math.max(0, row.spendCapCents - row.spentCents),
+  };
+}
+
+export async function releaseSpend(apiKeyId: string, amountCents: number): Promise<void> {
   if (amountCents <= 0) return;
-  await prisma.mcpApiKey.update({
-    where: { id: apiKeyId },
-    data: { spentCents: { increment: amountCents } },
-  });
+  await prisma.$executeRaw`
+    UPDATE "McpApiKey"
+    SET "spentCents" = GREATEST(0, "spentCents" - ${amountCents}),
+        "updatedAt" = NOW()
+    WHERE id = ${apiKeyId}
+  `;
+}
+
+/** @deprecated Use reserveSpend — kept for any leftover callers. */
+export async function recordSpend(apiKeyId: string, amountCents: number): Promise<void> {
+  await reserveSpend(apiKeyId, amountCents);
 }
 
 export async function createApiKeyRecord(input: {
