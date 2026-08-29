@@ -54,6 +54,8 @@ export type Product = {
   features: string[];
   benefits: ProductBenefit[];
   idealFor: string[];
+  /** Buyer chrome must not show start/order CTAs or live prices. */
+  comingSoon?: boolean;
 };
 
 export const POSTCARD_SIZE_MULTIPLIERS: Record<PostcardSize, number> = {
@@ -66,8 +68,15 @@ export const POSTCARD_SIZE_MULTIPLIERS: Record<PostcardSize, number> = {
 /** Honest placeholder until CIO wires a real partner/USPS rate. Do not invent a dollar amount. */
 export const LIVE_ESTIMATE_PLACEHOLDER = "See live estimate on the map";
 
+export const COMING_SOON_LABEL = "Coming soon";
+
+export function isProductComingSoon(product: Product): boolean {
+  return product.comingSoon === true;
+}
+
 /** Size rate label — never invent a starting-at dollar figure from marketing copy. */
 export function getSizePriceRange(product: Product, size: PostcardSize): string {
+  if (isProductComingSoon(product)) return COMING_SOON_LABEL;
   const sizeOption = product.sizes.find((s) => s.value === size);
   if (sizeOption?.priceRange) return sizeOption.priceRange;
   return product.priceTeaser || LIVE_ESTIMATE_PLACEHOLDER;
@@ -85,11 +94,11 @@ export const products: Product[] = [
     slug: "every-door-direct-mail",
     title: "Every Door Direct Mail",
     shortTitle: "EDDM",
-    tagline: "The proven way to reach every household in a neighborhood — no list required.",
-    heroHighlight: "Reach every customer in your area. No mailing list to buy.",
+    tagline: "Quote household reach from Census ZIP counts. Carrier routes are not live.",
+    heroHighlight: "Census ZIP quotes — carrier-route EDDM is coming soon.",
     benefitsHeadline: "Why local businesses choose Every Door Direct Mail",
     description:
-      "Mail oversized postcards to every deliverable address in the ZIP codes you select on the map. Ideal for restaurants, home services, and retailers who want neighborhood-wide visibility without list costs. USPS carrier-route selection is coming soon.",
+      "Select ZIP codes on the map for a Census household quote. This is not a live USPS Every Door drop — carrier-route selection is not available yet. No mailing list required.",
     image: "/images/eddm-product.jpg",
     heroImage: "/images/marketing/hero.jpg",
     priceTeaser: LIVE_ESTIMATE_PLACEHOLDER,
@@ -120,7 +129,7 @@ export const products: Product[] = [
     benefits: [
       {
         title: "No mailing list needed",
-        description: "Skip list brokers — choose ZIP codes on the map and mail to households in those areas.",
+        description: "Skip list brokers — choose ZIP codes on the map and see Census household counts.",
         icon: "reach",
       },
       {
@@ -135,7 +144,7 @@ export const products: Product[] = [
       },
       {
         title: "Live in as little as 5 days",
-        description: "Pick ZIP codes, upload artwork, and mail fast with Census household counts before you pay.",
+        description: "Pick ZIP codes and see a Census household quote before you plan artwork or pay.",
         icon: "speed",
       },
     ],
@@ -218,16 +227,17 @@ export const products: Product[] = [
     slug: "discount-zones",
     title: "Discount Zones",
     shortTitle: "Discount Zones",
-    tagline: "Pre-negotiated zone pricing for high-volume mailers in select markets.",
-    heroHighlight: "Our lowest rates — mail more households for the same budget.",
+    tagline: "Shared print windows in partner markets — not available to order yet.",
+    heroHighlight: "Coming soon. Zone rates are not live.",
     benefitsHeadline: "Volume pricing without cutting corners",
     description:
-      "Qualify for shared print schedules and zone-based rates in partner markets. Same map tools and artwork review — just a lower per-piece price when you commit to volume.",
+      "Discount Zones will offer shared print schedules in partner markets. Eligible ZIPs and rates are not published yet — this is not a live product and cannot be ordered.",
     image: "/images/targeted-product.jpg",
     heroImage: "/images/marketing/results.jpg",
-    priceTeaser: LIVE_ESTIMATE_PLACEHOLDER,
+    priceTeaser: COMING_SOON_LABEL,
+    comingSoon: true,
     sizeRecommendationNote:
-      "6×11″ EDDM in discount zones delivers the best cost-per-impression — our most popular format for zone drops.",
+      "6×11″ is the planned default when Discount Zones launch. No zone rate is published.",
     productType: "EDDM",
     defaultSize: "6x11",
     sizes: [
@@ -235,41 +245,40 @@ export const products: Product[] = [
         value: "6x11",
         label: "6×11″ EDDM",
         dimensions: "11″ × 6″",
-        description: "Best value in discount zones — full mailbox impact",
+        description: "Planned default format when Discount Zones launch",
         recommended: true,
       },
       {
         value: "6x9",
         label: "6×9″",
         dimensions: "9″ × 6″",
-        description: "Compact format to stretch zone budgets further",
+        description: "Planned alternate format — no zone rate published",
       },
     ],
     features: [
-      "Zone-based pricing",
-      "Shared print schedules",
-      "Minimum volume tiers",
-      "Same map targeting tools",
+      "Coming soon",
+      "No live zone rates",
+      "Not available to order",
     ],
     benefits: [
       {
-        title: "Lowest per-piece rates we offer",
-        description: "Zone pricing beats standard EDDM when your drop qualifies in an eligible market.",
+        title: "Planned for high-volume mailers",
+        description: "Shared print windows in partner markets are on the roadmap. No zone rates are published.",
         icon: "pricing",
       },
       {
         title: "Built for repeat campaigns",
-        description: "Lock in rates for monthly, seasonal, or multi-location programs that mail on schedule.",
+        description: "Intended for monthly, seasonal, or multi-location programs once the product launches.",
         icon: "scale",
       },
       {
-        title: "More reach, same spend",
-        description: "Stretch budget across additional households without downgrading print quality.",
+        title: "Same Census ZIP map",
+        description: "The quote-only map stays Census ZIP. Discount Zones will not invent a separate rate sheet.",
         icon: "reach",
       },
       {
-        title: "Reserved production windows",
-        description: "Priority slots in busy markets so your drop ships on time, even at peak volume.",
+        title: "Not for sale yet",
+        description: "You cannot start a Discount Zones order. No start-campaign path while this is coming soon.",
         icon: "speed",
       },
     ],
@@ -279,16 +288,17 @@ export const products: Product[] = [
     slug: "saturation-mail",
     title: "Saturation Mail",
     shortTitle: "Saturation",
-    tagline: "Blanket every deliverable address in the ZIP codes you choose.",
-    heroHighlight: "Own the mailbox across entire ZIP codes — pure awareness at scale.",
+    tagline: "Full-ZIP coverage is coming soon — not a live mail drop.",
+    heroHighlight: "Coming soon. Saturation is not for sale yet.",
     benefitsHeadline: "Maximum coverage when share of voice matters",
     description:
-      "Cover 100% of deliverable addresses in your selected ZIPs. Built for launches, events, and awareness campaigns where being everywhere locally is the goal.",
+      "Saturation Mail will cover selected ZIP codes when it launches. Carrier routes are not live, and this is not available to order.",
     image: "/images/saturation-product.jpg",
     heroImage: "/images/marketing/solution.jpg",
-    priceTeaser: LIVE_ESTIMATE_PLACEHOLDER,
+    priceTeaser: COMING_SOON_LABEL,
+    comingSoon: true,
     sizeRecommendationNote:
-      "6×11″ gives saturation campaigns the oversized presence needed to stand out when every household gets a piece.",
+      "6×11″ is the planned default when Saturation launches. Not a live mail drop.",
     productType: "EDDM",
     defaultSize: "6x11",
     sizes: [
@@ -296,14 +306,14 @@ export const products: Product[] = [
         value: "6x11",
         label: "6×11″ EDDM",
         dimensions: "11″ × 6″",
-        description: "Dominant mailbox presence for full-ZIP drops",
+        description: "Planned default format when Saturation launches",
         recommended: true,
       },
       {
         value: "6x9",
         label: "6×9″",
         dimensions: "9″ × 6″",
-        description: "Cost-effective saturation at high volumes",
+        description: "Planned alternate format — not a live drop",
       },
       {
         value: "5x7",
@@ -313,29 +323,29 @@ export const products: Product[] = [
       },
     ],
     features: [
-      "Full ZIP saturation",
-      "Household count previews",
-      "Artwork review included",
+      "Coming soon",
+      "Census ZIP quotes only",
+      "Not available to order",
     ],
     benefits: [
       {
-        title: "100% ZIP coverage",
-        description: "Every deliverable address in your selected ZIPs receives your piece — no gaps.",
+        title: "Planned ZIP coverage",
+        description: "Saturation will use selected ZIPs when it launches. Carrier routes are not live.",
         icon: "reach",
       },
       {
-        title: "Geography-only buying",
-        description: "Select ZIPs on the map and see household counts instantly. No list required.",
+        title: "Geography-only planning",
+        description: "The map stays a Census ZIP quote. Saturation cannot be ordered from this page.",
         icon: "targeting",
       },
       {
         title: "One ZIP or fifty",
-        description: "Start with a single neighborhood or blanket a metro — the same simple workflow scales.",
+        description: "The same quote-only ZIP workflow will scale when this product ships.",
         icon: "scale",
       },
       {
-        title: "Print-ready artwork review",
-        description: "Our team verifies your PDF before production so saturation drops ship without surprises.",
+        title: "Not for sale yet",
+        description: "You cannot start a Saturation order. No start-campaign path while this is coming soon.",
         icon: "transparency",
       },
     ],

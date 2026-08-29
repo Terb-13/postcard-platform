@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Check } from "lucide-react";
 import type { Product } from "@/lib/products";
-import { buildCampaignWizardHref } from "@/lib/products";
+import { buildCampaignWizardHref, COMING_SOON_LABEL, isProductComingSoon } from "@/lib/products";
 import { marketingContainer, marketingEyebrow } from "@/components/marketing/marketing-design-system";
 
 type ProductDetailHeroProps = {
@@ -10,6 +10,8 @@ type ProductDetailHeroProps = {
 };
 
 export function ProductDetailHero({ product }: ProductDetailHeroProps) {
+  const comingSoon = isProductComingSoon(product);
+
   return (
     <section className="border-b border-gray-200 bg-gradient-to-b from-white to-[#fafaf9]">
       <div className={`${marketingContainer} py-6 sm:py-10 lg:py-14`}>
@@ -52,15 +54,27 @@ export function ProductDetailHero({ product }: ProductDetailHeroProps) {
             </ul>
 
             <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
-              <Link
-                href={buildCampaignWizardHref(product)}
-                className="inline-flex min-h-[52px] w-full items-center justify-center rounded-3xl bg-[#0A2540] px-8 py-3.5 text-base font-semibold text-white shadow-lg transition-all hover:bg-black hover:shadow-xl sm:w-auto"
-              >
-                Start {product.shortTitle} campaign →
-              </Link>
+              {comingSoon ? (
+                <span className="inline-flex min-h-[52px] w-full items-center justify-center rounded-3xl bg-gray-100 px-8 py-3.5 text-base font-semibold text-[#0A2540] sm:w-auto">
+                  {COMING_SOON_LABEL}
+                </span>
+              ) : (
+                <Link
+                  href={buildCampaignWizardHref(product)}
+                  className="inline-flex min-h-[52px] w-full items-center justify-center rounded-3xl bg-[#0A2540] px-8 py-3.5 text-base font-semibold text-white shadow-lg transition-all hover:bg-black hover:shadow-xl sm:w-auto"
+                >
+                  Start {product.shortTitle} campaign →
+                </Link>
+              )}
               <div className="text-center sm:text-left">
-                <p className="text-lg font-semibold text-[#0A2540]">{product.priceTeaser}</p>
-                <p className="text-xs text-gray-500">No payment until you approve your audience</p>
+                <p className="text-lg font-semibold text-[#0A2540]">
+                  {comingSoon ? COMING_SOON_LABEL : product.priceTeaser}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {comingSoon
+                    ? "Not available to order"
+                    : "No payment until you approve your audience"}
+                </p>
               </div>
             </div>
           </div>
@@ -82,7 +96,9 @@ export function ProductDetailHero({ product }: ProductDetailHeroProps) {
                 <p className="text-xs font-semibold uppercase tracking-widest text-white/70">
                   {product.title}
                 </p>
-                <p className="mt-1 text-sm font-medium text-white/90">{product.priceTeaser}</p>
+                <p className="mt-1 text-sm font-medium text-white/90">
+                  {comingSoon ? COMING_SOON_LABEL : product.priceTeaser}
+                </p>
               </div>
             </div>
           </div>
