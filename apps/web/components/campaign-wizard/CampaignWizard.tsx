@@ -233,6 +233,18 @@ export function CampaignWizard() {
 
   const currentStepId = STEP_IDS[stepIndex] as WizardStepId;
 
+  /** Block only a quote-only / coming-soon marketing entry. Do not infer EDDM from a persisted generic draft. */
+  const blockedEntryProduct =
+    !campaignId && wizardProductParams.product && !canStartProductOrder(wizardProductParams.product)
+      ? wizardProductParams.product
+      : null;
+
+  const blockedEntryMessage = blockedEntryProduct
+    ? isProductQuoteOnly(blockedEntryProduct)
+      ? "Census ZIP quotes do not create a campaign or continue to artwork."
+      : "This product is not available to order."
+    : null;
+
   useEffect(() => {
     if (saveStatus !== "saved") return;
     const t = setTimeout(() => setSaveStatus("idle"), 3000);
@@ -251,12 +263,8 @@ export function CampaignWizard() {
   );
 
   const ensureCampaignDraft = useCallback(async () => {
-    if (activeProduct && !canStartProductOrder(activeProduct)) {
-      throw new Error(
-        isProductQuoteOnly(activeProduct)
-          ? "Census ZIP quotes do not create a campaign or continue to artwork."
-          : "This product is not available to order."
-      );
+    if (blockedEntryMessage) {
+      throw new Error(blockedEntryMessage);
     }
     const basics = basicsForm.getValues();
     const zctaList = targeting.zctas.map((z) => z.zcta);
@@ -320,15 +328,14 @@ export function CampaignWizard() {
     syncWizardUrl,
     targeting,
     updateDraft,
+    blockedEntryMessage,
   ]);
 
   const handleSaveDraft = async () => {
-    if (activeProduct && !canStartProductOrder(activeProduct)) {
+    if (blockedEntryMessage) {
       setStepError({
         step: currentStepId,
-        message: isProductQuoteOnly(activeProduct)
-          ? "Census ZIP quotes do not create a campaign or continue to artwork."
-          : "This product is not available to order.",
+        message: blockedEntryMessage,
       });
       return;
     }
@@ -360,12 +367,10 @@ export function CampaignWizard() {
     }
 
     if (currentStepId === "targeting") {
-      if (activeProduct && !canStartProductOrder(activeProduct)) {
+      if (blockedEntryMessage) {
         setStepError({
           step: "targeting",
-          message: isProductQuoteOnly(activeProduct)
-            ? "Census ZIP quotes do not create a campaign or continue to artwork."
-            : "This product is not available to order.",
+          message: blockedEntryMessage,
         });
         return;
       }
