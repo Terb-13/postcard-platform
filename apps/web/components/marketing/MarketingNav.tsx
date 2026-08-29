@@ -7,9 +7,14 @@ import { AuthButtons } from "@/components/landing/AuthButtons";
 /** redesign/index.html — Nav links & structure */
 const NAV_LINKS = [
   { href: "/products", label: "Products" },
-  { href: "#how-it-works", label: "How it Works" },
+  /** Homepage section — never `/how-it-works` (that path 404s). */
+  { href: "/#how-it-works", label: "How it Works" },
   { href: "#map-tool", label: "Map Tool" },
 ] as const;
+
+function isHashHref(href: string) {
+  return href.startsWith("#") || href.startsWith("/#");
+}
 
 export function MarketingNav() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -47,7 +52,7 @@ export function MarketingNav() {
 
         <nav className="hidden items-center gap-8 text-sm font-medium md:flex" aria-label="Main">
           {NAV_LINKS.map((link) =>
-            link.href.startsWith("#") ? (
+            isHashHref(link.href) ? (
               <a
                 key={link.href}
                 href={link.href}
@@ -106,7 +111,7 @@ export function MarketingNav() {
             </div>
             <nav className="flex flex-col gap-1 p-4" aria-label="Mobile">
               {NAV_LINKS.map((link) =>
-                link.href.startsWith("#") ? (
+                isHashHref(link.href) ? (
                   <a
                     key={link.href}
                     href={link.href}

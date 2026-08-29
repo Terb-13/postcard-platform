@@ -25,6 +25,12 @@ const nextConfig = {
         destination: "/products/targeted-direct-mail",
         permanent: true,
       },
+      {
+        // Header "How it Works" used to resolve as this path and 404.
+        source: "/how-it-works",
+        destination: "/#how-it-works",
+        permanent: false,
+      },
     ];
   },
 
