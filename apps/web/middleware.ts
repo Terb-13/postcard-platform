@@ -1,6 +1,8 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import type { NextFetchEvent, NextRequest } from "next/server";
+import { clerkProxyUrlFromEnv } from "@/lib/clerk-config";
+import { isClerkFrontendApiProxyPath } from "@/lib/clerk-fapi-proxy";
 
 const isProtectedRoute = createRouteMatcher([
   "/dashboard(.*)",
@@ -31,8 +33,12 @@ const hasClerkKeys =
   !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY &&
   !!process.env.CLERK_SECRET_KEY;
 
-const clerkHandler = clerkMiddleware(async (auth, req) => {
+const clerkProxyUrl = clerkProxyUrlFromEnv();
+
+async function clerkAuthHandler(auth, req: NextRequest) {
   try {
+    // FAPI proxy is a machine path — never auth.protect() or handshake it.
+    if (isClerkFrontendApiProxyPath(req.nextUrl.pathname)) return;
     if (isWebhookApiRoute(req)) return;
     if (isCampaignWizard(req)) {
       try {
@@ -58,7 +64,11 @@ const clerkHandler = clerkMiddleware(async (auth, req) => {
     // Re-throw to let Clerk handle its error responses where possible
     throw error;
   }
-});
+}
+
+const clerkHandler = clerkProxyUrl
+  ? clerkMiddleware(clerkAuthHandler, { proxyUrl: clerkProxyUrl })
+  : clerkMiddleware(clerkAuthHandler);
 
 // Graceful fallback middleware: prevents MIDDLEWARE_INVOCATION_FAILED (and 500s)
 // on deployments where Clerk keys are not yet configured (e.g. fresh preview envs).
@@ -68,13 +78,20 @@ const passthroughMiddleware = (req: NextRequest) => {
   return NextResponse.next();
 };
 
-export default hasClerkKeys ? clerkHandler : passthroughMiddleware;
+export default function middleware(req: NextRequest, event: NextFetchEvent) {
+  // /__clerk is served by app/%5F%5Fclerk — skip Clerk handshake so it is not a 404.
+  if (isClerkFrontendApiProxyPath(req.nextUrl.pathname)) {
+    return NextResponse.next();
+  }
+  return hasClerkKeys ? clerkHandler(req, event) : passthroughMiddleware(req);
+}
 
 export const config = {
   matcher: [
     // Skip /mcp so Clerk never inspects Authorization: Bearer mcp_…
     '/((?!_next|mcp(?:/|$)|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    // Always run for Clerk's auto-proxy path
+    // Clerk Dashboard requires '/__clerk/:path*'. Official SDK docs also use '(.*)'.
+    '/__clerk/:path*',
     '/__clerk/(.*)',
     '/(api|trpc)(.*)',
   ],

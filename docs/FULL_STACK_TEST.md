@@ -67,6 +67,7 @@ vercel env ls        # production + preview
 Confirm these exist for **Production** and **Preview**:
 
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+- `NEXT_PUBLIC_CLERK_PROXY_URL` — Production only: `https://postcard-platform-web.vercel.app/__clerk`
 - `CLERK_SECRET_KEY`
 - `CLERK_WEBHOOK_SECRET`
 - `POSTGRES_PRISMA_URL` (Vercel Supabase integration) — app maps this to Prisma `DATABASE_URL` in `packages/db/client.ts`

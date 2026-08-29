@@ -75,10 +75,12 @@ export async function authenticateClerkRequest(req: Request): Promise<ClerkReque
 
   try {
     const client = await clerkClient();
+    const proxyUrl = process.env.NEXT_PUBLIC_CLERK_PROXY_URL?.trim() || undefined;
     const state = await client.authenticateRequest(req, {
       secretKey,
       publishableKey,
       authorizedParties: partiesFromRequest(req),
+      ...(proxyUrl ? { proxyUrl } : {}),
     });
 
     if (!state.isAuthenticated) {

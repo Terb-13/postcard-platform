@@ -4,7 +4,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { TRPCProvider } from "@/lib/trpc/provider";
 import { GuestClaimOnAuth } from "@/components/auth/GuestClaimOnAuth";
-import { hasClerkPublishableKey } from "@/lib/clerk-config";
+import { clerkProxyUrl, hasClerkPublishableKey } from "@/lib/clerk-config";
 
 // Gate ClerkProvider on the publishable key so marketing pages work before keys exist.
 const hasClerkKeys = hasClerkPublishableKey;
@@ -33,6 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${inter.className} antialiased`}>
         {hasClerkKeys ? (
           <ClerkProvider
+            {...(clerkProxyUrl ? { proxyUrl: clerkProxyUrl } : {})}
             signInUrl="/sign-in"
             signUpUrl="/sign-up"
             afterSignInUrl="/campaigns"
