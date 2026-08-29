@@ -18,11 +18,13 @@ const isProtectedCampaignRoute = createRouteMatcher([
 
 const isPublicCampaignWizard = createRouteMatcher(["/campaigns/new"]);
 
-/** Webhooks only — must not run auth.protect(); Clerk middleware still runs for /api/trpc so auth() works. */
+/** Machine routes — must not run auth.protect(). MCP uses Authorization: Bearer mcp_…, not Clerk. */
 const isWebhookApiRoute = createRouteMatcher([
   "/api/webhooks/clerk(.*)",
   "/api/stripe/webhook(.*)",
   "/api/inngest(.*)",
+  "/mcp",
+  "/mcp/(.*)",
 ]);
 
 const hasClerkKeys =
@@ -58,7 +60,8 @@ export default hasClerkKeys ? clerkHandler : passthroughMiddleware;
 
 export const config = {
   matcher: [
-    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    // Skip /mcp so Clerk never inspects Authorization: Bearer mcp_…
+    '/((?!_next|mcp(?:/|$)|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
     // Always run for Clerk's auto-proxy path
     '/__clerk/(.*)',
     '/(api|trpc)(.*)',
