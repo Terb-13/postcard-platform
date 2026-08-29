@@ -4,6 +4,7 @@ const nextConfig = {
     "@postcard-platform/api",
     "@postcard-platform/db",
     "@postcard-platform/ai",
+    "@postcard-platform/mcp",
     "mapbox-gl",
   ],
 
@@ -34,6 +35,7 @@ const nextConfig = {
   serverExternalPackages: [
     "@napi-rs/canvas",
     "pdfjs-dist",
+    "@modelcontextprotocol/sdk",
     // Add others here if native modules cause similar parse errors in the future
   ],
 

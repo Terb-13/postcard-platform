@@ -18,7 +18,7 @@ export type AudienceFilters = {
 };
 
 export type TargetingInput = {
-  zctas: string[];
+  zctas?: string[];
   geoJson?: unknown;
   filters?: AudienceFilters;
   quantityOverride?: number;

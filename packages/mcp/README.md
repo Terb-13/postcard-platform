@@ -101,6 +101,50 @@ Authorization: Bearer mcp_...
 POST /mcp
 ```
 
+Do **not** put the key in the URL query string.
+
+### Production (Vercel)
+
+Live Streamable HTTP endpoint on the web app (not localhost, not a leftover preview):
+
+```
+https://postcard-platform-web.vercel.app/mcp
+```
+
+Auth is the same as local HTTP agents:
+
+```
+Authorization: Bearer mcp_...
+```
+
+Issue a **read,draft** key only (`--spend-cap-cents 0`). `spend` and `fulfill` stay off this key. Draft tools default to `dryRun=true`. Stripe / Drummond / confirm / fulfill stay gated behind scopes this key does not have.
+
+```bash
+npm run issue-key -w @postcard-platform/mcp -- \
+  --org-id org_xxx \
+  --user-email you@company.com \
+  --name "Grok Bot" \
+  --scopes read,draft \
+  --spend-cap-cents 0
+```
+
+Cursor / Grok Bot remote MCP (Streamable HTTP):
+
+```json
+{
+  "mcpServers": {
+    "postcard": {
+      "url": "https://postcard-platform-web.vercel.app/mcp",
+      "headers": {
+        "Authorization": "Bearer mcp_..."
+      }
+    }
+  }
+}
+```
+
+Local `npm run start:http` remains `127.0.0.1:3333` for development. Vercel cannot bind that host — production traffic must hit the Next.js `/mcp` route.
+
 ## Example agent flow
 
 1. `get_workflow_guide`
