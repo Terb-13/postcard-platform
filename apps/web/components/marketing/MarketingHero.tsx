@@ -30,11 +30,6 @@ export function MarketingHero() {
       <div className={`${marketingContainer} pb-20 pt-16`}>
         <div className="grid items-center gap-12 lg:grid-cols-12">
           <div className="lg:col-span-7">
-            <div className="mb-6 inline-flex items-center gap-x-2 rounded-3xl bg-white/10 px-4 py-1.5 text-sm">
-              <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-              <span className="font-medium">Trusted by 60,000+ marketers</span>
-            </div>
-
             <h1 className={`${marketingHeroTitle} mb-6`}>
               Design, Target,
               <br />
@@ -56,18 +51,6 @@ export function MarketingHero() {
               <a href="#map-tool" className="btn-hero-outline">
                 Launch Map Tool
               </a>
-            </div>
-
-            <div className="mt-8 flex items-center gap-x-6 text-sm">
-              <div className="flex -space-x-2" aria-hidden>
-                {[0, 1, 2].map((i) => (
-                  <div
-                    key={i}
-                    className="h-6 w-6 rounded-full border border-[#0A2540] bg-white"
-                  />
-                ))}
-              </div>
-              <span className="text-white/60">Join 12,400 businesses this month</span>
             </div>
           </div>
 

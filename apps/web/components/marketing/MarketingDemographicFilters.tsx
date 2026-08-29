@@ -72,6 +72,13 @@ export function MarketingDemographicFilters({
           <input type="checkbox" checked={false} disabled className={CHECKBOX_CLASS} />
           <span>Homeowners (coming soon)</span>
         </label>
+        <label
+          className="flex cursor-not-allowed items-center gap-x-2 text-gray-500"
+          title="Age targeting is not available yet"
+        >
+          <input type="checkbox" checked={false} disabled className={CHECKBOX_CLASS} />
+          <span>Age (coming soon)</span>
+        </label>
         <label className="flex cursor-pointer items-center gap-x-2">
           <input
             type="checkbox"
@@ -86,7 +93,7 @@ export function MarketingDemographicFilters({
         {variant === "standalone" ? (
           <label className="flex items-center gap-x-2 opacity-60" title="Coming soon">
             <input type="checkbox" disabled className={CHECKBOX_CLASS} />
-            <span>Business Owners</span>
+            <span>Business Owners (coming soon)</span>
           </label>
         ) : null}
         {(incomeOn || moversOn) && (

@@ -44,12 +44,6 @@ function MapToolPageChrome({ live, hasSelection }: { live: LiveEstimate; hasSele
           >
             Save Targeting
           </Link>
-          <Link
-            href="/campaigns/new"
-            className="rounded-2xl bg-[#0A2540] px-6 py-2.5 text-sm font-semibold text-white hover:bg-black"
-          >
-            Continue to Design
-          </Link>
         </div>
 
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">

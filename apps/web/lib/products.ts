@@ -63,24 +63,14 @@ export const POSTCARD_SIZE_MULTIPLIERS: Record<PostcardSize, number> = {
   "6x11": 1.5,
 };
 
-/** Parse base rate from priceTeaser e.g. "Starting at $0.19/piece" */
-function parseBasePriceCents(teaser: string): number {
-  const match = teaser.match(/\$([\d.]+)/);
-  if (!match) return 25;
-  return Math.round(parseFloat(match[1]) * 100);
-}
+/** Honest placeholder until CIO wires a real partner/USPS rate. Do not invent a dollar amount. */
+export const LIVE_ESTIMATE_PLACEHOLDER = "See live estimate on the map";
 
-/** Estimated per-piece range for a size, derived from product base rate × size multiplier */
+/** Size rate label — never invent a starting-at dollar figure from marketing copy. */
 export function getSizePriceRange(product: Product, size: PostcardSize): string {
   const sizeOption = product.sizes.find((s) => s.value === size);
   if (sizeOption?.priceRange) return sizeOption.priceRange;
-
-  const baseCents = parseBasePriceCents(product.priceTeaser);
-  const mult = POSTCARD_SIZE_MULTIPLIERS[size] ?? 1;
-  const low = (baseCents * mult) / 100;
-  const high = low * 1.08;
-  const fmt = (n: number) => n.toFixed(2);
-  return `$${fmt(low)} – $${fmt(high)}/pc`;
+  return product.priceTeaser || LIVE_ESTIMATE_PLACEHOLDER;
 }
 
 export const POSTCARD_SIZES: ProductSize[] = [
@@ -95,14 +85,14 @@ export const products: Product[] = [
     slug: "every-door-direct-mail",
     title: "Every Door Direct Mail",
     shortTitle: "EDDM",
-    tagline: "The proven way to reach every household on a carrier route — no list required.",
+    tagline: "The proven way to reach every household in a neighborhood — no list required.",
     heroHighlight: "Reach every customer in your area. No mailing list to buy.",
     benefitsHeadline: "Why local businesses choose Every Door Direct Mail",
     description:
-      "Select USPS carrier routes on the map and mail oversized postcards to every deliverable address. Ideal for restaurants, home services, and retailers who want neighborhood-wide visibility without list costs.",
+      "Mail oversized postcards to every deliverable address in the ZIP codes you select on the map. Ideal for restaurants, home services, and retailers who want neighborhood-wide visibility without list costs. USPS carrier-route selection is coming soon.",
     image: "/images/eddm-product.jpg",
     heroImage: "/images/marketing/hero.jpg",
-    priceTeaser: "Starting at $0.19/piece",
+    priceTeaser: LIVE_ESTIMATE_PLACEHOLDER,
     sizeRecommendationNote:
       "6×11″ is the USPS Every Door standard — maximum mailbox presence and the format carriers expect on EDDM routes.",
     productType: "EDDM",
@@ -124,19 +114,18 @@ export const products: Product[] = [
     ],
     features: [
       "No mailing list required",
-      "USPS carrier route targeting",
       "Interactive map selection",
       "Census household counts",
     ],
     benefits: [
       {
         title: "No mailing list needed",
-        description: "USPS delivers to every address on your selected routes — skip list brokers entirely.",
+        description: "Skip list brokers — choose ZIP codes on the map and mail to households in those areas.",
         icon: "reach",
       },
       {
         title: "Lowest cost per impression",
-        description: "EDDM rates plus route-based targeting keep costs predictable from the first quote.",
+        description: "See a live household count and estimate on the map before you pay.",
         icon: "pricing",
       },
       {
@@ -146,7 +135,7 @@ export const products: Product[] = [
       },
       {
         title: "Live in as little as 5 days",
-        description: "Pick routes, upload artwork, and mail fast with Census household counts before you pay.",
+        description: "Pick ZIP codes, upload artwork, and mail fast with Census household counts before you pay.",
         icon: "speed",
       },
     ],
@@ -160,10 +149,10 @@ export const products: Product[] = [
     heroHighlight: "Stop paying to reach people who will never buy.",
     benefitsHeadline: "Precision targeting that beats blanket mail",
     description:
-      "Layer Census demographics on top of your map selection — income, home ownership, age, and more — so every piece lands with a household that fits.",
+      "Layer Census demographics on top of your map selection — income and recent movers — so every piece lands with a household that fits. Homeownership and age filters are coming soon.",
     image: "/images/targeted-product.jpg",
     heroImage: "/images/marketing/data.jpg",
-    priceTeaser: "Starting at $0.28/piece",
+    priceTeaser: LIVE_ESTIMATE_PLACEHOLDER,
     sizeRecommendationNote:
       "6×9″ balances impact and cost for targeted drops — enough room for a compelling offer without overspending on postage.",
     productType: "TARGETED",
@@ -236,7 +225,7 @@ export const products: Product[] = [
       "Qualify for shared print schedules and zone-based rates in partner markets. Same map tools and artwork review — just a lower per-piece price when you commit to volume.",
     image: "/images/targeted-product.jpg",
     heroImage: "/images/marketing/results.jpg",
-    priceTeaser: "Starting at $0.15/piece",
+    priceTeaser: LIVE_ESTIMATE_PLACEHOLDER,
     sizeRecommendationNote:
       "6×11″ EDDM in discount zones delivers the best cost-per-impression — our most popular format for zone drops.",
     productType: "EDDM",
@@ -297,7 +286,7 @@ export const products: Product[] = [
       "Cover 100% of deliverable addresses in your selected ZIPs. Built for launches, events, and awareness campaigns where being everywhere locally is the goal.",
     image: "/images/saturation-product.jpg",
     heroImage: "/images/marketing/solution.jpg",
-    priceTeaser: "Starting at $0.17/piece",
+    priceTeaser: LIVE_ESTIMATE_PLACEHOLDER,
     sizeRecommendationNote:
       "6×11″ gives saturation campaigns the oversized presence needed to stand out when every household gets a piece.",
     productType: "EDDM",
@@ -326,7 +315,6 @@ export const products: Product[] = [
     features: [
       "Full ZIP saturation",
       "Household count previews",
-      "Bulk route optimization",
       "Artwork review included",
     ],
     benefits: [

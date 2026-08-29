@@ -23,9 +23,6 @@ type Props = {
   className?: string;
 };
 
-const CTA_CLASS =
-  "flex w-full items-center justify-center rounded-3xl bg-[#0EA5E9] font-semibold text-white transition-colors hover:bg-[#0284c7]";
-
 /** redesign/index.html (homepage) + map-tool.html (standalone) — results panel */
 export function MarketingMapResultsPanel({
   zctas,
@@ -77,9 +74,13 @@ export function MarketingMapResultsPanel({
           {isUpdating && hasSelection && (
             <p className="mb-3 text-xs font-medium text-[#0EA5E9]">Updating live…</p>
           )}
-          <Link href="/campaigns/new" className={cn(CTA_CLASS, "py-3.5 text-sm")}>
-            Continue to Design & Order
-          </Link>
+          <p className="text-xs leading-relaxed text-gray-500">
+            Map selection does not carry into a new campaign yet. Start from{" "}
+            <Link href="/products" className="font-medium text-[#0A2540] underline">
+              Products
+            </Link>
+            .
+          </p>
         </div>
       </aside>
     );
@@ -129,12 +130,13 @@ export function MarketingMapResultsPanel({
         <p className="mt-1 text-xs text-gray-500">Includes printing + postage</p>
       </div>
 
-      <div className="mt-auto pt-8">
-        <Link href="/campaigns/new" className={cn(CTA_CLASS, "py-4 text-lg")}>
-          Continue to Design
+      <p className="mt-auto pt-8 text-xs leading-relaxed text-gray-500">
+        Map selection does not carry into a new campaign yet. Start from{" "}
+        <Link href="/products" className="font-medium text-[#0A2540] underline">
+          Products
         </Link>
-        <p className="mt-2 text-center text-[10px] text-gray-400">Save targeting for later</p>
-      </div>
+        .
+      </p>
     </aside>
   );
 }

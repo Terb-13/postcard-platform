@@ -120,7 +120,7 @@ export function ProductSizeSelector({ product }: ProductSizeSelectorProps) {
       <div className="mt-8 flex flex-col gap-4 border-t border-gray-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-            Estimated rate for {selectedSize.replace("x", "×")}″
+            Pricing for {selectedSize.replace("x", "×")}″
           </p>
           <p className="text-2xl font-semibold tracking-tight text-[#0A2540]">{selectedPrice}</p>
           <p className="text-sm text-gray-600">Final total based on households reached</p>

@@ -5,7 +5,6 @@ import { MarketingHero } from './MarketingHero';
 import { MarketingProductsGrid } from './MarketingProductsGrid';
 import { MarketingValueProps } from './MarketingValueProps';
 import { MarketingHowItWorks } from './MarketingHowItWorks';
-import { MarketingSocialProof } from './MarketingSocialProof';
 import { MarketingFinalCta } from './MarketingFinalCta';
 import { MarketingTargetingDemo } from './MarketingTargetingDemo';
 import { MarketingFooter } from './MarketingFooter';
@@ -37,10 +36,7 @@ export function MarketingHomepage() {
         {/* 4. How It Works */}
         <MarketingHowItWorks />
 
-        {/* 5. Social Proof */}
-        <MarketingSocialProof />
-
-        {/* 6. Final CTA */}
+        {/* 5. Final CTA */}
         <MarketingFinalCta />
 
         {/* 7. Map Tool (first-class experience at the bottom) */}
