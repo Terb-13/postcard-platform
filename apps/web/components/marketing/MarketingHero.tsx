@@ -33,14 +33,14 @@ export function MarketingHero() {
             <h1 className={`${marketingHeroTitle} mb-6`}>
               Design, Target,
               <br />
-              and Mail Postcard
+              and Quote Postcard
               <br />
               Campaigns.
             </h1>
 
             <p className="mb-10 max-w-lg text-xl text-white/75">
-              The modern platform for local businesses to run precise, data-driven direct mail
-              campaigns — powered by real Census data.
+              The modern platform for local businesses to quote precise, data-driven Census ZIP
+              reach — powered by real Census data.
             </p>
 
             <div className="flex flex-wrap items-center gap-4">

@@ -23,12 +23,14 @@ const VALUE_PROPS = [
   {
     index: "03",
     title: "Full Transparency",
-    description: "Track every piece from design approval through delivery with photos.",
+    description:
+      "Household counts come from published U.S. Census data you can inspect on the map.",
   },
   {
     index: "04",
-    title: "Fast & Affordable",
-    description: "Get campaigns in the mail in as little as 5 business days.",
+    title: "Quote Before You Commit",
+    description:
+      "See ZIP reach and a live estimate on the map. This is not a live mail drop.",
   },
 ] as const;
 

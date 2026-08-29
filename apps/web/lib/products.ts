@@ -445,21 +445,20 @@ export function buildProductActionHref(product: Product, size?: PostcardSize): s
 export const MARKETING_QUOTE_CTA = `See ${QUOTE_ONLY_LABEL}`;
 
 /**
- * Unpersisted `/campaigns/new` (no campaignId) is not a mail-now path.
- * Quote-only / coming-soon products leave the wizard. Generic (no product)
- * is quote-only for signed-out buyers — send them to the Census ZIP map.
- * Do not invent a live EDDM campaign.
+ * `/campaigns/new` is not a mail-now path for signed-out buyers.
+ * Signed-out always goes to the Census ZIP map — including typed URLs
+ * with a product or campaignId. Quote-only / coming-soon products leave
+ * the wizard even when signed in. Do not invent a live EDDM campaign.
  */
 export function unpersistedWizardEntryRedirect(
   product: Product | null,
   isSignedIn: boolean
 ): string | null {
+  if (!isSignedIn) return MAP_QUOTE_HREF;
   if (product) {
     if (isProductComingSoon(product)) return `/products/${product.slug}`;
     if (isProductQuoteOnly(product)) return MAP_QUOTE_HREF;
-    return null;
   }
-  if (!isSignedIn) return MAP_QUOTE_HREF;
   return null;
 }
 
