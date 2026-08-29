@@ -3,7 +3,7 @@ export const SOLUTIONS_HUB = [
   {
     href: "/products/every-door-direct-mail",
     title: "Every Door Direct Mail",
-    description: "Reach every address in a neighborhood without a mailing list.",
+    description: "Quote Census ZIP reach on the map. Carrier routes are not live yet.",
   },
   {
     href: "/products/targeted-direct-mail",
@@ -13,7 +13,7 @@ export const SOLUTIONS_HUB = [
   {
     href: "/products/saturation-mail",
     title: "Saturation Mail",
-    description: "Maximum reach within a defined geographic area at the lowest cost.",
+    description: "Coming soon — not a live mail drop.",
   },
 ] as const;
 

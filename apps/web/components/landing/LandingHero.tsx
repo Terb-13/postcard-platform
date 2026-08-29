@@ -36,11 +36,6 @@ export function LandingHero() {
       <div className="relative mx-auto max-w-7xl px-8 pb-20 pt-16 lg:pb-24 lg:pt-20">
         <div className="grid items-center gap-10 lg:grid-cols-12 lg:gap-12">
           <div className="lg:col-span-7">
-            <div className="mb-6 inline-flex items-center gap-x-2 rounded-3xl bg-white/10 px-4 py-1.5 text-sm backdrop-blur-sm">
-              <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-              <span className="font-medium">Trusted by thousands of local businesses</span>
-            </div>
-
             <h1 className="mb-6 text-[clamp(2.75rem,6.5vw,4.5rem)] font-semibold leading-[1.05] tracking-tighter">
               Design, Target,
               <br />
@@ -61,19 +56,6 @@ export function LandingHero() {
               </a>
             </div>
 
-            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm">
-              <div className="flex -space-x-2" aria-hidden>
-                {[0, 1, 2].map((i) => (
-                  <div
-                    key={i}
-                    className="h-7 w-7 rounded-full border-2 border-[var(--color-bg-dark)] bg-white/90 shadow-sm"
-                  />
-                ))}
-              </div>
-              <span className="text-white/60">
-                Join growing businesses using data-driven direct mail
-              </span>
-            </div>
           </div>
 
           <div className="lg:col-span-5">

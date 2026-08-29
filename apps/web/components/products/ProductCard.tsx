@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Product } from "@/lib/products";
-import { buildCampaignWizardHref } from "@/lib/products";
+import { buildCampaignWizardHref, COMING_SOON_LABEL, isProductComingSoon } from "@/lib/products";
 import { marketingProductCard } from "@/components/marketing/marketing-design-system";
 
 type ProductCardProps = {
@@ -9,6 +9,8 @@ type ProductCardProps = {
 };
 
 export function ProductCard({ product }: ProductCardProps) {
+  const comingSoon = isProductComingSoon(product);
+
   return (
     <article className={`${marketingProductCard} flex h-full flex-col`}>
       <Link href={`/products/${product.slug}`} className="block flex-1">
@@ -35,14 +37,20 @@ export function ProductCard({ product }: ProductCardProps) {
 
       <div className="mt-4 flex flex-col gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
         <span className="w-fit rounded-2xl bg-gray-100 px-3 py-1.5 text-xs font-medium text-[#0A2540]">
-          {product.priceTeaser}
+          {comingSoon ? COMING_SOON_LABEL : product.priceTeaser}
         </span>
-        <Link
-          href={buildCampaignWizardHref(product)}
-          className="inline-flex min-h-[44px] items-center text-sm font-semibold text-[#0EA5E9] hover:text-[#0A2540]"
-        >
-          Start order →
-        </Link>
+        {comingSoon ? (
+          <span className="inline-flex min-h-[44px] items-center text-sm font-medium text-gray-500">
+            Not available to order
+          </span>
+        ) : (
+          <Link
+            href={buildCampaignWizardHref(product)}
+            className="inline-flex min-h-[44px] items-center text-sm font-semibold text-[#0EA5E9] hover:text-[#0A2540]"
+          >
+            Start order →
+          </Link>
+        )}
       </div>
     </article>
   );

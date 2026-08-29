@@ -17,7 +17,7 @@ export function MarketingFinalCta() {
             Ready to run smarter direct mail?
           </h2>
           <p className="mx-auto mb-8 max-w-md text-xl text-gray-600">
-            Join thousands of local businesses using data to grow.
+            Plan with Census ZIP quotes. Carrier-route drops are not live yet.
           </p>
 
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
