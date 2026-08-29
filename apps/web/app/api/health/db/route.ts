@@ -41,6 +41,7 @@ export async function GET(req: Request) {
     clerkEnv: {
       hasSecretKey: Boolean(process.env.CLERK_SECRET_KEY?.trim()),
       hasPublishableKey: Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.trim()),
+      hasProxyUrl: Boolean(process.env.NEXT_PUBLIC_CLERK_PROXY_URL?.trim()),
       keysPresent: clerkEnvKeys,
     },
     clerk: {

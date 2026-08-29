@@ -55,7 +55,10 @@ Then tRPC should return **200** when signed in.
 
 - `CLERK_SECRET_KEY` — must be non-empty (`sk_live_…` for production Clerk)
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` — `pk_live_…` from the **same** Clerk app
-- `turbo.json` lists both in `globalEnv` and `build.env` (so builds see them)
+- `NEXT_PUBLIC_CLERK_PROXY_URL` — production FAPI proxy, required on `*.vercel.app` (Vercel owns the TLD, so there is no `clerk.*` CNAME). Expected value:
+  `https://postcard-platform-web.vercel.app/__clerk`
+  Do **not** set this on a Clerk development instance (proxying is production-only). After setting it on Vercel Production, redeploy with **Clear build cache** so the client bundle inlines the URL.
+- `turbo.json` lists the Clerk public keys in `globalEnv` and `build.env` (so builds see them)
 
 If `CLERK_SECRET_KEY` was added in the dashboard with an empty value, re-add it:
 
@@ -73,3 +76,16 @@ vercel env add CLERK_SECRET_KEY production
 3. Server: `resolvePrismaUserForClerkId` → Supabase user row  
 
 No secret → step 2 never succeeds → `401`.
+
+## Production `*.vercel.app` FAPI proxy
+
+Hobby production on `postcard-platform-web.vercel.app` cannot CNAME `clerk.postcard-platform-web.vercel.app`. Clerk routes Frontend API traffic through the app:
+
+- Proxy URL (Clerk Dashboard → Domains): `https://postcard-platform-web.vercel.app/__clerk`
+- App route: `apps/web/app/%5F%5Fclerk/[[...path]]/route.ts` forwards `/__clerk/:path*` to `https://frontend-api.clerk.dev/:path*` with `Clerk-Proxy-Url`, `Clerk-Secret-Key`, and `X-Forwarded-For` (see [Clerk proxy docs](https://clerk.com/docs/guides/dashboard/dns-domains/proxy-fapi)).
+- `clerkMiddleware` matcher includes `/__clerk/:path*` and skips auth on that path. `GET /mcp` stays excluded from the matcher.
+- `ClerkProvider` reads `NEXT_PUBLIC_CLERK_PROXY_URL` so clerk-js does not load from `clerk.postcard-platform-web.vercel.app`.
+
+After deploy, **Verify proxy** in the Clerk Dashboard should succeed. Then set `NEXT_PUBLIC_CLERK_PROXY_URL` on Vercel Production and redeploy so `/sign-in` leaves the white “Loading…” state.
+
+Do not commit `sk_live_` values.
