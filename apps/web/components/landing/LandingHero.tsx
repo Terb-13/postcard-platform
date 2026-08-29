@@ -1,5 +1,5 @@
 import Image from "next/image";
-his is for import { AuthButtons } from "./AuthButtons";
+import { AuthButtons } from "./AuthButtons";
 
 function HeroCtaArrow() {
   return (
