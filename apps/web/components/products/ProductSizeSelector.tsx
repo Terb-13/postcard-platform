@@ -5,10 +5,12 @@ import Link from "next/link";
 import { HelpCircle } from "lucide-react";
 import type { Product, PostcardSize } from "@/lib/products";
 import {
-  buildCampaignWizardHref,
+  buildProductActionHref,
   COMING_SOON_LABEL,
   getSizePriceRange,
   isProductComingSoon,
+  isProductQuoteOnly,
+  QUOTE_ONLY_LABEL,
 } from "@/lib/products";
 import { PostcardSizePreview } from "./PostcardSizePreview";
 import { ProductCensusTrustBadge } from "./ProductCensusTrustBadge";
@@ -48,6 +50,7 @@ export function ProductSizeSelector({ product }: ProductSizeSelectorProps) {
 
   const selectedPrice = getSizePriceRange(product, selectedSize);
   const comingSoon = isProductComingSoon(product);
+  const quoteOnly = isProductQuoteOnly(product);
 
   return (
     <section className="rounded-3xl border border-gray-200 bg-gradient-to-b from-white via-white to-gray-50/90 p-5 shadow-sm sm:p-8 lg:p-10">
@@ -62,7 +65,9 @@ export function ProductSizeSelector({ product }: ProductSizeSelectorProps) {
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-gray-600 sm:text-base">
             {comingSoon
               ? `Sizes planned for ${product.title}. This product is not available to order.`
-              : `Only sizes available for ${product.title}. Your selection carries into the campaign wizard — change it anytime before checkout.`}
+              : quoteOnly
+                ? `Sizes you can quote for ${product.title}. Selecting a size does not start a campaign or artwork upload.`
+                : `Only sizes available for ${product.title}. Your selection carries into the campaign wizard — change it anytime before checkout.`}
           </p>
         </div>
         <ProductCensusTrustBadge className="shrink-0 self-start" />
@@ -115,7 +120,7 @@ export function ProductSizeSelector({ product }: ProductSizeSelectorProps) {
                 <p className="mt-2 text-sm leading-relaxed text-gray-600">{size.description}</p>
                 {isSelected ? (
                   <span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#0EA5E9]/10 px-2.5 py-1 text-xs font-semibold text-[#0EA5E9]">
-                    {comingSoon ? "✓ Selected size" : "✓ Selected for your campaign"}
+                    {comingSoon || quoteOnly ? "✓ Selected size" : "✓ Selected for your campaign"}
                   </span>
                 ) : null}
               </div>
@@ -131,16 +136,27 @@ export function ProductSizeSelector({ product }: ProductSizeSelectorProps) {
           </p>
           <p className="text-2xl font-semibold tracking-tight text-[#0A2540]">{selectedPrice}</p>
           <p className="text-sm text-gray-600">
-            {comingSoon ? "Not available to order" : "Final total based on households reached"}
+            {comingSoon
+              ? "Not available to order"
+              : quoteOnly
+                ? "Quote only — not a live mail drop"
+                : "Final total based on households reached"}
           </p>
         </div>
         {comingSoon ? (
           <span className="inline-flex min-h-[56px] w-full items-center justify-center rounded-3xl bg-gray-100 px-10 py-4 text-base font-semibold text-[#0A2540] sm:w-auto">
             {COMING_SOON_LABEL}
           </span>
+        ) : quoteOnly ? (
+          <Link
+            href={buildProductActionHref(product, selectedSize)}
+            className="inline-flex min-h-[56px] w-full items-center justify-center rounded-3xl bg-[#0A2540] px-10 py-4 text-base font-semibold text-white shadow-lg transition-all hover:bg-black hover:shadow-xl sm:w-auto"
+          >
+            See {QUOTE_ONLY_LABEL} →
+          </Link>
         ) : (
           <Link
-            href={buildCampaignWizardHref(product, selectedSize)}
+            href={buildProductActionHref(product, selectedSize)}
             className="inline-flex min-h-[56px] w-full items-center justify-center rounded-3xl bg-[#0A2540] px-10 py-4 text-base font-semibold text-white shadow-lg transition-all hover:bg-black hover:shadow-xl sm:w-auto"
           >
             Continue with {selectedSize.replace("x", "×")}″ →

@@ -19,7 +19,7 @@ export default function ProductsPage() {
           band
           size="hub"
           title="Direct Mail Products"
-          description="EDDM and Targeted can start a plan. Discount Zones and Saturation are coming soon and cannot be ordered."
+          description="EDDM and Targeted are Census ZIP quotes — not live mail drops. Discount Zones and Saturation are coming soon and cannot be ordered."
         />
 
         <div className={`${marketingContainer} grid gap-5 py-12 pb-20 sm:gap-6 sm:py-16 md:grid-cols-2 xl:grid-cols-4`}>

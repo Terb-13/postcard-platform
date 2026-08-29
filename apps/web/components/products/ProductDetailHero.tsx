@@ -2,7 +2,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { Check } from "lucide-react";
 import type { Product } from "@/lib/products";
-import { buildCampaignWizardHref, COMING_SOON_LABEL, isProductComingSoon } from "@/lib/products";
+import {
+  buildProductActionHref,
+  COMING_SOON_LABEL,
+  isProductComingSoon,
+  isProductQuoteOnly,
+  QUOTE_ONLY_LABEL,
+} from "@/lib/products";
 import { marketingContainer, marketingEyebrow } from "@/components/marketing/marketing-design-system";
 
 type ProductDetailHeroProps = {
@@ -11,6 +17,7 @@ type ProductDetailHeroProps = {
 
 export function ProductDetailHero({ product }: ProductDetailHeroProps) {
   const comingSoon = isProductComingSoon(product);
+  const quoteOnly = isProductQuoteOnly(product);
 
   return (
     <section className="border-b border-gray-200 bg-gradient-to-b from-white to-[#fafaf9]">
@@ -58,9 +65,16 @@ export function ProductDetailHero({ product }: ProductDetailHeroProps) {
                 <span className="inline-flex min-h-[52px] w-full items-center justify-center rounded-3xl bg-gray-100 px-8 py-3.5 text-base font-semibold text-[#0A2540] sm:w-auto">
                   {COMING_SOON_LABEL}
                 </span>
+              ) : quoteOnly ? (
+                <Link
+                  href={buildProductActionHref(product)}
+                  className="inline-flex min-h-[52px] w-full items-center justify-center rounded-3xl bg-[#0A2540] px-8 py-3.5 text-base font-semibold text-white shadow-lg transition-all hover:bg-black hover:shadow-xl sm:w-auto"
+                >
+                  See {QUOTE_ONLY_LABEL} →
+                </Link>
               ) : (
                 <Link
-                  href={buildCampaignWizardHref(product)}
+                  href={buildProductActionHref(product)}
                   className="inline-flex min-h-[52px] w-full items-center justify-center rounded-3xl bg-[#0A2540] px-8 py-3.5 text-base font-semibold text-white shadow-lg transition-all hover:bg-black hover:shadow-xl sm:w-auto"
                 >
                   Start {product.shortTitle} campaign →
@@ -68,12 +82,14 @@ export function ProductDetailHero({ product }: ProductDetailHeroProps) {
               )}
               <div className="text-center sm:text-left">
                 <p className="text-lg font-semibold text-[#0A2540]">
-                  {comingSoon ? COMING_SOON_LABEL : product.priceTeaser}
+                  {comingSoon ? COMING_SOON_LABEL : quoteOnly ? QUOTE_ONLY_LABEL : product.priceTeaser}
                 </p>
                 <p className="text-xs text-gray-500">
                   {comingSoon
                     ? "Not available to order"
-                    : "No payment until you approve your audience"}
+                    : quoteOnly
+                      ? "Quote only — not a live mail drop"
+                      : "No payment until you approve your audience"}
                 </p>
               </div>
             </div>
@@ -97,7 +113,7 @@ export function ProductDetailHero({ product }: ProductDetailHeroProps) {
                   {product.title}
                 </p>
                 <p className="mt-1 text-sm font-medium text-white/90">
-                  {comingSoon ? COMING_SOON_LABEL : product.priceTeaser}
+                  {comingSoon ? COMING_SOON_LABEL : quoteOnly ? QUOTE_ONLY_LABEL : product.priceTeaser}
                 </p>
               </div>
             </div>

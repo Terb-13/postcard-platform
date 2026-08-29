@@ -56,6 +56,8 @@ export type Product = {
   idealFor: string[];
   /** Buyer chrome must not show start/order CTAs or live prices. */
   comingSoon?: boolean;
+  /** Census ZIP quote only — not a live mail drop. No start-order / start-campaign doors. */
+  quoteOnly?: boolean;
 };
 
 export const POSTCARD_SIZE_MULTIPLIERS: Record<PostcardSize, number> = {
@@ -69,9 +71,20 @@ export const POSTCARD_SIZE_MULTIPLIERS: Record<PostcardSize, number> = {
 export const LIVE_ESTIMATE_PLACEHOLDER = "See live estimate on the map";
 
 export const COMING_SOON_LABEL = "Coming soon";
+export const QUOTE_ONLY_LABEL = "Census ZIP quote";
+export const MAP_QUOTE_HREF = "/map-tool";
 
 export function isProductComingSoon(product: Product): boolean {
   return product.comingSoon === true;
+}
+
+export function isProductQuoteOnly(product: Product): boolean {
+  return product.quoteOnly === true && !isProductComingSoon(product);
+}
+
+/** Start-order / start-campaign / artwork-continue doors. */
+export function canStartProductOrder(product: Product): boolean {
+  return !isProductComingSoon(product) && !isProductQuoteOnly(product);
 }
 
 /** Size rate label — never invent a starting-at dollar figure from marketing copy. */
@@ -102,6 +115,7 @@ export const products: Product[] = [
     image: "/images/eddm-product.jpg",
     heroImage: "/images/marketing/hero.jpg",
     priceTeaser: LIVE_ESTIMATE_PLACEHOLDER,
+    quoteOnly: true,
     sizeRecommendationNote:
       "6×11″ is the USPS Every Door standard — maximum mailbox presence and the format carriers expect on EDDM routes.",
     productType: "EDDM",
@@ -143,8 +157,8 @@ export const products: Product[] = [
         icon: "scale",
       },
       {
-        title: "Live in as little as 5 days",
-        description: "Pick ZIP codes and see a Census household quote before you plan artwork or pay.",
+        title: "Census quote before you plan",
+        description: "Pick ZIP codes and see a Census household quote. This page does not start a mail drop.",
         icon: "speed",
       },
     ],
@@ -154,16 +168,17 @@ export const products: Product[] = [
     slug: "targeted-direct-mail",
     title: "Targeted Direct Mail",
     shortTitle: "Targeted",
-    tagline: "Mail only to households that match your ideal customer profile.",
-    heroHighlight: "Stop paying to reach people who will never buy.",
+    tagline: "Quote Census household reach with income and recent-mover filters. Not a live mail drop.",
+    heroHighlight: "Census ZIP quotes with demographic filters — not a live list or drop.",
     benefitsHeadline: "Precision targeting that beats blanket mail",
     description:
-      "Layer Census demographics on top of your map selection — income and recent movers — so every piece lands with a household that fits. Homeownership and age filters are coming soon.",
+      "Layer Census income and recent-mover filters on the ZIP codes you select. Household counts are a quote — names, addresses, and a live mail drop are not available. Homeownership and age filters are coming soon.",
     image: "/images/targeted-product.jpg",
     heroImage: "/images/marketing/data.jpg",
     priceTeaser: LIVE_ESTIMATE_PLACEHOLDER,
+    quoteOnly: true,
     sizeRecommendationNote:
-      "6×9″ balances impact and cost for targeted drops — enough room for a compelling offer without overspending on postage.",
+      "6×9″ is the planned default for targeted quotes — enough room for an offer without implying a live drop.",
     productType: "TARGETED",
     defaultSize: "6x9",
     sizes: [
@@ -171,7 +186,7 @@ export const products: Product[] = [
         value: "6x9",
         label: "6×9″",
         dimensions: "9″ × 6″",
-        description: "Best balance of impact and cost for targeted lists",
+        description: "Best balance of impact and cost for targeted quotes",
         recommended: true,
       },
       {
@@ -195,29 +210,29 @@ export const products: Product[] = [
     ],
     features: [
       "Census demographic filters",
-      "Household-level targeting",
-      "Live audience estimates",
-      "Saved map selections",
+      "ZIP-level household quotes",
+      "Live Census estimates",
+      "Not a live mail drop",
     ],
     benefits: [
       {
-        title: "Higher response, less waste",
-        description: "Exclude low-fit households before you print — spend only on prospects that match your criteria.",
+        title: "Filter before you quote",
+        description: "Exclude low-fit ZIP codes on the map. This does not buy a mailing list or start a drop.",
         icon: "targeting",
       },
       {
         title: "Real U.S. Census data",
-        description: "Not purchased lists — filter by verified demographics attached to each household.",
+        description: "Not a purchased name-and-address list — filter by Census demographics on selected ZIPs.",
         icon: "transparency",
       },
       {
-        title: "Map + filters in one flow",
-        description: "Draw your geography, apply filters, and watch reach and cost update in real time.",
+        title: "Map + filters in one quote",
+        description: "Draw your geography, apply Census filters, and watch household counts update.",
         icon: "reach",
       },
       {
-        title: "Know your audience before checkout",
-        description: "Household counts and estimates are locked in before you upload artwork or pay.",
+        title: "Quote only — no checkout here",
+        description: "Household counts are a Census quote. This page does not open artwork upload or payment.",
         icon: "pricing",
       },
     ],
@@ -418,6 +433,13 @@ export function buildCampaignWizardHref(product: Product, size?: PostcardSize): 
   params.set("product", product.slug);
   params.set("size", size ?? product.defaultSize);
   return `/campaigns/new?${params.toString()}`;
+}
+
+/** Marketing CTA target — quote-only products go to the Census map, never the wizard. */
+export function buildProductActionHref(product: Product, size?: PostcardSize): string {
+  if (isProductComingSoon(product)) return `/products/${product.slug}`;
+  if (isProductQuoteOnly(product)) return MAP_QUOTE_HREF;
+  return buildCampaignWizardHref(product, size);
 }
 
 /** Merge wizard URL params while preserving product context */

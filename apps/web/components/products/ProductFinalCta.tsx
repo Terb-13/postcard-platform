@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import type { Product } from "@/lib/products";
-import { buildCampaignWizardHref, COMING_SOON_LABEL, isProductComingSoon } from "@/lib/products";
+import {
+  buildProductActionHref,
+  COMING_SOON_LABEL,
+  isProductComingSoon,
+  isProductQuoteOnly,
+  QUOTE_ONLY_LABEL,
+} from "@/lib/products";
 
 type ProductFinalCtaProps = {
   product: Product;
@@ -9,6 +15,7 @@ type ProductFinalCtaProps = {
 
 export function ProductFinalCta({ product }: ProductFinalCtaProps) {
   const comingSoon = isProductComingSoon(product);
+  const quoteOnly = isProductQuoteOnly(product);
 
   return (
     <section className="relative overflow-hidden rounded-[2rem] bg-[#0A2540] px-6 py-14 text-center shadow-2xl sm:px-12 sm:py-16 lg:py-20">
@@ -27,17 +34,21 @@ export function ProductFinalCta({ product }: ProductFinalCtaProps) {
 
       <div className="relative mx-auto max-w-2xl">
         <p className="mb-3 text-xs font-semibold uppercase tracking-[1.5px] text-[#0EA5E9]">
-          {comingSoon ? COMING_SOON_LABEL : "Ready to mail"}
+          {comingSoon ? COMING_SOON_LABEL : quoteOnly ? QUOTE_ONLY_LABEL : "Ready to mail"}
         </p>
         <h2 className="text-3xl font-semibold leading-tight tracking-tight text-white sm:text-4xl lg:text-5xl">
           {comingSoon
             ? `${product.shortTitle} is not available to order`
-            : `Launch your ${product.shortTitle} campaign today`}
+            : quoteOnly
+              ? `Quote ${product.shortTitle} reach on the map`
+              : `Launch your ${product.shortTitle} campaign today`}
         </h2>
         <p className="mx-auto mt-5 max-w-lg text-base leading-relaxed text-white/80 sm:text-lg">
           {comingSoon
             ? "This product is coming soon. No campaign, order, or live rate is offered from this page."
-            : "Product and recommended size are pre-selected. Name your campaign, draw your audience on the map, and see live Census counts before you pay."}
+            : quoteOnly
+              ? "Census ZIP household counts only. This is not a live mail drop — no campaign, artwork upload, or order starts here."
+              : "Product and recommended size are pre-selected. Name your campaign, draw your audience on the map, and see live Census counts before you pay."}
         </p>
 
         <div className="mt-10 flex flex-col items-center gap-4">
@@ -47,17 +58,19 @@ export function ProductFinalCta({ product }: ProductFinalCtaProps) {
             </span>
           ) : (
             <Link
-              href={buildCampaignWizardHref(product)}
+              href={buildProductActionHref(product)}
               className="inline-flex min-h-[56px] w-full max-w-md items-center justify-center gap-2 rounded-3xl bg-white px-10 py-4 text-lg font-semibold text-[#0A2540] shadow-xl transition-all hover:scale-[1.02] hover:bg-gray-50 hover:shadow-2xl sm:w-auto"
             >
-              Get started — free to plan
+              {quoteOnly ? `See ${QUOTE_ONLY_LABEL}` : "Get started — free to plan"}
               <ArrowRight className="h-5 w-5" aria-hidden />
             </Link>
           )}
           <p className="text-sm text-white/60">
             {comingSoon
               ? "Not a live mail drop"
-              : `${product.priceTeaser} · No credit card required to build your campaign`}
+              : quoteOnly
+                ? "Quote only — map selection does not create a campaign"
+                : `${product.priceTeaser} · No credit card required to build your campaign`}
           </p>
         </div>
       </div>
