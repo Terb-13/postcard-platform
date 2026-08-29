@@ -1,11 +1,7 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { CampaignWizard } from "@/components/campaign-wizard/CampaignWizard";
-import {
-  isProductComingSoon,
-  isProductQuoteOnly,
-  parseCampaignWizardParams,
-} from "@/lib/products";
+import { parseCampaignWizardParams, unpersistedWizardEntryRedirect } from "@/lib/products";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +12,22 @@ type PageProps = {
 function firstParam(value: string | string[] | undefined): string | null {
   if (Array.isArray(value)) return value[0] ?? null;
   return value ?? null;
+}
+
+async function isBuyerSignedIn(): Promise<boolean> {
+  if (
+    !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.trim() ||
+    !process.env.CLERK_SECRET_KEY?.trim()
+  ) {
+    return false;
+  }
+  try {
+    const { auth } = await import("@clerk/nextjs/server");
+    const session = await auth();
+    return Boolean(session.userId);
+  } catch {
+    return false;
+  }
 }
 
 export default async function NewCampaignPage({ searchParams }: PageProps) {
@@ -30,13 +42,12 @@ export default async function NewCampaignPage({ searchParams }: PageProps) {
     if (size) params.set("size", size);
 
     const parsed = parseCampaignWizardParams(params);
-    if (parsed.product) {
-      if (isProductComingSoon(parsed.product)) {
-        redirect(`/products/${parsed.product.slug}`);
-      }
-      if (isProductQuoteOnly(parsed.product)) {
-        redirect("/map-tool");
-      }
+    const entryRedirect = unpersistedWizardEntryRedirect(
+      parsed.product,
+      await isBuyerSignedIn()
+    );
+    if (entryRedirect) {
+      redirect(entryRedirect);
     }
   }
 

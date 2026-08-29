@@ -9,6 +9,7 @@ import {
   SignedIn,
   SignedOut,
 } from "@clerk/nextjs";
+import { MAP_QUOTE_HREF, MARKETING_QUOTE_CTA } from "@/lib/products";
 
 const hasClerk = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
 
@@ -48,7 +49,7 @@ function FallbackButton({
   );
 }
 
-function StartCampaignLink({
+function QuoteMapLink({
   className,
   children,
   onAction,
@@ -58,7 +59,7 @@ function StartCampaignLink({
   onAction?: () => void;
 }) {
   return (
-    <Link href="/campaigns/new" className={className} onClick={onAction}>
+    <Link href={MAP_QUOTE_HREF} className={className} onClick={onAction}>
       {children}
     </Link>
   );
@@ -66,25 +67,17 @@ function StartCampaignLink({
 
 function StartTargetingLink({ className }: { className?: string }) {
   return (
-    <>
-      <SignedOut>
-        <Link href="/campaigns/new" className={className}>
-          Start Targeting
-        </Link>
-      </SignedOut>
-      <SignedIn>
-        <Link href="/campaigns/new" className={className}>
-          Start Targeting
-        </Link>
-      </SignedIn>
-    </>
+    <Link href={MAP_QUOTE_HREF} className={className}>
+      {MARKETING_QUOTE_CTA}
+    </Link>
   );
 }
 
 const heroCtaClass = "btn-hero-primary auth-button w-full sm:w-auto justify-center";
-const MARKETING_ORDER_CTA = "Start an Order";
-/** redesign/index.html — Final CTA primary button */
-const MARKETING_FINAL_CTA = "Start Your First Campaign";
+/** Buyer chrome — not a mail-now / start-order door. Prototype said "Start an Order". */
+const MARKETING_ORDER_CTA = MARKETING_QUOTE_CTA;
+/** Buyer chrome — not a campaign start. Prototype said "Start Your First Campaign". */
+const MARKETING_FINAL_CTA = MARKETING_QUOTE_CTA;
 
 const marketingNavPrimaryClass =
   "inline-flex min-h-[44px] items-center justify-center rounded-3xl bg-[#0A2540] px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-black";
@@ -107,7 +100,7 @@ export function AuthButtons({ variant = "nav", onAction, ctaIcon }: AuthButtonsP
             Log in
           </Link>
           <Link
-            href="/campaigns/new"
+            href={MAP_QUOTE_HREF}
             className={stack ? `${marketingNavPrimaryClass} w-full` : marketingNavPrimaryClass}
             onClick={onAction}
           >
@@ -118,7 +111,7 @@ export function AuthButtons({ variant = "nav", onAction, ctaIcon }: AuthButtonsP
     }
     if (variant === "marketing-final") {
       return (
-        <Link href="/campaigns/new" className={`${marketingNavPrimaryClass} px-10 py-4 text-lg`}>
+        <Link href={MAP_QUOTE_HREF} className={`${marketingNavPrimaryClass} px-10 py-4 text-lg`}>
           {MARKETING_FINAL_CTA}
         </Link>
       );
@@ -135,11 +128,11 @@ export function AuthButtons({ variant = "nav", onAction, ctaIcon }: AuthButtonsP
             Sign in
           </Link>
           <Link
-            href="/campaigns/new"
+            href={MAP_QUOTE_HREF}
             className={stack ? "btn-nav-primary w-full justify-center" : "btn-nav-primary"}
             onClick={onAction}
           >
-            Start Targeting
+            {MARKETING_QUOTE_CTA}
           </Link>
         </div>
       );
@@ -147,23 +140,22 @@ export function AuthButtons({ variant = "nav", onAction, ctaIcon }: AuthButtonsP
     if (variant === "demo") {
       return (
         <Link
-          href="/campaigns/new"
+          href={MAP_QUOTE_HREF}
           className="btn-primary auth-button inline-flex items-center gap-2 text-[15px]"
         >
-          Build your own campaign →
+          {MARKETING_QUOTE_CTA} →
         </Link>
       );
     }
     if (variant === "hero") {
       return (
-        <Link href="/campaigns/new" className={heroCtaClass}>
+        <Link href={MAP_QUOTE_HREF} className={heroCtaClass}>
           {MARKETING_ORDER_CTA}
           {ctaIcon}
         </Link>
       );
     }
-    const label =
-      variant === "final" ? "Start your first campaign free" : "Start Targeting";
+    const label = MARKETING_QUOTE_CTA;
     return (
       <FallbackButton
         label={label}
@@ -194,12 +186,12 @@ export function AuthButtons({ variant = "nav", onAction, ctaIcon }: AuthButtonsP
               Log in
             </button>
           </SignInButton>
-          <StartCampaignLink
+          <QuoteMapLink
             className={stack ? `${marketingNavPrimaryClass} w-full` : marketingNavPrimaryClass}
             onAction={onAction}
           >
             {MARKETING_ORDER_CTA}
-          </StartCampaignLink>
+          </QuoteMapLink>
         </SignedOut>
         <SignedIn>
           <Link
@@ -225,7 +217,7 @@ export function AuthButtons({ variant = "nav", onAction, ctaIcon }: AuthButtonsP
             My campaigns
           </Link>
           <Link
-            href="/campaigns/new"
+            href={MAP_QUOTE_HREF}
             className={stack ? `${marketingNavPrimaryClass} w-full` : marketingNavPrimaryClass}
             onClick={onAction}
           >
@@ -239,9 +231,9 @@ export function AuthButtons({ variant = "nav", onAction, ctaIcon }: AuthButtonsP
   if (variant === "marketing-final") {
     return (
       <>
-        <StartCampaignLink className={`${marketingNavPrimaryClass} px-10 py-4 text-lg`}>
+        <QuoteMapLink className={`${marketingNavPrimaryClass} px-10 py-4 text-lg`}>
           {MARKETING_FINAL_CTA}
-        </StartCampaignLink>
+        </QuoteMapLink>
       </>
     );
   }
@@ -260,12 +252,12 @@ export function AuthButtons({ variant = "nav", onAction, ctaIcon }: AuthButtonsP
               Sign in
             </button>
           </SignInButton>
-          <StartCampaignLink
+          <QuoteMapLink
             className={stack ? "btn-nav-primary w-full" : "btn-nav-primary"}
             onAction={onAction}
           >
-            Start Targeting
-          </StartCampaignLink>
+            {MARKETING_QUOTE_CTA}
+          </QuoteMapLink>
         </SignedOut>
         <SignedIn>
           <Link
@@ -283,11 +275,11 @@ export function AuthButtons({ variant = "nav", onAction, ctaIcon }: AuthButtonsP
             My Campaigns
           </Link>
           <Link
-            href="/campaigns/new"
+            href={MAP_QUOTE_HREF}
             className={stack ? "btn-nav-primary w-full justify-center" : "btn-nav-primary"}
             onClick={onAction}
           >
-            Start Targeting
+            {MARKETING_QUOTE_CTA}
           </Link>
           <div className={stack ? "flex justify-center pt-1" : ""}>
             <UserButton afterSignOutUrl="/" />
@@ -301,10 +293,10 @@ export function AuthButtons({ variant = "nav", onAction, ctaIcon }: AuthButtonsP
     return (
       <>
         <Link
-          href="/campaigns/new"
+          href={MAP_QUOTE_HREF}
           className="btn-primary auth-button inline-flex items-center gap-2 text-[15px]"
         >
-          Build your own campaign →
+          {MARKETING_QUOTE_CTA} →
         </Link>
       </>
     );
@@ -314,9 +306,9 @@ export function AuthButtons({ variant = "nav", onAction, ctaIcon }: AuthButtonsP
     return (
       <>
         <SignedOut>
-          <StartCampaignLink className="btn-primary btn-cta auth-button px-12 text-[15px]">
-            Start your first campaign free
-          </StartCampaignLink>
+          <QuoteMapLink className="btn-primary btn-cta auth-button px-12 text-[15px]">
+            {MARKETING_QUOTE_CTA}
+          </QuoteMapLink>
           <SignInButton mode="modal" fallbackRedirectUrl="/campaigns">
             <button className="btn-secondary border-white/30 text-white hover:bg-white/10 px-9 text-[15px]">
               I already have an account
@@ -325,10 +317,10 @@ export function AuthButtons({ variant = "nav", onAction, ctaIcon }: AuthButtonsP
         </SignedOut>
         <SignedIn>
           <Link
-            href="/campaigns/new"
+            href={MAP_QUOTE_HREF}
             className="btn-primary btn-cta auth-button px-12 text-[15px]"
           >
-            Start a new campaign
+            {MARKETING_QUOTE_CTA}
           </Link>
           <Link
             href="/campaigns"
@@ -344,10 +336,10 @@ export function AuthButtons({ variant = "nav", onAction, ctaIcon }: AuthButtonsP
   // Hero variant — commercial landing CTA
   return (
     <>
-        <StartCampaignLink className={heroCtaClass}>
+        <QuoteMapLink className={heroCtaClass}>
           {MARKETING_ORDER_CTA}
           {ctaIcon}
-        </StartCampaignLink>
+        </QuoteMapLink>
     </>
   );
 }
@@ -355,8 +347,8 @@ export function AuthButtons({ variant = "nav", onAction, ctaIcon }: AuthButtonsP
 export function StartTargetingCta({ className }: { className?: string }) {
   if (!hasClerk) {
     return (
-      <Link href="/campaigns/new" className={className}>
-        Start Targeting
+      <Link href={MAP_QUOTE_HREF} className={className}>
+        {MARKETING_QUOTE_CTA}
       </Link>
     );
   }

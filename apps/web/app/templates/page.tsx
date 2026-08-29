@@ -20,9 +20,9 @@ export default function TemplatesPage() {
         </div>
 
         <p className="mt-10 text-sm text-gray-600">
-          More templates inside the{" "}
-          <Link href="/campaigns/new" className="font-medium text-[#0EA5E9] hover:underline">
-            campaign builder
+          Plan reach on the{" "}
+          <Link href="/map-tool" className="font-medium text-[#0EA5E9] hover:underline">
+            Census ZIP map
           </Link>
           . Need custom creative?{" "}
           <Link href="/design-services" className="font-medium text-[#0EA5E9] hover:underline">
