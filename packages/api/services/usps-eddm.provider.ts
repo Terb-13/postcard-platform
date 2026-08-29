@@ -14,12 +14,13 @@
  * @see https://postalpro.usps.com/mailing/every-door-direct-mail
  */
 
+import { fetchMelissaOccupantRoutes } from "./melissa-occupant-routes";
 import type { EddmRouteSelection } from "./types";
 
 const EDDM_MIN_PIECES_PER_ROUTE = 200;
 
 export const EDDM_ROUTES_BLOCKER =
-  "Real USPS/Melissa carrier routes are not configured. Census ACS is map/quote only. The Melissa share covered LeadGen Consumer lists (MELISSA_API_KEY), not EDDM route geometry. Brett-only: (1) Melissa sales — enable LeadGen Occupant and/or Carrier Route Lookups on the existing Melissa account (Sales@Melissa.com or 800-MELISSA ext. 3; they quote partner pricing — do not invent rates), or (2) log in to USPS Business Customer Gateway / EDDM Online (https://eddm.usps.com / https://gateway.usps.com) and give us the licensed route-table feed or aggregator URL as EDDM_ROUTES_API_URL with EDDM_ROUTES_PROVIDER=http. Do not stub routes.";
+  "Real USPS/Melissa carrier routes are not configured. Set EDDM_ROUTES_PROVIDER=melissa and MELISSA_API_KEY (LeadGen Occupant must be enabled on that license), or EDDM_ROUTES_PROVIDER=http plus EDDM_ROUTES_API_URL. Do not stub routes. Do not invent a key.";
 
 export class EddmRoutesNotConfiguredError extends Error {
   constructor(message = EDDM_ROUTES_BLOCKER) {
@@ -87,10 +88,20 @@ export async function fetchEddmRoutesFromProvider(input: FetchRoutesInput): Prom
     case "http":
     case "aggregator":
       return fetchRoutesFromHttp(input);
-    case "melissa":
+    case "melissa": {
+      const key = process.env.MELISSA_API_KEY?.trim() ?? "";
+      const occupant = await fetchMelissaOccupantRoutes(input.zctas, { licenseKey: key });
+      return {
+        routes: occupant.routes,
+        totalHomes: occupant.totalHomes,
+        warnings: occupant.warnings,
+        provider: "melissa",
+        isStub: false,
+      };
+    }
     case "dataaxle":
       throw new EddmRoutesNotConfiguredError(
-        `EDDM_ROUTES_PROVIDER=${provider} is not wired. Carrier-route products were not in the Melissa list-door share. ${EDDM_ROUTES_BLOCKER}`
+        "EDDM_ROUTES_PROVIDER=dataaxle is closed. Data Axle stays backup. Use EDDM_ROUTES_PROVIDER=melissa (Occupant + MELISSA_API_KEY) or http + EDDM_ROUTES_API_URL."
       );
     default:
       throw new EddmRoutesNotConfiguredError();

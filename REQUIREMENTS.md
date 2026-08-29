@@ -70,11 +70,12 @@ MAPBOX_ACCESS_TOKEN=pk....       # Server-side geocoding (can match public token
 POSTCARD_BASE_RATE_CENTS=12
 POSTAGE_CENTS_PER_PIECE=20
 
-# Targeted lists (Melissa LeadGen Consumer — list door; Census ACS is map/quote only)
+# Targeted lists (Melissa LeadGen Consumer buy / NewMovers — list door; Census ACS is map/quote only)
 TARGETED_LIST_PROVIDER=melissa
 MELISSA_API_KEY=
 
-# EDDM routes — real USPS/Melissa carrier routes only (not stubbed; not in the Melissa list-door share)
+# EDDM routes — Melissa Occupant (EDDM_ROUTES_PROVIDER=melissa) or http aggregator. No stubs.
+# EDDM_ROUTES_PROVIDER=melissa
 # EDDM_ROUTES_PROVIDER=http
 # EDDM_ROUTES_API_URL=
 # EDDM_ROUTES_API_KEY=

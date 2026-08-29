@@ -101,6 +101,14 @@ export async function finalizeMailingJob(
       listRequestId = list.listRequestId;
       recipientCount = list.recipientCount;
       finalQuantity = list.recipientCount;
+      if (list.recipients?.length) {
+        selectedRoutes = {
+          door: list.door,
+          orderId: list.listRequestId,
+          downloadUrl: list.downloadUrl ?? null,
+          recipients: list.recipients,
+        } as Prisma.InputJsonValue;
+      }
     }
 
     const costBreakdown: CostBreakdown = calculatePricing({

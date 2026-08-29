@@ -7,7 +7,7 @@ import {
 } from "../services/mailing-finalize.service";
 import { calculatePricing } from "../services/pricing.service";
 import { fetchEddmRoutes } from "../services/eddm.service";
-import { generateTargetedList } from "../services/targeted.service";
+import { countTargetedList } from "../services/targeted.service";
 import { EddmRoutesNotConfiguredError } from "../services/usps-eddm.provider";
 
 export const mailingRouter = router({
@@ -97,7 +97,7 @@ export const mailingRouter = router({
       })
     )
     .query(async ({ input }) =>
-      generateTargetedList({
+      countTargetedList({
         zctas: input.zctas,
         filters: input.filters,
         campaignId: input.campaignId ?? "preview",

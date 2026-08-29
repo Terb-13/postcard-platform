@@ -1,8 +1,8 @@
 /**
  * Melissa LeadGen Consumer — the targeted list door.
  *
- * Census ACS is map/quote only. This client talks to Melissa for real list counts.
- * Does not purchase lists (no `buy`) and does not invent rates or license keys.
+ * Census ACS is map/quote only. `get` = count. `buy` = purchase CSV of names+addresses.
+ * Does not invent rates or license keys. Fail closed without MELISSA_API_KEY.
  *
  * @see https://docs.melissa.com/reference-data/leadgen-consumer/leadgen-consumer-reference-guide.html
  */
@@ -92,6 +92,24 @@ export function ownRentDFromFilters(filters?: MelissaListFilters): string | unde
   return undefined;
 }
 
+export type MelissaRecipient = {
+  firstName?: string;
+  lastName?: string;
+  fullName?: string;
+  addressLine: string;
+  city?: string;
+  state?: string;
+  zip: string;
+  plus4?: string;
+  resultCodes?: string;
+};
+
+export type MelissaLeadgenPurchase = MelissaLeadgenCount & {
+  orderId: string;
+  downloadUrl: string;
+  recipients: MelissaRecipient[];
+};
+
 export function buildLeadgenCountParams(input: MelissaLeadgenQuery): URLSearchParams {
   const zips = input.zips.map(normalizeZip5).filter((z) => z.length === 5);
   const params = new URLSearchParams();
@@ -179,5 +197,172 @@ export async function countMelissaConsumerList(
     statusCode: parsed.statusCode,
     appliedParams,
     rawXml,
+  };
+}
+
+export function parseLeadgenBuyXml(xml: string): {
+  recipientCount: number;
+  statusCode: string;
+  orderId?: string;
+  downloadUrl?: string;
+} {
+  return {
+    ...parseLeadgenCountXml(xml),
+    orderId: xmlTag(xml, "Id"),
+    downloadUrl: xmlTag(xml, "DownloadURL"),
+  };
+}
+
+function splitCsvLine(line: string): string[] {
+  const out: string[] = [];
+  let current = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i += 1) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (ch === "," && !inQuotes) {
+      out.push(current.trim());
+      current = "";
+    } else {
+      current += ch;
+    }
+  }
+  out.push(current.trim());
+  return out;
+}
+
+function pick(row: Record<string, string>, ...keys: string[]): string | undefined {
+  for (const key of keys) {
+    const value = row[key];
+    if (value) return value;
+  }
+  return undefined;
+}
+
+/** Parse Melissa LeadGen CSV (file=8). Header names vary; we map documented mailing fields. */
+export function parseMelissaListCsv(csv: string): MelissaRecipient[] {
+  const lines = csv.split(/\r?\n/).filter((line) => line.trim().length > 0);
+  if (lines.length < 2) return [];
+  const headers = splitCsvLine(lines[0] ?? "").map((h) => h.toLowerCase().replace(/[\s_]+/g, ""));
+  const recipients: MelissaRecipient[] = [];
+
+  for (const line of lines.slice(1)) {
+    const cols = splitCsvLine(line);
+    const row: Record<string, string> = {};
+    headers.forEach((h, i) => {
+      row[h] = cols[i] ?? "";
+    });
+    const addressLine =
+      pick(row, "addressline", "address", "address1", "addressline1", "street", "streetaddress") ?? "";
+    const zip = normalizeZip5(pick(row, "zip", "zipcode", "postalcode", "zip5") ?? "");
+    if (!addressLine || zip.length !== 5) continue;
+    recipients.push({
+      firstName: pick(row, "firstname", "first", "fname"),
+      lastName: pick(row, "lastname", "last", "lname"),
+      fullName: pick(row, "fullname", "name"),
+      addressLine,
+      city: pick(row, "city"),
+      state: pick(row, "state", "st"),
+      zip,
+      plus4: pick(row, "plus4", "zip4", "plusfour"),
+      resultCodes: pick(row, "resultcodes", "results"),
+    });
+  }
+  return recipients;
+}
+
+export function creditsCannotBuyMessage(statusCode: string, detail: string): string {
+  return (
+    `Melissa LeadGen Consumer buy ${statusCode}: ${detail}. ` +
+    `LeadGen buy is a list purchase (order/subscription), not a Lookups credit ping. ` +
+    `Melissa Cloud credits do not enable every product — if this key is credits-only and LeadGen is not activated, ` +
+    `buy cannot return doors (status 104/116/130/133). Brett: enable LeadGen Consumer on the license ` +
+    `(Sales@Melissa.com or 800-MELISSA ext. 3). Do not invent a key.`
+  );
+}
+
+/**
+ * Purchase a Consumer list (names + ZIP+4 addresses). Spends Melissa list credits/order.
+ * Preview/count must use countMelissaConsumerList instead.
+ */
+export async function buyMelissaConsumerList(
+  input: MelissaLeadgenQuery,
+  options: { licenseKey: string; fetchImpl?: LeadgenFetch; purchaseOrder?: string }
+): Promise<MelissaLeadgenPurchase> {
+  const licenseKey = options.licenseKey.trim();
+  if (!licenseKey) {
+    throw new MelissaLeadgenError(
+      "MELISSA_API_KEY is required for targeted lists. Census ACS is map/quote only — not a list door. Do not invent a key.",
+      "NO_KEY"
+    );
+  }
+
+  const zips = input.zips.map(normalizeZip5).filter((z) => z.length === 5);
+  if (zips.length === 0) {
+    throw new MelissaLeadgenError("At least one 5-digit ZIP is required for a Melissa list buy.", "NO_ZIPS");
+  }
+
+  const params = buildLeadgenCountParams({ zips, filters: input.filters });
+  params.set("id", licenseKey);
+  params.set("name", "1");
+  params.set("zip4", "1");
+  params.set("file", "8");
+  if (options.purchaseOrder) params.set("po", options.purchaseOrder);
+
+  const fetchImpl = options.fetchImpl ?? fetch;
+  const url = `${MELISSA_LEADGEN_CONSUMER_BASE}/buy/zip?${params.toString()}`;
+  const res = await fetchImpl(url, {
+    method: "GET",
+    headers: { Accept: "application/xml" },
+  });
+  const rawXml = await res.text();
+  if (!res.ok) {
+    throw new MelissaLeadgenError(
+      `Melissa LeadGen Consumer buy HTTP ${res.status}: ${rawXml.slice(0, 200)}`,
+      `HTTP_${res.status}`
+    );
+  }
+
+  const parsed = parseLeadgenBuyXml(rawXml);
+  if (parsed.statusCode !== "Approved" || !parsed.downloadUrl || !parsed.orderId) {
+    const detail = xmlTag(rawXml, "Error") ?? xmlTag(rawXml, "ErrorMessage") ?? rawXml.slice(0, 240);
+    throw new MelissaLeadgenError(creditsCannotBuyMessage(parsed.statusCode, detail), parsed.statusCode);
+  }
+
+  const fileRes = await fetchImpl(parsed.downloadUrl, { method: "GET" });
+  const csv = await fileRes.text();
+  if (!fileRes.ok) {
+    throw new MelissaLeadgenError(
+      `Melissa list file HTTP ${fileRes.status} for order ${parsed.orderId}: ${csv.slice(0, 200)}`,
+      `HTTP_${fileRes.status}`
+    );
+  }
+
+  const recipients = parseMelissaListCsv(csv);
+  if (recipients.length === 0) {
+    throw new MelissaLeadgenError(
+      `Melissa order ${parsed.orderId} returned no parseable name/address rows. Not substituting Census counts.`,
+      "EMPTY_LIST"
+    );
+  }
+
+  const appliedParams = Object.fromEntries(
+    [...params.entries()].filter(([key]) => key !== "id")
+  );
+
+  return {
+    recipientCount: recipients.length,
+    statusCode: parsed.statusCode,
+    appliedParams,
+    rawXml,
+    orderId: parsed.orderId,
+    downloadUrl: parsed.downloadUrl,
+    recipients,
   };
 }
