@@ -22,6 +22,7 @@ import {
   handleCreateCampaign,
   handleEstimateAudience,
   handleFinalizeMailing,
+  handlePreviewTargetedList,
   handlePaymentReadiness,
   handlePrepareCheckout,
   handleUpdateDraft,
@@ -162,6 +163,27 @@ describe("safety defaults", () => {
     );
     expect(createCheckoutSession).not.toHaveBeenCalled();
     expect(result.structuredContent).toMatchObject({ code: "SCOPE_DENIED" });
+  });
+
+  it("preview_targeted_list wraps mailing.targetedListCount as count-only", async () => {
+    const targetedListCount = vi.fn().mockResolvedValue({
+      listProvider: "melissa",
+      recipientCount: 321,
+      isStub: false,
+    });
+    const result = await handlePreviewTargetedList(
+      runtime({ mailing: { targetedListCount } }),
+      { zctas: ["80202"], filters: { minMoverPercent: 10 } }
+    );
+    expect(targetedListCount).toHaveBeenCalledWith({
+      zctas: ["80202"],
+      filters: { minMoverPercent: 10 },
+    });
+    expect(result.structuredContent).toMatchObject({
+      ok: true,
+      dryRun: true,
+      data: { listProvider: "melissa", recipientCount: 321, isStub: false },
+    });
   });
 
   it("finalize_mailing without confirm does not call mailing.finalize", async () => {

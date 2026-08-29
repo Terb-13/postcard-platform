@@ -1,4 +1,8 @@
 import type { TargetingMetadata } from "../lib/targeting-summary";
+import {
+  countMelissaConsumerList,
+  type MelissaListFilters,
+} from "./melissa-leadgen-consumer";
 
 export type GenerateTargetedListInput = {
   zctas: string[];
@@ -12,37 +16,51 @@ export type GenerateTargetedListResult = {
   recipientCount: number;
   isStub: boolean;
   warnings: string[];
+  appliedParams?: Record<string, string>;
 };
 
+export const MELISSA_KEY_REQUIRED =
+  "MELISSA_API_KEY is required for targeted lists. Census ACS is map/quote only — not a list door. Brett: add TARGETED_LIST_PROVIDER=melissa and MELISSA_API_KEY (Melissa LeadGen Consumer license — Sales@Melissa.com or 800-MELISSA ext. 3). Do not invent a key.";
+
+function readListFilters(raw?: TargetingMetadata["filters"]): MelissaListFilters | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const rec = raw as MelissaListFilters;
+  const filters: MelissaListFilters = {};
+  if (typeof rec.minIncome === "number") filters.minIncome = rec.minIncome;
+  if (typeof rec.maxIncome === "number") filters.maxIncome = rec.maxIncome;
+  if (typeof rec.minMoverPercent === "number") filters.minMoverPercent = rec.minMoverPercent;
+  if (rec.ownHome === true) filters.ownHome = true;
+  if (rec.homeowners === true) filters.homeowners = true;
+  return Object.keys(filters).length > 0 ? filters : undefined;
+}
+
 /**
- * Phase 1.5 — Melissa / Data Axle list purchase + CASS/DPV.
- * Returns a stub count derived from Census estimate until vendor API keys are configured.
+ * Melissa is the list door. Count only (LeadGen Consumer `get`) — never `buy`.
+ * Census household estimates are not used as a recipient count.
  */
 export async function generateTargetedList(
   input: GenerateTargetedListInput,
-  estimatedHouseholds: number
+  _censusQuoteHouseholds?: number
 ): Promise<GenerateTargetedListResult> {
-  const provider = process.env.TARGETED_LIST_PROVIDER ?? "melissa";
-
-  if (!process.env.MELISSA_API_KEY && !process.env.DATA_AXLE_API_KEY) {
-    return {
-      listProvider: provider,
-      listRequestId: `stub-${input.campaignId}`,
-      recipientCount: estimatedHouseholds,
-      isStub: true,
-      warnings: [
-        "No list vendor API key configured (MELISSA_API_KEY / DATA_AXLE_API_KEY).",
-        "Recipient count matches Census estimate — not verified mover addresses.",
-      ],
-    };
+  const provider = (process.env.TARGETED_LIST_PROVIDER ?? "melissa").toLowerCase();
+  if (provider !== "melissa") {
+    throw new Error(
+      `TARGETED_LIST_PROVIDER=${provider} is not opened. Data Axle stays backup — do not add Data Axle keys. Set TARGETED_LIST_PROVIDER=melissa.`
+    );
   }
 
-  // TODO: vendor HTTP client, async job polling, encrypted storage
+  const licenseKey = process.env.MELISSA_API_KEY?.trim() ?? "";
+  const count = await countMelissaConsumerList(
+    { zips: input.zctas, filters: readListFilters(input.filters) },
+    { licenseKey }
+  );
+
   return {
-    listProvider: provider,
-    listRequestId: `pending-${input.campaignId}`,
-    recipientCount: estimatedHouseholds,
-    isStub: true,
-    warnings: ["Vendor keys present but targeted.service integration is not implemented yet."],
+    listProvider: "melissa",
+    listRequestId: `melissa-count-${input.campaignId}`,
+    recipientCount: count.recipientCount,
+    isStub: false,
+    warnings: [],
+    appliedParams: count.appliedParams,
   };
 }

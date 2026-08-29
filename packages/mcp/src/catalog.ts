@@ -21,7 +21,7 @@ export const PRODUCT_CATALOG = [
     defaultSize: "6x9",
     recommendedSizes: ["6x9", "6x11", "5x7", "4x6"],
     whenToUse:
-      "Mail only households that match Census filters (income, recent movers). Use alias newmover with minMoverPercent for new-mover campaigns.",
+      "Mail households from the Melissa list door (income, own-home, recent movers last 12 months). Use alias newmover with minMoverPercent. Census ACS is map/quote only — use preview_targeted_list for the real count.",
   },
   {
     slug: "saturation-mail",
@@ -68,10 +68,11 @@ Goal example: "targeted new-mover campaign in these ZIPs".
    - search_zips if you only have a city/ZIP fragment.
 
 2. Estimate (read-only, no confirmation)
-   - estimate_audience or estimate_audience_from_zctas with zctas + filters.
-   - New movers: productType TARGETED, filters.minMoverPercent (e.g. 8–15). Optional minIncome.
-   - calculate_cost for a print+postage+list breakdown. get_census_stats for per-ZCTA demographics.
-   - preview_eddm_routes only for EDDM/saturation (carrier routes + household counts).
+   - estimate_audience / get_census_stats = Census ACS map/quote only. Not a list door.
+   - preview_targeted_list = Melissa LeadGen Consumer count (income, own-home, resLen last 12 months). Requires MELISSA_API_KEY.
+   - New movers: productType TARGETED, filters.minMoverPercent (on = last 12 months on Melissa). Optional minIncome / ownHome.
+   - calculate_cost for a print+postage+list breakdown using a quantity — do not invent rates.
+   - preview_eddm_routes only for EDDM/saturation. Fails until Brett provisions real USPS/Melissa carrier routes (not stubbed).
 
 3. Create a DRAFT (default dryRun=true — no database write)
    - create_campaign with name, size, productType, productSlug, targeting.zctas, targeting.filters.

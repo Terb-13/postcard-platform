@@ -156,6 +156,21 @@ export async function handlePreviewEddmRoutes(
   }
 }
 
+export async function handlePreviewTargetedList(
+  rt: ToolRuntime,
+  input: {
+    zctas: string[];
+    filters?: AudienceFilters & { ownHome?: boolean; homeowners?: boolean };
+    campaignId?: string;
+  }
+) {
+  try {
+    return ok(await rt.caller.mailing.targetedListCount(input), { dryRun: true });
+  } catch (err) {
+    return trpcError(err);
+  }
+}
+
 export async function handleListCampaigns(rt: ToolRuntime) {
   const denied = requireScope(rt.auth, "read");
   if (denied) return denied;
