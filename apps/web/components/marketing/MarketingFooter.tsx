@@ -4,7 +4,7 @@ import { products } from "@/lib/products";
 
 const PLATFORM_LINKS = [
   { label: "All Products", href: "/products" },
-  { label: "Map Targeting Tool", href: "#map-tool" },
+  { label: "Map Targeting Tool", href: "/map-tool" },
   { label: "Templates", href: "/templates" },
   { label: "Design Services", href: "/design-services" },
 ] as const;
@@ -13,7 +13,7 @@ const PLATFORM_LINKS = [
 export function MarketingFooter() {
   return (
     <footer className="bg-[#0A2540] py-12 text-sm text-white/70">
-      <div className="mx-auto grid max-w-7xl grid-cols-2 gap-y-10 px-8 md:grid-cols-5">
+      <div className="mx-auto grid max-w-7xl grid-cols-2 gap-y-10 px-8 md:grid-cols-3">
         <FooterColumn title="Products">
           {products.map((product) => (
             <FooterLink key={product.slug} href={`/products/${product.slug}`}>
@@ -28,24 +28,10 @@ export function MarketingFooter() {
               {item.label}
             </FooterLink>
           ))}
-          <span className="block py-0.5">API & Integrations</span>
-        </FooterColumn>
-
-        <FooterColumn title="Resources">
-          <span className="block py-0.5">Blog</span>
-          <span className="block py-0.5">Case Studies</span>
-          <span className="block py-0.5">USPS Guides</span>
-          <span className="block py-0.5">Webinars</span>
         </FooterColumn>
 
         <div className="col-span-2 md:col-span-1">
-          <p className="mb-4 font-semibold text-white">Company</p>
-          <div className="space-y-1.5">
-            <span className="block py-0.5">About Us</span>
-            <span className="block py-0.5">USPS Partnership</span>
-            <span className="block py-0.5">Careers</span>
-            <p className="mt-4 text-xs">© {new Date().getFullYear()} Postcard Platform</p>
-          </div>
+          <p className="mt-4 text-xs md:mt-0">© {new Date().getFullYear()} Postcard Platform</p>
         </div>
       </div>
     </footer>

@@ -13,7 +13,7 @@ const VALUE_PROPS = [
     index: "01",
     title: "Real Census Data",
     description:
-      "Target by income, age, home ownership, and recent movers with actual U.S. Census data.",
+      "Target by income and recent movers with actual U.S. Census data.",
   },
   {
     index: "02",
