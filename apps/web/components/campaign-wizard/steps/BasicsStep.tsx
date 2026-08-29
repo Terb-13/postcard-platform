@@ -73,7 +73,7 @@ export function BasicsStep({ form, product, preselectedSize, onSizeChange }: Bas
           placeholder={
             product
               ? `e.g. ${product.shortTitle} — Spring 2026`
-              : "e.g. Spring 2026 neighborhood drop"
+              : "e.g. Spring 2026 ZIP quote"
           }
           {...register("name")}
         />

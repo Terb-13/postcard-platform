@@ -442,6 +442,27 @@ export function buildProductActionHref(product: Product, size?: PostcardSize): s
   return buildCampaignWizardHref(product, size);
 }
 
+export const MARKETING_QUOTE_CTA = `See ${QUOTE_ONLY_LABEL}`;
+
+/**
+ * Unpersisted `/campaigns/new` (no campaignId) is not a mail-now path.
+ * Quote-only / coming-soon products leave the wizard. Generic (no product)
+ * is quote-only for signed-out buyers — send them to the Census ZIP map.
+ * Do not invent a live EDDM campaign.
+ */
+export function unpersistedWizardEntryRedirect(
+  product: Product | null,
+  isSignedIn: boolean
+): string | null {
+  if (product) {
+    if (isProductComingSoon(product)) return `/products/${product.slug}`;
+    if (isProductQuoteOnly(product)) return MAP_QUOTE_HREF;
+    return null;
+  }
+  if (!isSignedIn) return MAP_QUOTE_HREF;
+  return null;
+}
+
 /** Merge wizard URL params while preserving product context */
 export function appendWizardProductParams(
   params: URLSearchParams,
