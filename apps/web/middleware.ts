@@ -10,13 +10,13 @@ const isProtectedRoute = createRouteMatcher([
   "/production(.*)",
 ]);
 
-/** Campaign list + detail require auth; wizard is public (guest checkout supported). */
+/** Campaign list + detail require auth. Signed-out /campaigns/new is not a mail door. */
 const isProtectedCampaignRoute = createRouteMatcher([
   "/campaigns",
   "/campaigns/((?!new).*)",
 ]);
 
-const isPublicCampaignWizard = createRouteMatcher(["/campaigns/new"]);
+const isCampaignWizard = createRouteMatcher(["/campaigns/new"]);
 
 /** Machine routes — must not run auth.protect(). MCP uses Authorization: Bearer mcp_…, not Clerk. */
 const isWebhookApiRoute = createRouteMatcher([
@@ -33,7 +33,19 @@ const hasClerkKeys =
 
 const clerkHandler = clerkMiddleware(async (auth, req) => {
   try {
-    if (isWebhookApiRoute(req) || isPublicCampaignWizard(req)) return;
+    if (isWebhookApiRoute(req)) return;
+    if (isCampaignWizard(req)) {
+      try {
+        const { userId } = await auth();
+        if (userId) return;
+      } catch {
+        // Treat auth errors as signed-out — never 200 a wizard.
+      }
+      const quote = req.nextUrl.clone();
+      quote.pathname = "/map-tool";
+      quote.search = "";
+      return NextResponse.redirect(quote);
+    }
     if (isProtectedCampaignRoute(req)) {
       await auth.protect();
       return;

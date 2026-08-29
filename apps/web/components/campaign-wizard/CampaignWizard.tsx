@@ -476,9 +476,7 @@ export function CampaignWizard() {
   return (
     <div className="min-h-screen bg-[var(--color-bg)] pb-[calc(7.5rem+env(safe-area-inset-bottom))] md:pb-10">
       <SignedOut>
-        <SignedOutGenericWizardRedirect
-          enabled={!campaignId && !wizardProductParams.product}
-        />
+        <SignedOutGenericWizardRedirect enabled />
       </SignedOut>
       <header className="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-surface)]/90 backdrop-blur">
         <div className="container flex max-w-5xl items-center justify-between gap-3 py-3 sm:gap-4 sm:py-4">

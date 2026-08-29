@@ -1,7 +1,11 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { CampaignWizard } from "@/components/campaign-wizard/CampaignWizard";
-import { parseCampaignWizardParams, unpersistedWizardEntryRedirect } from "@/lib/products";
+import {
+  MAP_QUOTE_HREF,
+  parseCampaignWizardParams,
+  unpersistedWizardEntryRedirect,
+} from "@/lib/products";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +37,12 @@ async function isBuyerSignedIn(): Promise<boolean> {
 export default async function NewCampaignPage({ searchParams }: PageProps) {
   const raw = await searchParams;
   const campaignId = firstParam(raw.campaignId);
+  const signedIn = await isBuyerSignedIn();
+
+  // Signed-out cannot mail. Do not 200 a campaign/checkout wizard.
+  if (!signedIn) {
+    redirect(MAP_QUOTE_HREF);
+  }
 
   if (!campaignId) {
     const params = new URLSearchParams();
@@ -42,10 +52,7 @@ export default async function NewCampaignPage({ searchParams }: PageProps) {
     if (size) params.set("size", size);
 
     const parsed = parseCampaignWizardParams(params);
-    const entryRedirect = unpersistedWizardEntryRedirect(
-      parsed.product,
-      await isBuyerSignedIn()
-    );
+    const entryRedirect = unpersistedWizardEntryRedirect(parsed.product, signedIn);
     if (entryRedirect) {
       redirect(entryRedirect);
     }
