@@ -31,6 +31,9 @@ import { WizardStepHeader } from "./WizardStepHeader";
 import { WizardMobileNav } from "./WizardMobileNav";
 import {
   appendWizardProductParams,
+  canStartProductOrder,
+  isProductComingSoon,
+  isProductQuoteOnly,
   parseCampaignWizardParams,
   resolveProductFromCampaign,
   type PostcardSize,
@@ -139,6 +142,18 @@ export function CampaignWizard() {
     }
   }, [basicsForm, campaignId, wizardProductParams.size]);
 
+  useEffect(() => {
+    const product = wizardProductParams.product;
+    if (!product || campaignId) return;
+    if (isProductComingSoon(product)) {
+      router.replace(`/products/${product.slug}`);
+      return;
+    }
+    if (isProductQuoteOnly(product)) {
+      router.replace("/map-tool");
+    }
+  }, [campaignId, router, wizardProductParams.product]);
+
   const handleSizeChange = useCallback(
     (nextSize: PostcardSize) => {
       if (activeProduct || preselectedSize) {
@@ -236,6 +251,13 @@ export function CampaignWizard() {
   );
 
   const ensureCampaignDraft = useCallback(async () => {
+    if (activeProduct && !canStartProductOrder(activeProduct)) {
+      throw new Error(
+        isProductQuoteOnly(activeProduct)
+          ? "Census ZIP quotes do not create a campaign or continue to artwork."
+          : "This product is not available to order."
+      );
+    }
     const basics = basicsForm.getValues();
     const zctaList = targeting.zctas.map((z) => z.zcta);
 
@@ -301,6 +323,15 @@ export function CampaignWizard() {
   ]);
 
   const handleSaveDraft = async () => {
+    if (activeProduct && !canStartProductOrder(activeProduct)) {
+      setStepError({
+        step: currentStepId,
+        message: isProductQuoteOnly(activeProduct)
+          ? "Census ZIP quotes do not create a campaign or continue to artwork."
+          : "This product is not available to order.",
+      });
+      return;
+    }
     setSaveStatus("saving");
     setStepError(null);
     try {
@@ -329,6 +360,15 @@ export function CampaignWizard() {
     }
 
     if (currentStepId === "targeting") {
+      if (activeProduct && !canStartProductOrder(activeProduct)) {
+        setStepError({
+          step: "targeting",
+          message: isProductQuoteOnly(activeProduct)
+            ? "Census ZIP quotes do not create a campaign or continue to artwork."
+            : "This product is not available to order.",
+        });
+        return;
+      }
       if (targeting.zctas.length === 0) {
         setTargetingValidationError("Select at least one ZIP code to continue.");
         return;

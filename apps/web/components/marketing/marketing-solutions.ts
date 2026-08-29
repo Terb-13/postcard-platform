@@ -8,7 +8,7 @@ export const SOLUTIONS_HUB = [
   {
     href: "/products/targeted-direct-mail",
     title: "Targeted Direct Mail",
-    description: "Reach specific households using real Census demographics.",
+    description: "Quote Census ZIP reach with demographic filters. Not a live mail drop.",
   },
   {
     href: "/products/saturation-mail",
