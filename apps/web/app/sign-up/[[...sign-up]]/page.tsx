@@ -16,9 +16,9 @@ export default function SignUpPage() {
             Postcard
           </Link>
           <p className="mt-3 text-[var(--color-text-secondary)] text-[15px]">
-            Start your first campaign in minutes.
+            Create an account to save your targeting.
             <br />
-            No credit card required.
+            This does not start a campaign or a mail drop.
           </p>
         </div>
 
