@@ -27,6 +27,6 @@ describe("registered tools", () => {
     for (const tool of TOOL_CATALOG) {
       expect(names, `missing ${tool.name}`).toContain(tool.name);
     }
-    expect(TOOL_CATALOG).toHaveLength(19);
+    expect(TOOL_CATALOG).toHaveLength(20);
   });
 });

@@ -2,17 +2,32 @@
  * EDDM carrier route resolution.
  *
  * USPS does not expose a public REST API for the EDDM Online Tool route table.
+ * Real routes were not in the Census/Melissa list-door share. This provider
+ * does not invent stub routes.
+ *
  * Production options (configure via EDDM_ROUTES_PROVIDER):
- * - `melissa` — Melissa Data / Data Axle route product (when API wired)
- * - `http`    — Your aggregator URL (EDDM_ROUTES_API_URL)
- * - `stub`    — Development fallback (default)
+ * - `http` — aggregator URL (EDDM_ROUTES_API_URL + optional EDDM_ROUTES_API_KEY)
+ *
+ * Melissa LeadGen Occupant / Carrier Route Lookups and USPS EDDM Online were
+ * not in the share. Do not invent those clients or rates.
  *
  * @see https://postalpro.usps.com/mailing/every-door-direct-mail
  */
 
+import { fetchMelissaOccupantRoutes } from "./melissa-occupant-routes";
 import type { EddmRouteSelection } from "./types";
 
 const EDDM_MIN_PIECES_PER_ROUTE = 200;
+
+export const EDDM_ROUTES_BLOCKER =
+  "Real USPS/Melissa carrier routes are not configured. Set EDDM_ROUTES_PROVIDER=melissa and MELISSA_CUSTOMER_IDENT (numeric Customer Ident for Occupant id=; MELISSA_API_KEY is fallback only). Occupant must be enabled on that account. Or EDDM_ROUTES_PROVIDER=http plus EDDM_ROUTES_API_URL. Do not stub routes. Do not invent an id.";
+
+export class EddmRoutesNotConfiguredError extends Error {
+  constructor(message = EDDM_ROUTES_BLOCKER) {
+    super(message);
+    this.name = "EddmRoutesNotConfiguredError";
+  }
+}
 
 export type FetchRoutesInput = {
   zctas: string[];
@@ -31,45 +46,13 @@ function normalizeZip(z: string): string {
   return z.replace(/\D/g, "").slice(0, 5);
 }
 
-function stubRoutes(input: FetchRoutesInput): FetchRoutesResult {
-  const warnings: string[] = [
-    "Using development stub routes. Set EDDM_ROUTES_PROVIDER=http and EDDM_ROUTES_API_URL for production.",
-  ];
-  const routes: EddmRouteSelection[] = [];
-
-  for (const zip of input.zctas) {
-    const normalized = normalizeZip(zip);
-    if (normalized.length !== 5) continue;
-
-    const householdCount = input.householdByZip?.[normalized] ?? 0;
-    if (householdCount > 0 && householdCount < EDDM_MIN_PIECES_PER_ROUTE) {
-      warnings.push(
-        `ZIP ${normalized}: ${householdCount} delivery points (USPS retail EDDM minimum is ${EDDM_MIN_PIECES_PER_ROUTE} per ZIP/day).`
-      );
-    }
-
-    routes.push({
-      carrierRouteId: `STUB-CR-${normalized}-001`,
-      zip: normalized,
-      householdCount: Math.max(householdCount, EDDM_MIN_PIECES_PER_ROUTE),
-      walkSequence: "001",
-    });
-  }
-
-  return {
-    routes,
-    totalHomes: routes.reduce((s, r) => s + r.householdCount, 0),
-    warnings,
-    provider: "stub",
-    isStub: true,
-  };
-}
-
 /** Expected JSON from EDDM_ROUTES_API_URL: { routes: EddmRouteSelection[] } */
 async function fetchRoutesFromHttp(input: FetchRoutesInput): Promise<FetchRoutesResult> {
   const base = process.env.EDDM_ROUTES_API_URL?.trim();
   if (!base) {
-    return stubRoutes(input);
+    throw new EddmRoutesNotConfiguredError(
+      `EDDM_ROUTES_PROVIDER=http but EDDM_ROUTES_API_URL is empty. ${EDDM_ROUTES_BLOCKER}`
+    );
   }
 
   const zips = input.zctas.map(normalizeZip).filter((z) => z.length === 5).join(",");
@@ -98,42 +81,31 @@ async function fetchRoutesFromHttp(input: FetchRoutesInput): Promise<FetchRoutes
   };
 }
 
-async function fetchRoutesFromMelissa(input: FetchRoutesInput): Promise<FetchRoutesResult> {
-  const key = process.env.MELISSA_API_KEY?.trim();
-  if (!key) {
-    return {
-      ...stubRoutes(input),
-      warnings: [
-        "EDDM_ROUTES_PROVIDER=melissa but MELISSA_API_KEY is not set.",
-        ...stubRoutes(input).warnings,
-      ],
-    };
-  }
-
-  // TODO: Melissa EDDM / Carrier Route API — replace with vendor endpoint when contract is active
-  return {
-    ...stubRoutes(input),
-    warnings: [
-      "Melissa EDDM route API integration pending — using stub routes until endpoint is configured.",
-      ...stubRoutes(input).warnings,
-    ],
-    provider: "melissa",
-    isStub: true,
-  };
-}
-
 export async function fetchEddmRoutesFromProvider(input: FetchRoutesInput): Promise<FetchRoutesResult> {
-  const provider = (process.env.EDDM_ROUTES_PROVIDER ?? "stub").toLowerCase();
+  const provider = (process.env.EDDM_ROUTES_PROVIDER ?? "").toLowerCase();
 
   switch (provider) {
     case "http":
     case "aggregator":
       return fetchRoutesFromHttp(input);
-    case "melissa":
+    case "melissa": {
+      const customerId =
+        process.env.MELISSA_CUSTOMER_IDENT?.trim() || process.env.MELISSA_API_KEY?.trim() || "";
+      const occupant = await fetchMelissaOccupantRoutes(input.zctas, { licenseKey: customerId });
+      return {
+        routes: occupant.routes,
+        totalHomes: occupant.totalHomes,
+        warnings: occupant.warnings,
+        provider: "melissa",
+        isStub: false,
+      };
+    }
     case "dataaxle":
-      return fetchRoutesFromMelissa(input);
+      throw new EddmRoutesNotConfiguredError(
+        "EDDM_ROUTES_PROVIDER=dataaxle is closed. Data Axle stays backup. Use EDDM_ROUTES_PROVIDER=melissa (Occupant + MELISSA_CUSTOMER_IDENT) or http + EDDM_ROUTES_API_URL."
+      );
     default:
-      return stubRoutes(input);
+      throw new EddmRoutesNotConfiguredError();
   }
 }
 

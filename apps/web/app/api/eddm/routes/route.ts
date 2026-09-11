@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchEddmRoutes } from "@postcard-platform/api/services/eddm.service";
+import { EddmRoutesNotConfiguredError } from "@postcard-platform/api/services/usps-eddm.provider";
 
 export const runtime = "nodejs";
 
 /**
- * GET /api/eddm/routes?zips=84037,84003&households_84037=11193
- * Optional per-zip household counts from Census estimate (until USPS API is live).
+ * GET /api/eddm/routes?zips=84037,84003
+ * Real USPS/Melissa carrier routes only. Does not return stub routes.
  */
 export async function GET(req: NextRequest) {
   const zipsParam = req.nextUrl.searchParams.get("zips") ?? "";
@@ -25,6 +26,17 @@ export async function GET(req: NextRequest) {
     if (h) householdByZip[key] = parseInt(h, 10);
   }
 
-  const result = await fetchEddmRoutes({ zctas }, householdByZip);
-  return NextResponse.json(result);
+  try {
+    const result = await fetchEddmRoutes({ zctas }, householdByZip);
+    return NextResponse.json(result);
+  } catch (err) {
+    if (err instanceof EddmRoutesNotConfiguredError) {
+      return NextResponse.json(
+        { error: err.message, isStub: false, provider: null, routes: [] },
+        { status: 503 }
+      );
+    }
+    const message = err instanceof Error ? err.message : "EDDM routes failed";
+    return NextResponse.json({ error: message }, { status: 502 });
+  }
 }

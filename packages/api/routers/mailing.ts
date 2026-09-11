@@ -7,6 +7,8 @@ import {
 } from "../services/mailing-finalize.service";
 import { calculatePricing } from "../services/pricing.service";
 import { fetchEddmRoutes } from "../services/eddm.service";
+import { countTargetedList } from "../services/targeted.service";
+import { EddmRoutesNotConfiguredError } from "../services/usps-eddm.provider";
 
 export const mailingRouter = router({
   getByCampaignId: protectedProcedure
@@ -66,5 +68,39 @@ export const mailingRouter = router({
         householdByZip: z.record(z.string(), z.number().int().min(0)).optional(),
       })
     )
-    .query(async ({ input }) => fetchEddmRoutes({ zctas: input.zctas }, input.householdByZip)),
+    .query(async ({ input }) => {
+      try {
+        return await fetchEddmRoutes({ zctas: input.zctas }, input.householdByZip);
+      } catch (err) {
+        if (err instanceof EddmRoutesNotConfiguredError) {
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: err.message });
+        }
+        throw err;
+      }
+    }),
+
+  /** Melissa LeadGen Consumer count — list door. Not Census. Never buys. */
+  targetedListCount: protectedProcedure
+    .input(
+      z.object({
+        zctas: z.array(z.string().min(5).max(10)).min(1).max(50),
+        filters: z
+          .object({
+            minIncome: z.number().optional(),
+            maxIncome: z.number().optional(),
+            minMoverPercent: z.number().optional(),
+            ownHome: z.boolean().optional(),
+            homeowners: z.boolean().optional(),
+          })
+          .optional(),
+        campaignId: z.string().optional(),
+      })
+    )
+    .query(async ({ input }) =>
+      countTargetedList({
+        zctas: input.zctas,
+        filters: input.filters,
+        campaignId: input.campaignId ?? "preview",
+      })
+    ),
 });

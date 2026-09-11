@@ -3,5 +3,8 @@ export * from "./pricing.service";
 export * from "./eddm.service";
 export * from "./usps-eddm.provider";
 export * from "./targeted.service";
+export * from "./melissa-leadgen-consumer";
+export * from "./melissa-newmovers";
+export * from "./melissa-occupant-routes";
 export * from "./drummond-handoff.service";
 export * from "./mailing-finalize.service";

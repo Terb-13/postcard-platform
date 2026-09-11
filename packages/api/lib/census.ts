@@ -1,6 +1,8 @@
 /**
  * US Census ACS 5-year estimates at ZCTA (ZIP Code Tabulation Area) level.
  *
+ * Map/quote only. Not a mailing-list door. Targeted lists go through Melissa.
+ *
  * ## Getting a free Census API key
  * 1. Visit https://api.census.gov/data/key_signup.html
  * 2. Enter your name, organization, and email — keys are free and usually arrive instantly.

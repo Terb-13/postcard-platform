@@ -60,7 +60,13 @@ export const TOOL_CATALOG: ToolCatalogEntry[] = [
     name: "preview_eddm_routes",
     kind: "read",
     wraps: "mailing.eddmRoutes → eddm.service",
-    safety: "estimate-only",
+    safety: "estimate-only — fails until real USPS/Melissa routes are provisioned",
+  },
+  {
+    name: "preview_targeted_list",
+    kind: "read",
+    wraps: "mailing.targetedListCount → Melissa LeadGen Consumer get",
+    safety: "count-only — does not buy",
   },
   {
     name: "list_campaigns",

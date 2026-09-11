@@ -70,11 +70,18 @@ MAPBOX_ACCESS_TOKEN=pk....       # Server-side geocoding (can match public token
 POSTCARD_BASE_RATE_CENTS=12
 POSTAGE_CENTS_PER_PIECE=20
 
-# Fulfillment / EDDM routes (staging + production)
-EDDM_ROUTES_PROVIDER=stub
-EDDM_ROUTES_API_URL=
-EDDM_ROUTES_API_KEY=
+# Targeted lists (Melissa LeadGen Consumer buy / NewMovers — list door; Census ACS is map/quote only)
+TARGETED_LIST_PROVIDER=melissa
+# Occupant + LeadGen Consumer id= (numeric Customer Ident). License Key as id= returns empty Geography.
+MELISSA_CUSTOMER_IDENT=
+# NewMovers Data Retriever License Key (CustomerID). Fallback for Occupant/Consumer id= only.
 MELISSA_API_KEY=
+
+# EDDM routes — Melissa Occupant (EDDM_ROUTES_PROVIDER=melissa) or http aggregator. No stubs.
+# EDDM_ROUTES_PROVIDER=melissa
+# EDDM_ROUTES_PROVIDER=http
+# EDDM_ROUTES_API_URL=
+# EDDM_ROUTES_API_KEY=
 
 # App
 NEXT_PUBLIC_APP_URL=http://localhost:3000

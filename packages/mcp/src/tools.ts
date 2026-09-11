@@ -17,6 +17,7 @@ import {
   handlePaymentReadiness,
   handlePrepareCheckout,
   handlePreviewEddmRoutes,
+  handlePreviewTargetedList,
   handleSearchZips,
   handleSpendStatus,
   handleUpdateDraft,
@@ -190,6 +191,27 @@ export function registerPostcardTools(server: McpServer, factory: RuntimeFactory
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
     },
     async (input) => withRuntime(factory, (rt) => handlePreviewEddmRoutes(rt, input))
+  );
+
+  server.registerTool(
+    "preview_targeted_list",
+    {
+      title: "Preview Melissa targeted list count",
+      description:
+        "Melissa LeadGen Consumer list count for ZIPs + filters (income, recent movers last 12 months, own-home). Wraps mailing.targetedListCount. Census ACS is map/quote only — this is the list door. Count-only; does not buy a list or charge.",
+      inputSchema: {
+        zctas: z.array(z.string().min(5).max(10)).min(1).max(50),
+        filters: z
+          .object({
+            ...filtersSchema,
+            ownHome: z.boolean().optional().describe("Melissa ownRent-d=1 (homeowner)."),
+          })
+          .optional(),
+        campaignId: z.string().optional(),
+      },
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: true },
+    },
+    async (input) => withRuntime(factory, (rt) => handlePreviewTargetedList(rt, input))
   );
 
   server.registerTool(
