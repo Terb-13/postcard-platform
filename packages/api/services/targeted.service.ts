@@ -3,6 +3,7 @@ import {
   buyMelissaConsumerList,
   countMelissaConsumerList,
   MelissaLeadgenError,
+  readMelissaLeadgenCustomerId,
   type MelissaListFilters,
   type MelissaRecipient,
 } from "./melissa-leadgen-consumer";
@@ -31,7 +32,7 @@ export type GenerateTargetedListResult = {
 };
 
 export const MELISSA_KEY_REQUIRED =
-  "MELISSA_API_KEY is required for targeted lists. Census ACS is map/quote only — not a list door. Set TARGETED_LIST_PROVIDER=melissa and MELISSA_API_KEY on Vercel after Brett lands Cloud credits / LeadGen. Do not invent a key.";
+  "MELISSA_API_KEY (License Key) is required for NewMovers Data Retriever CustomerID. Census ACS is map/quote only — not a list door. LeadGen Occupant/Consumer id= uses MELISSA_CUSTOMER_IDENT (numeric Ident), falling back to MELISSA_API_KEY. Do not invent a key.";
 
 export function requireMelissaProvider(): void {
   const provider = (process.env.TARGETED_LIST_PROVIDER ?? "melissa").toLowerCase();
@@ -67,10 +68,10 @@ export async function countTargetedList(
   input: GenerateTargetedListInput
 ): Promise<GenerateTargetedListResult> {
   requireMelissaProvider();
-  const licenseKey = licenseKeyOrThrow();
   const filters = readListFilters(input.filters);
 
   if (shouldUseNewMoversDoor(filters)) {
+    const licenseKey = licenseKeyOrThrow();
     const count = await countMelissaNewMovers(input.zctas, { licenseKey });
     return {
       listProvider: "melissa",
@@ -82,7 +83,8 @@ export async function countTargetedList(
     };
   }
 
-  const count = await countMelissaConsumerList({ zips: input.zctas, filters }, { licenseKey });
+  const customerId = readMelissaLeadgenCustomerId();
+  const count = await countMelissaConsumerList({ zips: input.zctas, filters }, { licenseKey: customerId });
   return {
     listProvider: "melissa",
     listRequestId: `melissa-count-${input.campaignId}`,
@@ -103,10 +105,10 @@ export async function generateTargetedList(
   _censusQuoteHouseholds?: number
 ): Promise<GenerateTargetedListResult> {
   requireMelissaProvider();
-  const licenseKey = licenseKeyOrThrow();
   const filters = readListFilters(input.filters);
 
   if (shouldUseNewMoversDoor(filters)) {
+    const licenseKey = licenseKeyOrThrow();
     const lookup = await lookupMelissaNewMovers(input.zctas, { licenseKey });
     return {
       listProvider: "melissa",
@@ -119,9 +121,10 @@ export async function generateTargetedList(
     };
   }
 
+  const customerId = readMelissaLeadgenCustomerId();
   const purchase = await buyMelissaConsumerList(
     { zips: input.zctas, filters },
-    { licenseKey, purchaseOrder: input.campaignId }
+    { licenseKey: customerId, purchaseOrder: input.campaignId }
   );
 
   return {

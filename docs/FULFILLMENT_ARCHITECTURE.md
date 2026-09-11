@@ -94,6 +94,9 @@ EDDM_ROUTES_API_URL=               # when provider=http — returns { routes: [.
 EDDM_ROUTES_API_KEY=
 
 # Targeted lists (Phase 1.5)
+# Occupant + LeadGen Consumer id= (numeric Customer Ident). License Key as id= returns empty Geography.
+MELISSA_CUSTOMER_IDENT=
+# NewMovers Data Retriever License Key. Fallback for Occupant/Consumer id= only.
 MELISSA_API_KEY=
 TARGETED_LIST_PROVIDER=melissa
 

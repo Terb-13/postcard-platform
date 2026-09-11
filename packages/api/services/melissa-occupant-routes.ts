@@ -1,11 +1,17 @@
 /**
  * Melissa LeadGen Occupant — real EDDM carrier routes (not STUB-CR).
- * Wired only when EDDM_ROUTES_PROVIDER=melissa and MELISSA_API_KEY is set.
+ * Wired only when EDDM_ROUTES_PROVIDER=melissa.
+ * `id=` is MELISSA_CUSTOMER_IDENT (numeric Ident), falling back to MELISSA_API_KEY.
  *
  * @see https://docs.melissa.com/reference-data/leadgen-occupant/leadgen-occupant-reference-guide.html
  */
 
-import { MelissaLeadgenError, normalizeZip5, type LeadgenFetch } from "./melissa-leadgen-consumer";
+import {
+  MelissaLeadgenError,
+  normalizeZip5,
+  readMelissaLeadgenCustomerId,
+  type LeadgenFetch,
+} from "./melissa-leadgen-consumer";
 import type { EddmRouteSelection } from "./types";
 
 export const MELISSA_OCCUPANT_BASE = "https://list.melissadata.net/V1/occupant/rest/Service.svc";
@@ -92,15 +98,9 @@ export function parseOccupantRoutesXml(xml: string): OccupantRoutesResult {
 
 export async function fetchMelissaOccupantRoutes(
   zips: string[],
-  options: { licenseKey: string; fetchImpl?: LeadgenFetch }
+  options: { licenseKey?: string; fetchImpl?: LeadgenFetch } = {}
 ): Promise<OccupantRoutesResult> {
-  const licenseKey = options.licenseKey.trim();
-  if (!licenseKey) {
-    throw new MelissaLeadgenError(
-      "EDDM_ROUTES_PROVIDER=melissa requires MELISSA_API_KEY. Do not invent a key. Do not stub routes.",
-      "NO_KEY"
-    );
-  }
+  const customerId = readMelissaLeadgenCustomerId(options.licenseKey);
 
   const zipList = zips.map(normalizeZip5).filter((z) => z.length === 5).join(",");
   if (!zipList) {
@@ -108,7 +108,7 @@ export async function fetchMelissaOccupantRoutes(
   }
 
   const fetchImpl = options.fetchImpl ?? fetch;
-  const url = `${MELISSA_OCCUPANT_BASE}/get/json/zip?id=${encodeURIComponent(licenseKey)}&zip=${encodeURIComponent(zipList)}`;
+  const url = `${MELISSA_OCCUPANT_BASE}/get/json/zip?id=${encodeURIComponent(customerId)}&zip=${encodeURIComponent(zipList)}`;
   const res = await fetchImpl(url, { method: "GET", headers: { Accept: "application/json" } });
   const text = await res.text();
   if (!res.ok) {

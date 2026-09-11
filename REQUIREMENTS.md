@@ -72,6 +72,9 @@ POSTAGE_CENTS_PER_PIECE=20
 
 # Targeted lists (Melissa LeadGen Consumer buy / NewMovers — list door; Census ACS is map/quote only)
 TARGETED_LIST_PROVIDER=melissa
+# Occupant + LeadGen Consumer id= (numeric Customer Ident). License Key as id= returns empty Geography.
+MELISSA_CUSTOMER_IDENT=
+# NewMovers Data Retriever License Key (CustomerID). Fallback for Occupant/Consumer id= only.
 MELISSA_API_KEY=
 
 # EDDM routes — Melissa Occupant (EDDM_ROUTES_PROVIDER=melissa) or http aggregator. No stubs.

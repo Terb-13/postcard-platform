@@ -2,7 +2,9 @@
  * Melissa LeadGen Consumer — the targeted list door.
  *
  * Census ACS is map/quote only. `get` = count. `buy` = purchase CSV of names+addresses.
- * Does not invent rates or license keys. Fail closed without MELISSA_API_KEY.
+ * Occupant/Consumer `id=` is MELISSA_CUSTOMER_IDENT (numeric Customer Ident),
+ * falling back to MELISSA_API_KEY. License Key as id= returns empty Geography.
+ * NewMovers Data Retriever still uses MELISSA_API_KEY as CustomerID.
  *
  * @see https://docs.melissa.com/reference-data/leadgen-consumer/leadgen-consumer-reference-guide.html
  */
@@ -61,6 +63,26 @@ export class MelissaLeadgenError extends Error {
     this.name = "MelissaLeadgenError";
     this.statusCode = statusCode;
   }
+}
+
+/** Melissa LeadGen Occupant/Consumer `id=` — numeric Customer Ident, not the License Key. */
+export const MELISSA_LEADGEN_ID_REQUIRED =
+  "MELISSA_CUSTOMER_IDENT (numeric Customer Ident) is required for LeadGen Occupant/Consumer id=. MELISSA_API_KEY (License Key) is a fallback only — License Key as id= returns empty Geography. Do not invent an id.";
+
+/**
+ * Occupant + LeadGen Consumer get/buy use this as Melissa `id=`.
+ * Prefer MELISSA_CUSTOMER_IDENT; fall back to MELISSA_API_KEY. Fail closed if both missing.
+ */
+export function readMelissaLeadgenCustomerId(explicit?: string): string {
+  const id =
+    explicit?.trim() ||
+    process.env.MELISSA_CUSTOMER_IDENT?.trim() ||
+    process.env.MELISSA_API_KEY?.trim() ||
+    "";
+  if (!id) {
+    throw new MelissaLeadgenError(MELISSA_LEADGEN_ID_REQUIRED, "NO_KEY");
+  }
+  return id;
 }
 
 export function normalizeZip5(zip: string): string {
@@ -146,15 +168,9 @@ export type LeadgenFetch = (url: string, init?: RequestInit) => Promise<Response
 
 export async function countMelissaConsumerList(
   input: MelissaLeadgenQuery,
-  options: { licenseKey: string; fetchImpl?: LeadgenFetch } = { licenseKey: "" }
+  options: { licenseKey?: string; fetchImpl?: LeadgenFetch } = {}
 ): Promise<MelissaLeadgenCount> {
-  const licenseKey = options.licenseKey.trim();
-  if (!licenseKey) {
-    throw new MelissaLeadgenError(
-      "MELISSA_API_KEY is required for targeted lists. Census ACS is map/quote only — not a list door. Brett: add a Melissa LeadGen Consumer license key (Sales@Melissa.com or 800-MELISSA ext. 3). Do not invent a key.",
-      "NO_KEY"
-    );
-  }
+  const customerId = readMelissaLeadgenCustomerId(options.licenseKey);
 
   const zips = input.zips.map(normalizeZip5).filter((z) => z.length === 5);
   if (zips.length === 0) {
@@ -162,7 +178,7 @@ export async function countMelissaConsumerList(
   }
 
   const params = buildLeadgenCountParams({ zips, filters: input.filters });
-  params.set("id", licenseKey);
+  params.set("id", customerId);
 
   const url = `${MELISSA_LEADGEN_CONSUMER_BASE}/get/zip?${params.toString()}`;
   const fetchImpl = options.fetchImpl ?? fetch;
@@ -293,15 +309,9 @@ export function creditsCannotBuyMessage(statusCode: string, detail: string): str
  */
 export async function buyMelissaConsumerList(
   input: MelissaLeadgenQuery,
-  options: { licenseKey: string; fetchImpl?: LeadgenFetch; purchaseOrder?: string }
+  options: { licenseKey?: string; fetchImpl?: LeadgenFetch; purchaseOrder?: string }
 ): Promise<MelissaLeadgenPurchase> {
-  const licenseKey = options.licenseKey.trim();
-  if (!licenseKey) {
-    throw new MelissaLeadgenError(
-      "MELISSA_API_KEY is required for targeted lists. Census ACS is map/quote only — not a list door. Do not invent a key.",
-      "NO_KEY"
-    );
-  }
+  const customerId = readMelissaLeadgenCustomerId(options.licenseKey);
 
   const zips = input.zips.map(normalizeZip5).filter((z) => z.length === 5);
   if (zips.length === 0) {
@@ -309,7 +319,7 @@ export async function buyMelissaConsumerList(
   }
 
   const params = buildLeadgenCountParams({ zips, filters: input.filters });
-  params.set("id", licenseKey);
+  params.set("id", customerId);
   params.set("name", "1");
   params.set("zip4", "1");
   params.set("file", "8");

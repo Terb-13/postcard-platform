@@ -69,7 +69,7 @@ Goal example: "targeted new-mover campaign in these ZIPs".
 
 2. Estimate (read-only, no confirmation)
    - estimate_audience / get_census_stats = Census ACS map/quote only. Not a list door.
-   - preview_targeted_list = Melissa LeadGen Consumer count (income, own-home, resLen last 12 months). Requires MELISSA_API_KEY.
+   - preview_targeted_list = Melissa LeadGen Consumer count (income, own-home, resLen last 12 months). Requires MELISSA_CUSTOMER_IDENT (numeric Ident for id=; MELISSA_API_KEY is fallback only).
    - New movers: productType TARGETED, filters.minMoverPercent (on = last 12 months on Melissa). Optional minIncome / ownHome.
    - calculate_cost for a print+postage+list breakdown using a quantity — do not invent rates.
    - preview_eddm_routes only for EDDM/saturation. Fails until Brett provisions real USPS/Melissa carrier routes (not stubbed).

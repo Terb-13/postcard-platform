@@ -20,7 +20,7 @@ import type { EddmRouteSelection } from "./types";
 const EDDM_MIN_PIECES_PER_ROUTE = 200;
 
 export const EDDM_ROUTES_BLOCKER =
-  "Real USPS/Melissa carrier routes are not configured. Set EDDM_ROUTES_PROVIDER=melissa and MELISSA_API_KEY (LeadGen Occupant must be enabled on that license), or EDDM_ROUTES_PROVIDER=http plus EDDM_ROUTES_API_URL. Do not stub routes. Do not invent a key.";
+  "Real USPS/Melissa carrier routes are not configured. Set EDDM_ROUTES_PROVIDER=melissa and MELISSA_CUSTOMER_IDENT (numeric Customer Ident for Occupant id=; MELISSA_API_KEY is fallback only). Occupant must be enabled on that account. Or EDDM_ROUTES_PROVIDER=http plus EDDM_ROUTES_API_URL. Do not stub routes. Do not invent an id.";
 
 export class EddmRoutesNotConfiguredError extends Error {
   constructor(message = EDDM_ROUTES_BLOCKER) {
@@ -89,8 +89,9 @@ export async function fetchEddmRoutesFromProvider(input: FetchRoutesInput): Prom
     case "aggregator":
       return fetchRoutesFromHttp(input);
     case "melissa": {
-      const key = process.env.MELISSA_API_KEY?.trim() ?? "";
-      const occupant = await fetchMelissaOccupantRoutes(input.zctas, { licenseKey: key });
+      const customerId =
+        process.env.MELISSA_CUSTOMER_IDENT?.trim() || process.env.MELISSA_API_KEY?.trim() || "";
+      const occupant = await fetchMelissaOccupantRoutes(input.zctas, { licenseKey: customerId });
       return {
         routes: occupant.routes,
         totalHomes: occupant.totalHomes,
@@ -101,7 +102,7 @@ export async function fetchEddmRoutesFromProvider(input: FetchRoutesInput): Prom
     }
     case "dataaxle":
       throw new EddmRoutesNotConfiguredError(
-        "EDDM_ROUTES_PROVIDER=dataaxle is closed. Data Axle stays backup. Use EDDM_ROUTES_PROVIDER=melissa (Occupant + MELISSA_API_KEY) or http + EDDM_ROUTES_API_URL."
+        "EDDM_ROUTES_PROVIDER=dataaxle is closed. Data Axle stays backup. Use EDDM_ROUTES_PROVIDER=melissa (Occupant + MELISSA_CUSTOMER_IDENT) or http + EDDM_ROUTES_API_URL."
       );
     default:
       throw new EddmRoutesNotConfiguredError();

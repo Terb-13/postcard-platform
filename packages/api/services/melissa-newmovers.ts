@@ -1,5 +1,6 @@
 /**
  * Melissa Data Retriever — NewMovers door.
+ * CustomerID is MELISSA_API_KEY (License Key), not MELISSA_CUSTOMER_IDENT.
  * Used when the campaign is new-movers only (no income/own-home selects).
  * Combined income/own-home + movers uses LeadGen Consumer (documented filters).
  *

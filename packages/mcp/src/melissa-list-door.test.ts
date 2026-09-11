@@ -18,6 +18,7 @@ import { EddmRoutesNotConfiguredError, fetchEddmRoutesFromProvider } from "../..
 
 afterEach(() => {
   delete process.env.MELISSA_API_KEY;
+  delete process.env.MELISSA_CUSTOMER_IDENT;
   delete process.env.TARGETED_LIST_PROVIDER;
   delete process.env.EDDM_ROUTES_PROVIDER;
   delete process.env.EDDM_ROUTES_API_URL;
@@ -63,10 +64,26 @@ describe("Melissa LeadGen Consumer XML parse + count client", () => {
     expect(parseLeadgenCountXml(xml)).toEqual({ recipientCount: 1842, statusCode: "Approved" });
   });
 
-  it("refuses to invent a count without MELISSA_API_KEY", async () => {
+  it("refuses to invent a count without MELISSA_CUSTOMER_IDENT or MELISSA_API_KEY", async () => {
     await expect(countMelissaConsumerList({ zips: ["80202"] }, { licenseKey: "" })).rejects.toBeInstanceOf(
       MelissaLeadgenError
     );
+  });
+
+  it("prefers MELISSA_CUSTOMER_IDENT over MELISSA_API_KEY for Consumer id=", async () => {
+    process.env.MELISSA_CUSTOMER_IDENT = "121046531";
+    process.env.MELISSA_API_KEY = "license-key-value";
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: true,
+      text: async () =>
+        `<Consumer><TotalCount><Count>10</Count></TotalCount><Result><StatusCode>Approved</StatusCode></Result></Consumer>`,
+    });
+
+    await countMelissaConsumerList({ zips: ["80202"] }, { fetchImpl });
+
+    const calledUrl = String(fetchImpl.mock.calls[0]?.[0]);
+    expect(calledUrl).toContain("id=121046531");
+    expect(calledUrl).not.toContain("license-key-value");
   });
 
   it("calls Melissa get/zip and returns the Approved count (no buy)", async () => {
@@ -206,9 +223,19 @@ describe("Occupant routes (no STUB-CR)", () => {
 });
 
 describe("targeted.service list door", () => {
-  it("fails closed without MELISSA_API_KEY and does not use Census households", async () => {
+  it("fails closed without MELISSA_CUSTOMER_IDENT or MELISSA_API_KEY and does not use Census households", async () => {
     await expect(
       generateTargetedList({ zctas: ["80202"], campaignId: "camp_1" }, 12_000)
+    ).rejects.toThrow(/MELISSA_CUSTOMER_IDENT/);
+  });
+
+  it("NewMovers still requires MELISSA_API_KEY even when MELISSA_CUSTOMER_IDENT is set", async () => {
+    process.env.MELISSA_CUSTOMER_IDENT = "121046531";
+    await expect(
+      generateTargetedList(
+        { zctas: ["80202"], campaignId: "camp_1", filters: { minMoverPercent: 10 } },
+        12_000
+      )
     ).rejects.toThrow(/MELISSA_API_KEY/);
   });
 
@@ -221,7 +248,7 @@ describe("targeted.service list door", () => {
   });
 
   it("generateTargetedList returns bought doors, not a Census count", async () => {
-    process.env.MELISSA_API_KEY = "test-license";
+    process.env.MELISSA_CUSTOMER_IDENT = "121046531";
     vi.stubGlobal(
       "fetch",
       vi
@@ -244,6 +271,8 @@ describe("targeted.service list door", () => {
     expect(result.listRequestId).toBe("99");
     expect(result.recipients?.[0]?.addressLine).toBe("11 Blake St");
     expect(result.door).toBe("melissa-consumer");
+    const buyUrl = String((fetch as ReturnType<typeof vi.fn>).mock.calls[0]?.[0]);
+    expect(buyUrl).toContain("id=121046531");
   });
 });
 
@@ -259,8 +288,35 @@ describe("EDDM routes fail closed / Occupant", () => {
     await expect(fetchEddmRoutesFromProvider({ zctas: ["80202"] })).rejects.toThrow(/Data Axle stays backup/);
   });
 
-  it("melissa Occupant without a key fails closed (no STUB-CR)", async () => {
+  it("melissa Occupant without Ident or License Key fails closed (no STUB-CR)", async () => {
     process.env.EDDM_ROUTES_PROVIDER = "melissa";
-    await expect(fetchEddmRoutesFromProvider({ zctas: ["80202"] })).rejects.toThrow(/MELISSA_API_KEY/);
+    await expect(fetchEddmRoutesFromProvider({ zctas: ["80202"] })).rejects.toThrow(/MELISSA_CUSTOMER_IDENT/);
+  });
+
+  it("Occupant uses MELISSA_CUSTOMER_IDENT as id= when License Key is also set", async () => {
+    process.env.EDDM_ROUTES_PROVIDER = "melissa";
+    process.env.MELISSA_CUSTOMER_IDENT = "121046531";
+    process.env.MELISSA_API_KEY = "license-key-value";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        text: async () =>
+          JSON.stringify({
+            Occupant: {
+              CarrierRoutes: { CarrierRoute: [{ Zip: "80202", Route: "C001", Count: "412" }] },
+              Result: { StatusCode: "Approved" },
+            },
+          }),
+      })
+    );
+
+    const result = await fetchEddmRoutesFromProvider({ zctas: ["80202"] });
+    expect(result.provider).toBe("melissa");
+    expect(result.isStub).toBe(false);
+    expect(result.routes[0]?.carrierRouteId).toBe("C001-80202");
+    const calledUrl = String((fetch as ReturnType<typeof vi.fn>).mock.calls[0]?.[0]);
+    expect(calledUrl).toContain("id=121046531");
+    expect(calledUrl).not.toContain("license-key-value");
   });
 });
