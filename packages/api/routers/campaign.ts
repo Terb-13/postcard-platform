@@ -20,7 +20,9 @@ import {
   PREVIEW_ONLY_BLOCK_MESSAGE,
   isMelissaBuyerDoorEnabled,
   isPreviewOnlyTargeting,
+  isPreviewStripeTestCheckoutAllowed,
   melissaQuoteQuantity,
+  shouldRefusePreviewOnlyCheckout,
   normalizeMelissaMeta,
   type MelissaTargetingMeta,
 } from "../lib/melissa-buyer-door";
@@ -572,6 +574,11 @@ export const campaignRouter = router({
 
   canCreateTestOrder: protectedProcedure.query(() => isTestOrdersEnabled()),
 
+  /** Preview Stripe test checkout (sk_test_ only). Never true in Vercel Production. */
+  canUsePreviewTestCheckout: protectedProcedure.query(() =>
+    isPreviewStripeTestCheckoutAllowed()
+  ),
+
   /** Load sample draft + orders for the signed-in account (safe on production demos). */
   seedDemoData: protectedProcedure.mutation(async ({ ctx }) => {
     return seedDemoDataForOrganization(ctx.prisma, ctx.user.organizationId);
@@ -646,7 +653,7 @@ export const campaignRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Campaign not found" });
       }
       assertCampaignAccess(campaign, ctx);
-      if (isPreviewOnlyTargeting(campaign.targetingMetadata)) {
+      if (shouldRefusePreviewOnlyCheckout(campaign.targetingMetadata)) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: PREVIEW_ONLY_BLOCK_MESSAGE,

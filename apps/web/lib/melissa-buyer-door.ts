@@ -1,9 +1,12 @@
 export {
   PREVIEW_ONLY_BLOCK_MESSAGE,
+  PREVIEW_ONLY_FINALIZE_BLOCK_MESSAGE,
   hasStubCarrierRoutes,
   isMelissaBuyerDoorEnabled,
   isMelissaBuyerDoorEnabledOnClient,
   isPreviewOnlyTargeting,
+  isPreviewStripeTestCheckoutAllowed,
+  isPreviewStripeTestCheckoutAllowedOnClient,
   melissaQuoteQuantity,
   normalizeMelissaMeta,
   parseEnvFlag,
