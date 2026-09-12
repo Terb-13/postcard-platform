@@ -1,7 +1,10 @@
 import type { Campaign, Prisma, PrismaClient } from "@prisma/client";
 import { targetingPayloadBlock } from "./targeting-summary";
 import { ensureMailingJobForCampaign } from "../services/mailing-finalize.service";
-import { assertNotPreviewOnly } from "./melissa-buyer-door";
+import {
+  assertNotPreviewOnly,
+  canActivatePreviewOnlyAfterStripeTestPayment,
+} from "./melissa-buyer-door";
 
 type ActivateOptions = {
   amountPaidCents?: number;
@@ -23,7 +26,14 @@ export async function activateOrderForProduction(
     actor = "system",
   } = options;
 
-  assertNotPreviewOnly(campaign.targetingMetadata);
+  if (
+    !canActivatePreviewOnlyAfterStripeTestPayment(campaign.targetingMetadata, {
+      paymentIntentId,
+      actor,
+    })
+  ) {
+    assertNotPreviewOnly(campaign.targetingMetadata);
+  }
 
   const existingJob = await prisma.productionJob.findUnique({
     where: { campaignId: campaign.id },

@@ -65,11 +65,17 @@ type CampaignWizardProps = {
    * from raw `process.env` in the browser (VERCEL_ENV is not inlined).
    */
   buyerDoorEnabled?: boolean;
+  /**
+   * Server-computed Preview Stripe test checkout (VERCEL_ENV=preview or
+   * ALLOW_TEST_ORDERS, plus sk_test_). Required from RSC.
+   */
+  previewTestCheckoutEnabled?: boolean;
 };
 
 export function CampaignWizard({
   melissaDoorForced = false,
   buyerDoorEnabled = false,
+  previewTestCheckoutEnabled = false,
 }: CampaignWizardProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -131,6 +137,11 @@ export function CampaignWizard({
   const campaignIsMelissaDoor = isPreviewOnlyTargeting(campaign?.targetingMetadata);
   const melissaDoor =
     buyerDoorEnabled && (melissaDoorForced || urlMelissaDoor || campaignIsMelissaDoor);
+  const melissaPayLater = melissaDoor && !previewTestCheckoutEnabled;
+  const visibleSteps = melissaPayLater
+    ? WIZARD_STEPS.filter((s) => s.id !== "checkout")
+    : [...WIZARD_STEPS];
+  const lastVisibleStepIndex = visibleSteps.length - 1;
 
   const melissaMeta: MelissaTargetingMeta | null = useMemo(() => {
     const fromRoutes: MelissaTargetingMeta | null = melissaRoutes
@@ -575,7 +586,7 @@ export function CampaignWizard({
     }
 
     if (currentStepId === "review") {
-      if (melissaDoor) {
+      if (melissaPayLater) {
         try {
           setSaveStatus("saving");
           await ensureCampaignDraft();
@@ -659,7 +670,7 @@ export function CampaignWizard({
           <div className="flex shrink-0 items-center gap-2">
             {saveStatus === "saved" && (
               <span className="animate-in fade-in text-xs font-medium text-[var(--color-success)]">
-                {melissaDoor ? "Saved — pay later." : "Draft saved"}
+                {melissaPayLater ? "Saved — pay later." : "Draft saved"}
               </span>
             )}
             {saveStatus === "saving" && (
@@ -676,15 +687,15 @@ export function CampaignWizard({
 
       <main className="container max-w-5xl py-5 sm:py-8 md:py-10">
         <Stepper
-          steps={melissaDoor ? WIZARD_STEPS.filter((s) => s.id !== "checkout") : [...WIZARD_STEPS]}
-          currentStep={Math.min(stepIndex, melissaDoor ? 3 : STEP_IDS.length - 1)}
+          steps={visibleSteps}
+          currentStep={Math.min(stepIndex, lastVisibleStepIndex)}
           onStepClick={handleStepClick}
           className="mb-8 hidden md:block sm:mb-10"
         />
 
         <WizardMobileNav
-          steps={melissaDoor ? WIZARD_STEPS.filter((s) => s.id !== "checkout") : WIZARD_STEPS}
-          currentStep={Math.min(stepIndex, melissaDoor ? 3 : STEP_IDS.length - 1)}
+          steps={visibleSteps}
+          currentStep={Math.min(stepIndex, lastVisibleStepIndex)}
           onStepClick={handleStepClick}
           className="mb-5"
         />
@@ -740,6 +751,7 @@ export function CampaignWizard({
                       totalCents={melissaQuoteQuery.data.totalCents}
                       unitCents={melissaQuoteQuery.data.unitPriceCents}
                       source={listPreview ? "list preview" : "Occupant routes"}
+                      testCheckout={previewTestCheckoutEnabled}
                     />
                   )}
                 </>
@@ -791,15 +803,16 @@ export function CampaignWizard({
                 />
               )}
 
-              {currentStepId === "checkout" && melissaDoor && (
+              {currentStepId === "checkout" && melissaPayLater && (
                 <MelissaPayLaterPanel />
               )}
 
-              {currentStepId === "checkout" && campaignId && !melissaDoor && (
+              {currentStepId === "checkout" && campaignId && !melissaPayLater && (
                 <CheckoutStep
                   campaign={campaign}
                   onPay={() => createCheckout.mutate({ campaignId })}
                   isPaying={createCheckout.isPending}
+                  testMode={previewTestCheckoutEnabled}
                 />
               )}
             </div>
@@ -828,12 +841,12 @@ export function CampaignWizard({
                 >
                   {saveStatus === "saving"
                     ? "Saving…"
-                    : melissaDoor
+                    : melissaPayLater
                       ? "Save draft — pay later"
                       : "Save draft"}
                 </Button>
               )}
-              {currentStepId !== "checkout" && !(melissaDoor && currentStepId === "review") && (
+              {currentStepId !== "checkout" && !(melissaPayLater && currentStepId === "review") && (
                 <Button
                   type="button"
                   onClick={handleNext}
@@ -856,11 +869,13 @@ function MelissaDraftQuote({
   totalCents,
   unitCents,
   source,
+  testCheckout = false,
 }: {
   quantity: number;
   totalCents: number;
   unitCents: number;
   source: string;
+  testCheckout?: boolean;
 }) {
   return (
     <div className="mt-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-alt)]/60 p-5">
@@ -872,7 +887,9 @@ function MelissaDraftQuote({
         {formatNumber(quantity)} pieces × {formatCurrency(unitCents)} · source estimate · {source}
       </p>
       <p className="mt-3 text-xs text-[var(--color-text-muted)]">
-        Preview only. No Stripe and no finalize on this door.
+        {testCheckout
+          ? "Preview quote. Stripe test checkout is available on this Preview; list buy and finalize stay blocked."
+          : "Preview only. No Stripe and no finalize on this door."}
       </p>
     </div>
   );

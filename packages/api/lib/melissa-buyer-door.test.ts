@@ -4,12 +4,17 @@ import {
   PREVIEW_ONLY_BLOCK_MESSAGE,
   PreviewOnlyBlockedError,
   assertNotPreviewOnly,
+  canActivatePreviewOnlyAfterStripeTestPayment,
   hasStubCarrierRoutes,
   isMelissaBuyerDoorEnabled,
   isMelissaBuyerDoorEnabledOnClient,
   isPreviewOnlyTargeting,
+  isPreviewStripeTestCheckoutAllowed,
+  isPreviewStripeTestCheckoutAllowedOnClient,
+  isStripeTestSecretKey,
   melissaQuoteQuantity,
   normalizeMelissaMeta,
+  shouldRefusePreviewOnlyCheckout,
 } from "./melissa-buyer-door";
 import { calculatePricing } from "../services/pricing.service";
 
@@ -94,6 +99,134 @@ describe("previewOnly finalize refuse", () => {
       message: PREVIEW_ONLY_BLOCK_MESSAGE,
     });
     assert.doesNotThrow(() => assertNotPreviewOnly({ zctas: ["84037"] }));
+  });
+});
+
+describe("Preview Stripe test checkout escape hatch", () => {
+  const testSecret = { STRIPE_SECRET_KEY: "sk_test_abc" };
+  const liveSecret = { STRIPE_SECRET_KEY: "sk_live_abc" };
+  const previewOnly = { previewOnly: true, melissa: { provider: "melissa" } };
+
+  it("detects Stripe test secrets and rejects live or missing keys", () => {
+    assert.equal(isStripeTestSecretKey("sk_test_123"), true);
+    assert.equal(isStripeTestSecretKey("rk_test_123"), true);
+    assert.equal(isStripeTestSecretKey("sk_live_123"), false);
+    assert.equal(isStripeTestSecretKey("pk_test_123"), false);
+    assert.equal(isStripeTestSecretKey(""), false);
+    assert.equal(isStripeTestSecretKey(undefined), false);
+  });
+
+  it("is hard-off in Vercel Production even with test keys and ALLOW_TEST_ORDERS", () => {
+    assert.equal(
+      isPreviewStripeTestCheckoutAllowed({
+        VERCEL_ENV: "production",
+        ALLOW_TEST_ORDERS: "true",
+        ...testSecret,
+      }),
+      false
+    );
+    assert.equal(
+      shouldRefusePreviewOnlyCheckout(previewOnly, {
+        VERCEL_ENV: "production",
+        ...testSecret,
+      }),
+      true
+    );
+  });
+
+  it("allows checkout on Preview when Stripe secret is test-mode", () => {
+    assert.equal(
+      isPreviewStripeTestCheckoutAllowed({ VERCEL_ENV: "preview", ...testSecret }),
+      true
+    );
+    assert.equal(
+      shouldRefusePreviewOnlyCheckout(previewOnly, { VERCEL_ENV: "preview", ...testSecret }),
+      false
+    );
+  });
+
+  it("allows checkout when ALLOW_TEST_ORDERS=true and Stripe is test (local / preview)", () => {
+    assert.equal(
+      isPreviewStripeTestCheckoutAllowed({
+        ALLOW_TEST_ORDERS: "true",
+        ...testSecret,
+      }),
+      true
+    );
+  });
+
+  it("refuses checkout when Stripe is live or unset", () => {
+    assert.equal(
+      isPreviewStripeTestCheckoutAllowed({ VERCEL_ENV: "preview", ...liveSecret }),
+      false
+    );
+    assert.equal(isPreviewStripeTestCheckoutAllowed({ VERCEL_ENV: "preview" }), false);
+    assert.equal(
+      shouldRefusePreviewOnlyCheckout(previewOnly, { VERCEL_ENV: "preview", ...liveSecret }),
+      true
+    );
+  });
+
+  it("does not refuse non-previewOnly targeting", () => {
+    assert.equal(
+      shouldRefusePreviewOnlyCheckout({ zctas: ["84037"] }, { VERCEL_ENV: "preview" }),
+      false
+    );
+  });
+
+  it("client helper requires pk_test_ and a non-production public deploy env", () => {
+    assert.equal(
+      isPreviewStripeTestCheckoutAllowedOnClient({
+        NEXT_PUBLIC_VERCEL_ENV: "preview",
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "pk_test_abc",
+      }),
+      true
+    );
+    assert.equal(
+      isPreviewStripeTestCheckoutAllowedOnClient({
+        NEXT_PUBLIC_VERCEL_ENV: "production",
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "pk_test_abc",
+      }),
+      false
+    );
+    assert.equal(
+      isPreviewStripeTestCheckoutAllowedOnClient({
+        NEXT_PUBLIC_VERCEL_ENV: "preview",
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "pk_live_abc",
+      }),
+      false
+    );
+  });
+
+  it("allows activation after Stripe test payment only", () => {
+    assert.equal(
+      canActivatePreviewOnlyAfterStripeTestPayment(previewOnly, { paymentIntentId: "pi_test" }, {
+        VERCEL_ENV: "preview",
+        ...testSecret,
+      }),
+      true
+    );
+    assert.equal(
+      canActivatePreviewOnlyAfterStripeTestPayment(
+        previewOnly,
+        { actor: "system:stripe-webhook" },
+        { VERCEL_ENV: "preview", ...testSecret }
+      ),
+      true
+    );
+    assert.equal(
+      canActivatePreviewOnlyAfterStripeTestPayment(previewOnly, {}, { VERCEL_ENV: "preview", ...testSecret }),
+      false
+    );
+    assert.equal(
+      canActivatePreviewOnlyAfterStripeTestPayment(
+        previewOnly,
+        { paymentIntentId: "pi_live" },
+        { VERCEL_ENV: "production", ...testSecret }
+      ),
+      false
+    );
+    assert.equal(canActivatePreviewOnlyAfterStripeTestPayment({ zctas: ["84037"] }, {}), true);
   });
 });
 

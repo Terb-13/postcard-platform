@@ -22,8 +22,10 @@ import { AuthRequiredCard } from "@/components/account/AuthRequiredCard";
 
 export default function CampaignsListClient({
   buyerDoorEnabled = false,
+  previewTestCheckoutEnabled = false,
 }: {
   buyerDoorEnabled?: boolean;
+  previewTestCheckoutEnabled?: boolean;
 }) {
   const { data: campaigns, isLoading, isError, error, refetch } = trpc.campaign.getMine.useQuery();
 
@@ -122,7 +124,7 @@ export default function CampaignsListClient({
                 artwork?.status === "APPROVED" &&
                 campaign.status !== "PAID" &&
                 !job &&
-                !previewOnly;
+                (!previewOnly || previewTestCheckoutEnabled);
               const isRejected = artwork?.status === "REJECTED";
               const isDraft = campaign.status === "DRAFT";
               const resumeHref =
@@ -156,7 +158,13 @@ export default function CampaignsListClient({
                           {campaign.size} · {campaign.quantity.toLocaleString()}
                         </Badge>
                         <Badge variant="accent">{campaign.status.replace(/_/g, " ")}</Badge>
-                        {previewOnly && <Badge>Preview only · pay later</Badge>}
+                        {previewOnly && (
+                          <Badge>
+                            {previewTestCheckoutEnabled
+                              ? "Preview · Stripe test"
+                              : "Preview only · pay later"}
+                          </Badge>
+                        )}
                       </div>
                       {campaign.dropDate && (
                         <p className="text-sm text-[var(--color-text-muted)] mt-1">
@@ -179,7 +187,11 @@ export default function CampaignsListClient({
                           disabled={createCheckout.isPending}
                           className="bg-[var(--color-success)] hover:bg-[var(--color-success)]/90"
                         >
-                          {createCheckout.isPending ? "Redirecting…" : "Pay & Send to Production"}
+                          {createCheckout.isPending
+                            ? "Redirecting…"
+                            : previewOnly && previewTestCheckoutEnabled
+                              ? "Pay with Stripe (test)"
+                              : "Pay & Send to Production"}
                         </Button>
                       )}
                       {(campaign.status === "PAID" ||

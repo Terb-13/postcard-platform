@@ -23,9 +23,11 @@ type Props = {
   } | null;
   onPay: () => void;
   isPaying: boolean;
+  /** Preview Stripe test mode — no live charges. */
+  testMode?: boolean;
 };
 
-export function CheckoutStep({ campaign, onPay, isPaying }: Props) {
+export function CheckoutStep({ campaign, onPay, isPaying, testMode = false }: Props) {
   const artworkApproved = campaign?.artwork?.status === "APPROVED";
   const canPay = artworkApproved && campaign?.status !== "PAID";
   const quantity = campaign?.quantity ?? 0;
@@ -36,7 +38,11 @@ export function CheckoutStep({ campaign, onPay, isPaying }: Props) {
     <div className="mx-auto max-w-lg space-y-6 md:space-y-8">
       <WizardStepHeader
         title="Complete your campaign"
-        description="Secure payment via Stripe. Production starts after our team approves your artwork."
+        description={
+          testMode
+            ? "Stripe test mode on this Preview. Use card 4242 4242 4242 4242. No live charges. Melissa list buy stays blocked."
+            : "Secure payment via Stripe. Production starts after our team approves your artwork."
+        }
         className="text-center sm:text-left [&_.heading-sm]:sm:mx-0"
       />
 
@@ -79,7 +85,11 @@ export function CheckoutStep({ campaign, onPay, isPaying }: Props) {
           <GuestCheckoutAccountPrompt campaignId={campaign?.id} />
           {canPay ? (
             <Button size="lg" className="min-h-[52px] w-full" onClick={onPay} disabled={isPaying}>
-              {isPaying ? "Redirecting to Stripe…" : "Pay with Stripe"}
+              {isPaying
+                ? "Redirecting to Stripe…"
+                : testMode
+                  ? "Pay with Stripe (test)"
+                  : "Pay with Stripe"}
             </Button>
           ) : (
             <p className="text-center text-sm text-[var(--color-text-muted)]">

@@ -2,7 +2,10 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { CampaignWizard } from "@/components/campaign-wizard/CampaignWizard";
 import { isBuyerSignedIn } from "@/lib/buyer-session";
-import { isMelissaBuyerDoorEnabled } from "@/lib/melissa-buyer-door";
+import {
+  isMelissaBuyerDoorEnabled,
+  isPreviewStripeTestCheckoutAllowed,
+} from "@/lib/melissa-buyer-door";
 import { MAP_QUOTE_HREF } from "@/lib/products";
 
 export const dynamic = "force-dynamic";
@@ -30,7 +33,11 @@ export default async function MelissaPlanPage() {
         </div>
       }
     >
-      <CampaignWizard melissaDoorForced buyerDoorEnabled={buyerDoorEnabled} />
+      <CampaignWizard
+        melissaDoorForced
+        buyerDoorEnabled={buyerDoorEnabled}
+        previewTestCheckoutEnabled={isPreviewStripeTestCheckoutAllowed()}
+      />
     </Suspense>
   );
 }

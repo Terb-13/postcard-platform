@@ -1,14 +1,22 @@
 /**
- * Melissa buyer-door M-slice — flag, preview-only persist, finalize/checkout refuse.
+ * Melissa buyer-door M-slice — flag, preview-only persist, finalize/list-buy refuse.
  *
  * MELISSA_BUYER_DOOR is hard-off in Vercel Production even if someone sets the env.
  * Do not write Production Melissa secrets or provider values from this slice.
  * Preview defaults ON so acceptance can be exercised without a Production merge.
  * Explicit 0/false/off still disables the door on preview.
+ *
+ * Preview Stripe **test** checkout is a separate escape hatch: VERCEL_ENV=preview
+ * (or ALLOW_TEST_ORDERS=true) AND STRIPE_SECRET_KEY is sk_test_/rk_test_.
+ * That path never enables Production MELISSA_BUYER_DOOR and never uses live keys.
+ * List buy / mailing finalize stay blocked on previewOnly drafts.
  */
 
 export const PREVIEW_ONLY_BLOCK_MESSAGE =
   "This draft is a Melissa preview-only quote. Finalize, checkout, and list buy are blocked. Pay later.";
+
+export const PREVIEW_ONLY_FINALIZE_BLOCK_MESSAGE =
+  "This draft is a Melissa preview-only quote. List buy and finalize are blocked. Stripe test checkout does not purchase a Melissa list.";
 
 export const MELISSA_BUYER_DOOR_DISABLED_MESSAGE =
   "Melissa buyer door is not enabled in this environment.";
@@ -52,6 +60,9 @@ export type MelissaBuyerDoorEnv = {
   MELISSA_BUYER_DOOR?: string;
   NEXT_PUBLIC_MELISSA_BUYER_DOOR?: string;
   NODE_ENV?: string;
+  ALLOW_TEST_ORDERS?: string;
+  STRIPE_SECRET_KEY?: string;
+  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?: string;
 };
 
 export function parseEnvFlag(raw: string | undefined | null): boolean | null {
@@ -134,6 +145,68 @@ export function assertNotPreviewOnly(raw: unknown): void {
   if (isPreviewOnlyTargeting(raw)) {
     throw new PreviewOnlyBlockedError();
   }
+}
+
+/** Stripe secret is test-mode (never live). Restricted test keys (rk_test_) count. */
+export function isStripeTestSecretKey(key: string | undefined | null): boolean {
+  const trimmed = key?.trim() ?? "";
+  return trimmed.startsWith("sk_test_") || trimmed.startsWith("rk_test_");
+}
+
+export function isStripeTestPublishableKey(key: string | undefined | null): boolean {
+  const trimmed = key?.trim() ?? "";
+  return trimmed.startsWith("pk_test_");
+}
+
+/**
+ * Server: allow Stripe Checkout Session create for previewOnly drafts.
+ * Hard-off in Vercel Production. Requires a test secret key so live charges cannot run.
+ */
+export function isPreviewStripeTestCheckoutAllowed(
+  env: MelissaBuyerDoorEnv = process.env
+): boolean {
+  if (vercelDeployEnv(env) === "production") return false;
+  if (!isStripeTestSecretKey(env.STRIPE_SECRET_KEY)) return false;
+
+  const deploy = vercelDeployEnv(env);
+  if (deploy === "preview") return true;
+  if (parseEnvFlag(env.ALLOW_TEST_ORDERS) === true) return true;
+  return false;
+}
+
+/**
+ * Client-shaped env: only NEXT_PUBLIC_* is visible.
+ * Prefer a server-computed boolean from RSC (same pattern as MELISSA_BUYER_DOOR).
+ */
+export function isPreviewStripeTestCheckoutAllowedOnClient(env: MelissaBuyerDoorEnv): boolean {
+  const deploy = env.NEXT_PUBLIC_VERCEL_ENV?.trim() || undefined;
+  if (deploy === "production") return false;
+  if (!isStripeTestPublishableKey(env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)) return false;
+  if (deploy === "preview" || deploy === "development") return true;
+  return parseEnvFlag(env.ALLOW_TEST_ORDERS) === true;
+}
+
+/** Refuse createCheckoutSession unless the Preview Stripe test escape hatch applies. */
+export function shouldRefusePreviewOnlyCheckout(
+  targeting: unknown,
+  env: MelissaBuyerDoorEnv = process.env
+): boolean {
+  return isPreviewOnlyTargeting(targeting) && !isPreviewStripeTestCheckoutAllowed(env);
+}
+
+/**
+ * After a Stripe **test** payment, mark the campaign paid / create jobs.
+ * Does not unlock Melissa list buy or mailing finalize.
+ */
+export function canActivatePreviewOnlyAfterStripeTestPayment(
+  targeting: unknown,
+  options: { paymentIntentId?: string; actor?: string } = {},
+  env: MelissaBuyerDoorEnv = process.env
+): boolean {
+  if (!isPreviewOnlyTargeting(targeting)) return true;
+  if (!isPreviewStripeTestCheckoutAllowed(env)) return false;
+  if (options.paymentIntentId) return true;
+  return Boolean(options.actor?.startsWith("system:stripe"));
 }
 
 export function hasStubCarrierRoutes(

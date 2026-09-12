@@ -22,7 +22,7 @@ export type TargetingMetadata = {
     unitPriceCents?: number;
     source?: "estimate" | "final";
   };
-  /** Melissa buyer-door drafts — finalize/checkout must refuse. */
+  /** Melissa buyer-door drafts — list buy / finalize refuse; Preview Stripe test checkout may proceed. */
   previewOnly?: boolean;
   melissa?: MelissaTargetingMeta;
 };

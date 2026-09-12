@@ -5,7 +5,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc/client";
 import { formatCurrency, formatNumber } from "@/lib/utils";
-import { PREVIEW_ONLY_BLOCK_MESSAGE, isPreviewOnlyTargeting } from "@/lib/melissa-buyer-door";
+import {
+  PREVIEW_ONLY_FINALIZE_BLOCK_MESSAGE,
+  isPreviewOnlyTargeting,
+} from "@/lib/melissa-buyer-door";
 
 /** Post-checkout: resolve EDDM routes / list counts and show final cost (keeps existing wizard + map unchanged). */
 export default function CampaignFinalizePage() {
@@ -60,7 +63,7 @@ export default function CampaignFinalizePage() {
       {previewOnly && (
         <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950">
           <p className="font-semibold">Preview-only draft</p>
-          <p className="mt-2">{PREVIEW_ONLY_BLOCK_MESSAGE}</p>
+          <p className="mt-2">{PREVIEW_ONLY_FINALIZE_BLOCK_MESSAGE}</p>
         </div>
       )}
 
