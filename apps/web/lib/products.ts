@@ -73,6 +73,8 @@ export const LIVE_ESTIMATE_PLACEHOLDER = "See live estimate on the map";
 export const COMING_SOON_LABEL = "Coming soon";
 export const QUOTE_ONLY_LABEL = "Census ZIP quote";
 export const MAP_QUOTE_HREF = "/map-tool";
+export const MELISSA_PLAN_HREF = "/campaigns/plan";
+export const MELISSA_BUYER_DOOR = "melissa" as const;
 
 export function isProductComingSoon(product: Product): boolean {
   return product.comingSoon === true;
@@ -444,17 +446,76 @@ export function buildProductActionHref(product: Product, size?: PostcardSize): s
 
 export const MARKETING_QUOTE_CTA = `See ${QUOTE_ONLY_LABEL}`;
 
+export function parseZipQueryParam(param: string | null | undefined): string[] {
+  if (!param?.trim()) return [];
+  const seen = new Set<string>();
+  const zips: string[] = [];
+  for (const part of param.split(/[\s,]+/)) {
+    const zip = part.replace(/\D/g, "").slice(0, 5);
+    if (zip.length !== 5 || seen.has(zip)) continue;
+    seen.add(zip);
+    zips.push(zip);
+  }
+  return zips;
+}
+
+export function isMelissaBuyerDoorQuery(
+  param: string | null | undefined
+): boolean {
+  return param?.trim().toLowerCase() === MELISSA_BUYER_DOOR;
+}
+
+export function buildMelissaPlanHref(opts?: {
+  zips?: string[];
+  product?: Product | string | null;
+  size?: PostcardSize | null;
+}): string {
+  const params = new URLSearchParams();
+  if (opts?.zips?.length) params.set("zips", opts.zips.join(","));
+  const slug = typeof opts?.product === "string" ? opts.product : opts?.product?.slug;
+  if (slug) params.set("product", slug);
+  if (opts?.size) params.set("size", opts.size);
+  const qs = params.toString();
+  return qs ? `${MELISSA_PLAN_HREF}?${qs}` : MELISSA_PLAN_HREF;
+}
+
+export function buildMelissaWizardHref(opts?: {
+  zips?: string[];
+  product?: Product | string | null;
+  size?: PostcardSize | null;
+}): string {
+  const params = new URLSearchParams();
+  params.set("door", MELISSA_BUYER_DOOR);
+  const product =
+    typeof opts?.product === "string"
+      ? getProductBySlug(opts.product)
+      : opts?.product ?? getProductBySlug("every-door-direct-mail");
+  if (product) {
+    params.set("product", product.slug);
+    params.set("size", opts?.size ?? product.defaultSize);
+  } else if (opts?.size) {
+    params.set("size", opts.size);
+  }
+  if (opts?.zips?.length) params.set("zips", opts.zips.join(","));
+  return `/campaigns/new?${params.toString()}`;
+}
+
 /**
  * `/campaigns/new` is not a mail-now path for signed-out buyers.
  * Signed-out always goes to the Census ZIP map — including typed URLs
  * with a product or campaignId. Quote-only / coming-soon products leave
- * the wizard even when signed in. Do not invent a live EDDM campaign.
+ * the wizard even when signed in, unless the Melissa buyer door is on.
  */
 export function unpersistedWizardEntryRedirect(
   product: Product | null,
-  isSignedIn: boolean
+  isSignedIn: boolean,
+  options?: { melissaDoor?: boolean; buyerDoorEnabled?: boolean }
 ): string | null {
   if (!isSignedIn) return MAP_QUOTE_HREF;
+  if (options?.melissaDoor && options?.buyerDoorEnabled) {
+    if (product && isProductComingSoon(product)) return `/products/${product.slug}`;
+    return null;
+  }
   if (product) {
     if (isProductComingSoon(product)) return `/products/${product.slug}`;
     if (isProductQuoteOnly(product)) return MAP_QUOTE_HREF;
@@ -466,7 +527,8 @@ export function unpersistedWizardEntryRedirect(
 export function appendWizardProductParams(
   params: URLSearchParams,
   product: Product | null,
-  size: PostcardSize | null | undefined
+  size: PostcardSize | null | undefined,
+  options?: { melissaDoor?: boolean; zips?: string[] }
 ): URLSearchParams {
   if (product) {
     params.set("product", product.slug);
@@ -474,20 +536,30 @@ export function appendWizardProductParams(
   } else if (size) {
     params.set("size", size);
   }
+  if (options?.melissaDoor) {
+    params.set("door", MELISSA_BUYER_DOOR);
+  }
+  if (options?.zips?.length) {
+    params.set("zips", options.zips.join(","));
+  }
   return params;
 }
 
 export type CampaignWizardProductParams = {
   product: Product | null;
   size: PostcardSize | null;
+  door: "melissa" | null;
+  zips: string[];
 };
 
-/** Read ?product= & ?size= from URL search params (client or server). */
+/** Read ?product= & ?size= & ?door= & ?zips= from URL search params (client or server). */
 export function parseCampaignWizardParams(
   searchParams: URLSearchParams | { get: (key: string) => string | null }
 ): CampaignWizardProductParams {
   const productParam = searchParams.get("product");
   const sizeParam = searchParams.get("size");
+  const door = isMelissaBuyerDoorQuery(searchParams.get("door")) ? MELISSA_BUYER_DOOR : null;
+  const zips = parseZipQueryParam(searchParams.get("zips"));
 
   const product = parseProductQueryParam(productParam);
   if (!product) {
@@ -496,11 +568,13 @@ export function parseCampaignWizardParams(
       sizeParam && validSizes.includes(sizeParam as PostcardSize)
         ? (sizeParam as PostcardSize)
         : null;
-    return { product: null, size };
+    return { product: null, size, door, zips };
   }
 
   return {
     product,
     size: resolveSizeForProduct(product, sizeParam),
+    door,
+    zips,
   };
 }

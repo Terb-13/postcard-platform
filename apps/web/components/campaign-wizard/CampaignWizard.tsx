@@ -41,13 +41,29 @@ import {
   type PostcardSize,
   type Product,
 } from "@/lib/products";
+import {
+  isMelissaBuyerDoorEnabled,
+  isPreviewOnlyTargeting,
+  melissaQuoteQuantity,
+  readMelissaTargeting,
+  type MelissaListPreviewMeta,
+  type MelissaTargetingMeta,
+} from "@/lib/melissa-buyer-door";
+import type { MelissaRoutesResult } from "./MelissaRoutesPanel";
+import type { MelissaListPreviewResult } from "./MelissaListPreviewPanel";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 const STEP_IDS = WIZARD_STEPS.map((s) => s.id);
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 type StepError = { step: WizardStepId; message: string } | null;
 
-export function CampaignWizard() {
+type CampaignWizardProps = {
+  /** Dedicated /campaigns/plan entry — always Melissa door when the flag is on. */
+  melissaDoorForced?: boolean;
+};
+
+export function CampaignWizard({ melissaDoorForced = false }: CampaignWizardProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialStep = Math.min(
@@ -59,6 +75,8 @@ export function CampaignWizard() {
     () => parseCampaignWizardParams(searchParams),
     [searchParams]
   );
+  const buyerDoorEnabled = isMelissaBuyerDoorEnabled();
+  const urlMelissaDoor = wizardProductParams.door === "melissa" && buyerDoorEnabled;
 
   const [stepIndex, setStepIndex] = useState(initialStep);
   const [campaignId, setCampaignId] = useState<string | null>(
@@ -71,6 +89,9 @@ export function CampaignWizard() {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [stepError, setStepError] = useState<StepError>(null);
   const [targetingValidationError, setTargetingValidationError] = useState<string | null>(null);
+  const [melissaRoutes, setMelissaRoutes] = useState<MelissaRoutesResult | null>(null);
+  const [melissaRoutesError, setMelissaRoutesError] = useState<string | null>(null);
+  const [listPreview, setListPreview] = useState<MelissaListPreviewResult | null>(null);
 
   const basicsForm = useForm<CampaignBasics>({
     resolver: zodResolver(campaignBasicsSchema),
@@ -93,8 +114,47 @@ export function CampaignWizard() {
         size: campaign.size,
       });
     }
-    return wizardProductParams.product;
-  }, [campaign, wizardProductParams.product]);
+    return (
+      wizardProductParams.product ??
+      (melissaDoorForced || urlMelissaDoor
+        ? resolveProductFromCampaign({ productSlug: "every-door-direct-mail" })
+        : null)
+    );
+  }, [campaign, melissaDoorForced, urlMelissaDoor, wizardProductParams.product]);
+
+  const campaignIsMelissaDoor = isPreviewOnlyTargeting(campaign?.targetingMetadata);
+  const melissaDoor =
+    buyerDoorEnabled && (melissaDoorForced || urlMelissaDoor || campaignIsMelissaDoor);
+
+  const melissaMeta: MelissaTargetingMeta | null = useMemo(() => {
+    const fromRoutes: MelissaTargetingMeta | null = melissaRoutes
+      ? {
+          provider: "melissa",
+          isStub: melissaRoutes.isStub,
+          routes: melissaRoutes.routes,
+          totalHomes: melissaRoutes.totalHomes,
+          listPreview: listPreview ?? undefined,
+        }
+      : readMelissaTargeting(campaign?.targetingMetadata);
+    if (!fromRoutes) return listPreview
+      ? { provider: "melissa", isStub: false, listPreview }
+      : null;
+    return { ...fromRoutes, listPreview: listPreview ?? fromRoutes.listPreview };
+  }, [campaign?.targetingMetadata, listPreview, melissaRoutes]);
+
+  const melissaQuantity = melissaQuoteQuantity(melissaMeta);
+
+  const handleMelissaRoutes = useCallback(
+    (result: MelissaRoutesResult | null, error?: string | null) => {
+      setMelissaRoutes(result);
+      setMelissaRoutesError(error ?? null);
+    },
+    []
+  );
+
+  const handleListPreview = useCallback((result: MelissaListPreviewResult | null) => {
+    setListPreview(result);
+  }, []);
 
   const preselectedSize = useMemo((): PostcardSize | null => {
     if (campaign?.size) {
@@ -129,10 +189,24 @@ export function CampaignWizard() {
       if (nextCampaignId) params.set("campaignId", nextCampaignId);
       else params.delete("campaignId");
 
-      appendWizardProductParams(params, product, nextSize);
-      router.replace(`/campaigns/new?${params.toString()}`, { scroll: false });
+      appendWizardProductParams(params, product, nextSize, {
+        melissaDoor,
+        zips: targeting.zctas.map((z) => z.zcta),
+      });
+      const path = melissaDoorForced ? "/campaigns/plan" : "/campaigns/new";
+      router.replace(`${path}?${params.toString()}`, { scroll: false });
     },
-    [activeProduct, basicsForm, campaignId, router, searchParams, stepIndex]
+    [
+      activeProduct,
+      basicsForm,
+      campaignId,
+      melissaDoor,
+      melissaDoorForced,
+      router,
+      searchParams,
+      stepIndex,
+      targeting.zctas,
+    ]
   );
 
   useEffect(() => {
@@ -142,7 +216,17 @@ export function CampaignWizard() {
     if (wizardProductParams.size) {
       basicsForm.setValue("size", wizardProductParams.size);
     }
-  }, [basicsForm, campaignId, wizardProductParams.size]);
+    if (wizardProductParams.zips.length > 0) {
+      setTargeting((prev) => ({
+        ...prev,
+        zctas: wizardProductParams.zips.map((z) => ({ zcta: z, placeName: `ZCTA ${z}` })),
+      }));
+    }
+    if (melissaDoor && !basicsForm.getValues("name")) {
+      const zipLabel = wizardProductParams.zips[0] ?? "plan";
+      basicsForm.setValue("name", `Melissa plan ${zipLabel}`);
+    }
+  }, [basicsForm, campaignId, melissaDoor, wizardProductParams.size, wizardProductParams.zips]);
 
   useEffect(() => {
     const product = wizardProductParams.product;
@@ -151,10 +235,10 @@ export function CampaignWizard() {
       router.replace(`/products/${product.slug}`);
       return;
     }
-    if (isProductQuoteOnly(product)) {
+    if (isProductQuoteOnly(product) && !melissaDoor) {
       router.replace(MAP_QUOTE_HREF);
     }
-  }, [campaignId, router, wizardProductParams.product]);
+  }, [campaignId, melissaDoor, router, wizardProductParams.product]);
 
   const handleSizeChange = useCallback(
     (nextSize: PostcardSize) => {
@@ -181,7 +265,21 @@ export function CampaignWizard() {
       filters: targeting.filters,
       geoJson: targeting.geoJson,
     },
-    { enabled: targeting.zctas.length > 0, staleTime: 30_000, placeholderData: (prev) => prev }
+    {
+      enabled: !melissaDoor && targeting.zctas.length > 0,
+      staleTime: 30_000,
+      placeholderData: (prev) => prev,
+    }
+  );
+
+  const melissaQuoteQuery = trpc.mailing.calculatePricing.useQuery(
+    {
+      size,
+      quantity: melissaQuantity,
+      productType: activeProduct?.productType ?? "EDDM",
+      source: "estimate",
+    },
+    { enabled: melissaDoor && melissaQuantity > 0, staleTime: 30_000 }
   );
 
   const hydratedRef = useRef(false);
@@ -208,6 +306,8 @@ export function CampaignWizard() {
     const meta = campaign.targetingMetadata as {
       zctas?: string[];
       filters?: TargetingSelection["filters"];
+      previewOnly?: boolean;
+      melissa?: MelissaTargetingMeta;
     } | null;
 
     const zctaList = meta?.zctas ?? [];
@@ -215,9 +315,24 @@ export function CampaignWizard() {
       setTargeting({
         zctas: zctaList.map((z) => ({ zcta: z, placeName: `ZCTA ${z}` })),
         filters: meta?.filters,
+        quantityOverride: meta?.melissa
+          ? melissaQuoteQuantity(meta.melissa)
+          : undefined,
         geoJson: campaign.savedMap?.geoJson
           ? (campaign.savedMap.geoJson as unknown as TargetingSelection["geoJson"])
           : undefined,
+      });
+    }
+    if (meta?.melissa?.listPreview) {
+      setListPreview(meta.melissa.listPreview as MelissaListPreviewMeta);
+    }
+    if (meta?.melissa?.routes?.length) {
+      setMelissaRoutes({
+        provider: "melissa",
+        isStub: meta.melissa.isStub === true,
+        totalHomes: meta.melissa.totalHomes ?? 0,
+        routes: meta.melissa.routes,
+        warnings: [],
       });
     }
 
@@ -235,9 +350,12 @@ export function CampaignWizard() {
 
   const currentStepId = STEP_IDS[stepIndex] as WizardStepId;
 
-  /** Block only a quote-only / coming-soon marketing entry. Do not infer EDDM from a persisted generic draft. */
+  /** Block only a quote-only / coming-soon marketing entry. Melissa door may enter quote-only EDDM. */
   const blockedEntryProduct =
-    !campaignId && wizardProductParams.product && !canStartProductOrder(wizardProductParams.product)
+    !campaignId &&
+    !melissaDoor &&
+    wizardProductParams.product &&
+    !canStartProductOrder(wizardProductParams.product)
       ? wizardProductParams.product
       : null;
 
@@ -270,6 +388,23 @@ export function CampaignWizard() {
     }
     const basics = basicsForm.getValues();
     const zctaList = targeting.zctas.map((z) => z.zcta);
+    const melissaTargeting =
+      melissaDoor && zctaList.length > 0
+        ? {
+            zctas: zctaList,
+            geoJson: targeting.geoJson,
+            filters: targeting.filters,
+            quantityOverride: melissaQuantity > 0 ? melissaQuantity : undefined,
+            previewOnly: true as const,
+            melissa: melissaMeta ?? { provider: "melissa" as const, isStub: false },
+          }
+        : zctaList.length > 0
+          ? {
+              zctas: zctaList,
+              geoJson: targeting.geoJson,
+              quantityOverride: targeting.quantityOverride,
+            }
+          : undefined;
 
     if (campaignId) {
       await updateDraft.mutateAsync({
@@ -278,14 +413,7 @@ export function CampaignWizard() {
         size: basics.size,
         productSlug: activeProduct?.slug,
         productType: activeProduct?.productType,
-        targeting:
-          zctaList.length > 0
-            ? {
-                zctas: zctaList,
-                geoJson: targeting.geoJson,
-                quantityOverride: targeting.quantityOverride,
-              }
-            : undefined,
+        targeting: melissaTargeting,
         dropDate: dropDate || null,
         notes: notes || null,
       });
@@ -301,14 +429,7 @@ export function CampaignWizard() {
       productSlug: activeProduct?.slug,
       dropDate: dropDate || undefined,
       notes: notes || undefined,
-      targeting:
-        zctaList.length > 0
-          ? {
-              zctas: zctaList,
-              geoJson: targeting.geoJson,
-              quantityOverride: targeting.quantityOverride,
-            }
-          : undefined,
+      targeting: melissaTargeting,
     });
     setCampaignId(created.id);
     syncWizardUrl({
@@ -331,6 +452,9 @@ export function CampaignWizard() {
     targeting,
     updateDraft,
     blockedEntryMessage,
+    melissaDoor,
+    melissaMeta,
+    melissaQuantity,
   ]);
 
   const handleSaveDraft = async () => {
@@ -380,16 +504,27 @@ export function CampaignWizard() {
         setTargetingValidationError("Select at least one ZIP code to continue.");
         return;
       }
-      if (estimateQuery.isFetching && !estimateQuery.data) {
-        setTargetingValidationError("Please wait for Census estimates to finish loading.");
-        return;
-      }
-      if (estimateQuery.isError) {
-        setStepError({
-          step: "targeting",
-          message: formatTrpcError(estimateQuery.error),
-        });
-        return;
+      if (melissaDoor) {
+        if (melissaRoutesError) {
+          setStepError({ step: "targeting", message: melissaRoutesError });
+          return;
+        }
+        if (!melissaMeta || melissaQuantity <= 0) {
+          setTargetingValidationError("Wait for live Melissa Occupant routes before saving.");
+          return;
+        }
+      } else {
+        if (estimateQuery.isFetching && !estimateQuery.data) {
+          setTargetingValidationError("Please wait for Census estimates to finish loading.");
+          return;
+        }
+        if (estimateQuery.isError) {
+          setStepError({
+            step: "targeting",
+            message: formatTrpcError(estimateQuery.error),
+          });
+          return;
+        }
       }
       try {
         setSaveStatus("saving");
@@ -434,6 +569,20 @@ export function CampaignWizard() {
     }
 
     if (currentStepId === "review") {
+      if (melissaDoor) {
+        try {
+          setSaveStatus("saving");
+          await ensureCampaignDraft();
+          setSaveStatus("saved");
+        } catch (e) {
+          setSaveStatus("error");
+          setStepError({
+            step: "review",
+            message: e instanceof Error ? e.message : "Could not save",
+          });
+        }
+        return;
+      }
       if (!campaignId) return;
       try {
         setSaveStatus("saving");
@@ -504,7 +653,7 @@ export function CampaignWizard() {
           <div className="flex shrink-0 items-center gap-2">
             {saveStatus === "saved" && (
               <span className="animate-in fade-in text-xs font-medium text-[var(--color-success)]">
-                Draft saved
+                {melissaDoor ? "Saved — pay later." : "Draft saved"}
               </span>
             )}
             {saveStatus === "saving" && (
@@ -521,15 +670,15 @@ export function CampaignWizard() {
 
       <main className="container max-w-5xl py-5 sm:py-8 md:py-10">
         <Stepper
-          steps={[...WIZARD_STEPS]}
-          currentStep={stepIndex}
+          steps={melissaDoor ? WIZARD_STEPS.filter((s) => s.id !== "checkout") : [...WIZARD_STEPS]}
+          currentStep={Math.min(stepIndex, melissaDoor ? 3 : STEP_IDS.length - 1)}
           onStepClick={handleStepClick}
           className="mb-8 hidden md:block sm:mb-10"
         />
 
         <WizardMobileNav
-          steps={WIZARD_STEPS}
-          currentStep={stepIndex}
+          steps={melissaDoor ? WIZARD_STEPS.filter((s) => s.id !== "checkout") : WIZARD_STEPS}
+          currentStep={Math.min(stepIndex, melissaDoor ? 3 : STEP_IDS.length - 1)}
           onStepClick={handleStepClick}
           className="mb-5"
         />
@@ -559,20 +708,35 @@ export function CampaignWizard() {
               )}
 
               {currentStepId === "targeting" && (
-                <TargetingStep
-                  size={size}
-                  targeting={targeting}
-                  onTargetingChange={setTargeting}
-                  validationError={targetingValidationError}
-                  isEstimateLoading={
-                    estimateQuery.isFetching && targeting.zctas.length > 0
-                  }
-                  censusError={
-                    estimateQuery.isError && targeting.zctas.length > 0
-                      ? formatTrpcError(estimateQuery.error)
-                      : null
-                  }
-                />
+                <>
+                  <TargetingStep
+                    size={size}
+                    targeting={targeting}
+                    onTargetingChange={setTargeting}
+                    validationError={targetingValidationError}
+                    melissaDoor={melissaDoor}
+                    campaignId={campaignId}
+                    onMelissaRoutes={handleMelissaRoutes}
+                    listPreview={listPreview}
+                    onListPreview={handleListPreview}
+                    isEstimateLoading={
+                      !melissaDoor && estimateQuery.isFetching && targeting.zctas.length > 0
+                    }
+                    censusError={
+                      !melissaDoor && estimateQuery.isError && targeting.zctas.length > 0
+                        ? formatTrpcError(estimateQuery.error)
+                        : null
+                    }
+                  />
+                  {melissaDoor && melissaQuoteQuery.data && (
+                    <MelissaDraftQuote
+                      quantity={melissaQuoteQuery.data.quantity}
+                      totalCents={melissaQuoteQuery.data.totalCents}
+                      unitCents={melissaQuoteQuery.data.unitPriceCents}
+                      source={listPreview ? "list preview" : "Occupant routes"}
+                    />
+                  )}
+                </>
               )}
 
               {currentStepId === "creative" && campaignId && (
@@ -621,7 +785,11 @@ export function CampaignWizard() {
                 />
               )}
 
-              {currentStepId === "checkout" && campaignId && (
+              {currentStepId === "checkout" && melissaDoor && (
+                <MelissaPayLaterPanel />
+              )}
+
+              {currentStepId === "checkout" && campaignId && !melissaDoor && (
                 <CheckoutStep
                   campaign={campaign}
                   onPay={() => createCheckout.mutate({ campaignId })}
@@ -652,23 +820,69 @@ export function CampaignWizard() {
                   disabled={isSaving}
                   className="min-h-[48px] w-full sm:w-auto"
                 >
-                  {saveStatus === "saving" ? "Saving…" : "Save draft"}
+                  {saveStatus === "saving"
+                    ? "Saving…"
+                    : melissaDoor
+                      ? "Save draft — pay later"
+                      : "Save draft"}
                 </Button>
               )}
-              {currentStepId !== "checkout" && (
+              {currentStepId !== "checkout" && !(melissaDoor && currentStepId === "review") && (
                 <Button
                   type="button"
                   onClick={handleNext}
                   disabled={isSaving}
                   className="min-h-[48px] w-full sm:w-auto"
                 >
-                  {isSaving ? "Saving…" : "Continue"}
+                  {isSaving ? "Saving…" : melissaDoor && currentStepId === "targeting" ? "Save & review" : "Continue"}
                 </Button>
               )}
             </div>
           </div>
         </div>
       </main>
+    </div>
+  );
+}
+
+function MelissaDraftQuote({
+  quantity,
+  totalCents,
+  unitCents,
+  source,
+}: {
+  quantity: number;
+  totalCents: number;
+  unitCents: number;
+  source: string;
+}) {
+  return (
+    <div className="mt-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-alt)]/60 p-5">
+      <p className="text-micro font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+        Melissa draft quote
+      </p>
+      <p className="mt-1 text-2xl font-bold tracking-tight">{formatCurrency(totalCents)}</p>
+      <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+        {formatNumber(quantity)} pieces × {formatCurrency(unitCents)} · source estimate · {source}
+      </p>
+      <p className="mt-3 text-xs text-[var(--color-text-muted)]">
+        Preview only. No Stripe and no finalize on this door.
+      </p>
+    </div>
+  );
+}
+
+function MelissaPayLaterPanel() {
+  return (
+    <div className="mx-auto max-w-lg space-y-4 text-center">
+      <WizardStepHeader
+        title="Saved — pay later."
+        description="This Melissa draft is preview-only. Checkout, Stripe, and /finalize are blocked until the paid door opens."
+        className="text-center [&_.heading-sm]:sm:mx-auto"
+      />
+      <Link href="/campaigns" className="text-sm text-[var(--color-accent)] hover:underline">
+        Back to campaigns
+      </Link>
     </div>
   );
 }

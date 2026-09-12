@@ -4,7 +4,8 @@
   "private": true,
   "main": "./root.ts",
   "scripts": {
-    "build": "echo 'Source package - transpiled by consumer (Next.js)'"
+    "build": "echo 'Source package - transpiled by consumer (Next.js)'",
+    "test:melissa-door": "npx tsx --test lib/melissa-buyer-door.test.ts"
   },
   "dependencies": {
     "@postcard-platform/db": "*",

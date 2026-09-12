@@ -3,6 +3,11 @@
 import { TargetingMap } from "@/components/targeting";
 import type { TargetingSelection } from "@/components/targeting";
 import { CensusLiveBadge, WizardStepHeader } from "../WizardStepHeader";
+import { MelissaRoutesPanel, type MelissaRoutesResult } from "../MelissaRoutesPanel";
+import {
+  MelissaListPreviewPanel,
+  type MelissaListPreviewResult,
+} from "../MelissaListPreviewPanel";
 
 type Props = {
   size: string;
@@ -11,6 +16,11 @@ type Props = {
   validationError?: string | null;
   censusError?: string | null;
   isEstimateLoading?: boolean;
+  melissaDoor?: boolean;
+  campaignId?: string | null;
+  onMelissaRoutes?: (result: MelissaRoutesResult | null, error?: string | null) => void;
+  listPreview?: MelissaListPreviewResult | null;
+  onListPreview?: (result: MelissaListPreviewResult | null) => void;
 };
 
 export function TargetingStep({
@@ -20,15 +30,29 @@ export function TargetingStep({
   validationError,
   censusError,
   isEstimateLoading,
+  melissaDoor = false,
+  campaignId,
+  onMelissaRoutes,
+  listPreview,
+  onListPreview,
 }: Props) {
   const hasSelection = targeting.zctas.length > 0;
+  const zctas = targeting.zctas.map((z) => z.zcta);
 
   return (
     <div className="space-y-5 md:space-y-6">
       <WizardStepHeader
-        title="Who should receive your postcards?"
-        description="Search ZIP codes, click the map, or draw a custom boundary. Reach and cost update live from US Census data."
-        badge={<CensusLiveBadge />}
+        title={
+          melissaDoor
+            ? "Pick a ZIP, then attach Melissa routes"
+            : "Who should receive your postcards?"
+        }
+        description={
+          melissaDoor
+            ? "Map selection loads live Melissa Occupant carrier routes. Optionally attach a list preview count. This saves a draft quote — pay later."
+            : "Search ZIP codes, click the map, or draw a custom boundary. Reach and cost update live from US Census data."
+        }
+        badge={melissaDoor ? <MelissaDoorBadge /> : <CensusLiveBadge />}
       />
 
       {validationError && (
@@ -54,7 +78,7 @@ export function TargetingStep({
         </div>
       )}
 
-      {censusError && (
+      {!melissaDoor && censusError && (
         <div
           role="alert"
           className="rounded-xl border border-red-200/80 bg-red-50/90 px-4 py-3 text-sm text-red-800"
@@ -64,17 +88,17 @@ export function TargetingStep({
         </div>
       )}
 
-      {isEstimateLoading && hasSelection && !censusError && (
+      {!melissaDoor && isEstimateLoading && hasSelection && !censusError && (
         <p className="flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
           <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--color-accent)]" />
           Loading Census estimates…
         </p>
       )}
 
-      {hasSelection && !censusError && (
+      {hasSelection && (
         <p className="text-micro font-medium text-[var(--color-accent)]">
-          {targeting.zctas.length} ZIP{targeting.zctas.length === 1 ? "" : "s"} selected · estimates
-          update as you refine
+          {targeting.zctas.length} ZIP{targeting.zctas.length === 1 ? "" : "s"} selected
+          {melissaDoor ? " · Melissa Occupant next" : " · estimates update as you refine"}
         </p>
       )}
 
@@ -87,6 +111,28 @@ export function TargetingStep({
           className="w-full"
         />
       </div>
+
+      {melissaDoor && (
+        <div className="space-y-4">
+          <MelissaRoutesPanel zctas={zctas} onResult={onMelissaRoutes} />
+          <MelissaListPreviewPanel
+            zctas={zctas}
+            filters={targeting.filters}
+            campaignId={campaignId}
+            attached={listPreview}
+            onAttach={onListPreview}
+          />
+        </div>
+      )}
     </div>
+  );
+}
+
+function MelissaDoorBadge() {
+  return (
+    <span className="inline-flex w-fit shrink-0 items-center gap-2 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-alt)] px-3 py-2 text-xs text-[var(--color-text-muted)]">
+      <span className="h-1.5 w-1.5 rounded-full bg-sky-500" />
+      Melissa · preview only
+    </span>
   );
 }

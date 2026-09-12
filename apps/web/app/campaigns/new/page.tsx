@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { CampaignWizard } from "@/components/campaign-wizard/CampaignWizard";
+import { isMelissaBuyerDoorEnabled } from "@/lib/melissa-buyer-door";
 import {
   MAP_QUOTE_HREF,
   parseCampaignWizardParams,
@@ -48,11 +49,23 @@ export default async function NewCampaignPage({ searchParams }: PageProps) {
     const params = new URLSearchParams();
     const product = firstParam(raw.product);
     const size = firstParam(raw.size);
+    const door = firstParam(raw.door);
+    const zips = firstParam(raw.zips);
     if (product) params.set("product", product);
     if (size) params.set("size", size);
+    if (door) params.set("door", door);
+    if (zips) params.set("zips", zips);
 
     const parsed = parseCampaignWizardParams(params);
-    const entryRedirect = unpersistedWizardEntryRedirect(parsed.product, signedIn);
+    const buyerDoorEnabled = isMelissaBuyerDoorEnabled();
+    const melissaDoor = parsed.door === "melissa" && buyerDoorEnabled;
+    if (parsed.door === "melissa" && !buyerDoorEnabled) {
+      redirect(MAP_QUOTE_HREF);
+    }
+    const entryRedirect = unpersistedWizardEntryRedirect(parsed.product, signedIn, {
+      melissaDoor,
+      buyerDoorEnabled,
+    });
     if (entryRedirect) {
       redirect(entryRedirect);
     }

@@ -9,6 +9,11 @@ import { calculatePricing } from "../services/pricing.service";
 import { fetchEddmRoutes } from "../services/eddm.service";
 import { countTargetedList } from "../services/targeted.service";
 import { EddmRoutesNotConfiguredError } from "../services/usps-eddm.provider";
+import {
+  PREVIEW_ONLY_BLOCK_MESSAGE,
+  PreviewOnlyBlockedError,
+  isPreviewOnlyTargeting,
+} from "../lib/melissa-buyer-door";
 
 export const mailingRouter = router({
   getByCampaignId: protectedProcedure
@@ -38,9 +43,22 @@ export const mailingRouter = router({
       if (!campaign || campaign.organizationId !== ctx.user.organizationId) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Campaign not found" });
       }
-      return finalizeMailingJob(input.campaignId, {
-        runHandoff: input.runHandoff,
-      });
+      if (isPreviewOnlyTargeting(campaign.targetingMetadata)) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: PREVIEW_ONLY_BLOCK_MESSAGE,
+        });
+      }
+      try {
+        return await finalizeMailingJob(input.campaignId, {
+          runHandoff: input.runHandoff,
+        });
+      } catch (err) {
+        if (err instanceof PreviewOnlyBlockedError) {
+          throw new TRPCError({ code: "FORBIDDEN", message: err.message });
+        }
+        throw err;
+      }
     }),
 
   calculatePricing: protectedProcedure

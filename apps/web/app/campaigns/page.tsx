@@ -7,9 +7,11 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc/client";
 import {
   buildCampaignDraftHref,
+  buildMelissaPlanHref,
   resolveProductFromCampaign,
   type PostcardSize,
 } from "@/lib/products";
+import { isMelissaBuyerDoorEnabled, isPreviewOnlyTargeting } from "@/lib/melissa-buyer-door";
 import { ArtworkPreview } from "@/components/ArtworkPreview";
 import { ArtworkUpload } from "@/components/ArtworkUpload";
 import { CampaignArtworkDisclosure } from "@/components/orders/OrderArtworkDisclosure";
@@ -81,9 +83,16 @@ export default function MyCampaignsPage() {
               .
             </p>
           </div>
-          <Link href="/campaigns/new">
-            <Button>+ New Campaign</Button>
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            {isMelissaBuyerDoorEnabled() && (
+              <Link href={buildMelissaPlanHref({ product: "every-door-direct-mail", zips: ["84037"] })}>
+                <Button variant="secondary">Plan with Melissa</Button>
+              </Link>
+            )}
+            <Link href="/campaigns/new">
+              <Button>+ New Campaign</Button>
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -106,19 +115,33 @@ export default function MyCampaignsPage() {
                 {} as Record<number, string>
               );
 
+              const previewOnly = isPreviewOnlyTargeting(campaign.targetingMetadata);
               const canPay =
-                artwork?.status === "APPROVED" && campaign.status !== "PAID" && !job;
+                artwork?.status === "APPROVED" &&
+                campaign.status !== "PAID" &&
+                !job &&
+                !previewOnly;
               const isRejected = artwork?.status === "REJECTED";
               const isDraft = campaign.status === "DRAFT";
-              const resumeHref = buildCampaignDraftHref(
-                campaign.id,
-                resolveProductFromCampaign({
-                  productSlug: campaign.productSlug,
-                  productType: campaign.productType,
-                  size: campaign.size,
-                }),
-                campaign.size as PostcardSize
-              );
+              const resumeHref = previewOnly
+                ? `${buildCampaignDraftHref(
+                    campaign.id,
+                    resolveProductFromCampaign({
+                      productSlug: campaign.productSlug,
+                      productType: campaign.productType,
+                      size: campaign.size,
+                    }),
+                    campaign.size as PostcardSize
+                  )}&door=melissa`
+                : buildCampaignDraftHref(
+                    campaign.id,
+                    resolveProductFromCampaign({
+                      productSlug: campaign.productSlug,
+                      productType: campaign.productType,
+                      size: campaign.size,
+                    }),
+                    campaign.size as PostcardSize
+                  );
 
               return (
                 <Card key={campaign.id} className="p-6 hover:translate-y-0">
@@ -130,6 +153,7 @@ export default function MyCampaignsPage() {
                           {campaign.size} · {campaign.quantity.toLocaleString()}
                         </Badge>
                         <Badge variant="accent">{campaign.status.replace(/_/g, " ")}</Badge>
+                        {previewOnly && <Badge>Preview only · pay later</Badge>}
                       </div>
                       {campaign.dropDate && (
                         <p className="text-sm text-[var(--color-text-muted)] mt-1">
