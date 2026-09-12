@@ -140,7 +140,7 @@ export function CampaignWizard({
   const melissaPayLater = melissaDoor && !previewTestCheckoutEnabled;
   const visibleSteps = melissaPayLater
     ? WIZARD_STEPS.filter((s) => s.id !== "checkout")
-    : WIZARD_STEPS;
+    : [...WIZARD_STEPS];
   const lastVisibleStepIndex = visibleSteps.length - 1;
 
   const melissaMeta: MelissaTargetingMeta | null = useMemo(() => {
