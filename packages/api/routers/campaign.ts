@@ -7,12 +7,23 @@ import { stripe } from "../lib/stripe";
 import { getACSStats } from "../lib/census";
 import { mapCensusError } from "../lib/census-errors";
 import { calculateCampaignPricing } from "../lib/pricing";
+import { calculatePricing } from "../services/pricing.service";
 import { claimGuestCampaigns } from "../lib/claim-guest-campaigns";
 import { isValidGuestSessionId } from "../lib/guest-org";
 import { createTestOrderForOrganization } from "../lib/test-order";
 import { isTestOrdersEnabled } from "../lib/activate-order-for-production";
 import { trackingForCampaign } from "../lib/order-tracking-helpers";
 import { seedDemoDataForOrganization } from "../lib/seed-demo-data";
+import {
+  MELISSA_BUYER_DOOR_AUTH_MESSAGE,
+  MELISSA_BUYER_DOOR_DISABLED_MESSAGE,
+  PREVIEW_ONLY_BLOCK_MESSAGE,
+  isMelissaBuyerDoorEnabled,
+  isPreviewOnlyTargeting,
+  melissaQuoteQuantity,
+  normalizeMelissaMeta,
+  type MelissaTargetingMeta,
+} from "../lib/melissa-buyer-door";
 
 async function loadTargetingStats(zctas: string[]) {
   try {
@@ -21,6 +32,31 @@ async function loadTargetingStats(zctas: string[]) {
     mapCensusError(err);
   }
 }
+
+const melissaTargetingSchema = z.object({
+  provider: z.literal("melissa"),
+  isStub: z.boolean(),
+  routes: z
+    .array(
+      z.object({
+        carrierRouteId: z.string(),
+        zip: z.string(),
+        householdCount: z.number().int().min(0),
+        walkSequence: z.string().optional(),
+      })
+    )
+    .optional(),
+  totalHomes: z.number().int().min(0).optional(),
+  listPreview: z
+    .object({
+      recipientCount: z.number().int().min(0),
+      isStub: z.boolean(),
+      listProvider: z.string(),
+      door: z.string().optional(),
+      listRequestId: z.string().optional(),
+    })
+    .optional(),
+});
 
 const targetingInputSchema = z
   .object({
@@ -31,12 +67,80 @@ const targetingInputSchema = z
         minIncome: z.number().optional(),
         maxIncome: z.number().optional(),
         minMoverPercent: z.number().optional(),
+        ownHome: z.boolean().optional(),
+        homeowners: z.boolean().optional(),
       })
       .optional(),
-    quantityOverride: z.number().int().min(100).optional(),
+    quantityOverride: z.number().int().min(1).optional(),
     savedMapName: z.string().optional(),
+    previewOnly: z.boolean().optional(),
+    melissa: melissaTargetingSchema.optional(),
   })
   .optional();
+
+type TargetingInput = NonNullable<z.infer<typeof targetingInputSchema>>;
+
+function assertMelissaBuyerDoorAllowed(ctx: { user: { id: string } | null }): void {
+  if (!isMelissaBuyerDoorEnabled()) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: MELISSA_BUYER_DOOR_DISABLED_MESSAGE,
+    });
+  }
+  if (!ctx.user) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: MELISSA_BUYER_DOOR_AUTH_MESSAGE,
+    });
+  }
+}
+
+function buildMelissaDraftMetadata(
+  targeting: TargetingInput,
+  size: string,
+  productType?: "EDDM" | "TARGETED"
+): {
+  targetingMetadata: Prisma.InputJsonValue;
+  quantity: number;
+  unitPriceCents: number;
+  totalPriceCents: number;
+} {
+  const melissa = normalizeMelissaMeta(targeting.melissa as MelissaTargetingMeta | undefined);
+  const quantity =
+    targeting.quantityOverride && targeting.quantityOverride > 0
+      ? targeting.quantityOverride
+      : melissaQuoteQuantity(melissa);
+  const breakdown = calculatePricing({
+    size,
+    quantity,
+    productType,
+    source: "estimate",
+  });
+
+  return {
+    quantity: breakdown.quantity,
+    unitPriceCents: breakdown.unitPriceCents,
+    totalPriceCents: breakdown.totalCents,
+    targetingMetadata: {
+      zctas: targeting.zctas,
+      filters: targeting.filters,
+      previewOnly: true,
+      melissa: melissa ?? { provider: "melissa", isStub: false },
+      estimate: {
+        reach: breakdown.quantity,
+        households: breakdown.quantity,
+        zctaCount: targeting.zctas.length,
+        source: "melissa",
+      },
+      pricing: {
+        quantity: breakdown.quantity,
+        unitPriceCents: breakdown.unitPriceCents,
+        totalPriceCents: breakdown.totalCents,
+        source: "estimate",
+      },
+    },
+  };
+}
 
 export const campaignRouter = router({
   // Create a new draft campaign (optionally with Census targeting)
@@ -63,31 +167,45 @@ export const campaignRouter = router({
       let savedMapId: string | undefined;
 
       if (input.targeting?.zctas?.length) {
-        const stats = await loadTargetingStats(input.targeting.zctas);
-        const reach = stats.households > 0 ? stats.households : stats.population;
-        const pricing = calculateCampaignPricing({
-          size: input.size,
-          estimatedReach: reach,
-          quantityOverride: input.targeting.quantityOverride,
-        });
+        const isMelissaDoor = Boolean(input.targeting.previewOnly || input.targeting.melissa);
+        if (isMelissaDoor) {
+          assertMelissaBuyerDoorAllowed(ctx);
+          const melissaDraft = buildMelissaDraftMetadata(
+            input.targeting,
+            input.size,
+            input.productType
+          );
+          quantity = melissaDraft.quantity;
+          unitPriceCents = melissaDraft.unitPriceCents;
+          totalPriceCents = melissaDraft.totalPriceCents;
+          targetingMetadata = melissaDraft.targetingMetadata;
+        } else {
+          const stats = await loadTargetingStats(input.targeting.zctas);
+          const reach = stats.households > 0 ? stats.households : stats.population;
+          const pricing = calculateCampaignPricing({
+            size: input.size,
+            estimatedReach: reach,
+            quantityOverride: input.targeting.quantityOverride,
+          });
 
-        quantity = pricing.quantity;
-        unitPriceCents = pricing.unitPriceCents;
-        totalPriceCents = pricing.totalPriceCents;
+          quantity = pricing.quantity;
+          unitPriceCents = pricing.unitPriceCents;
+          totalPriceCents = pricing.totalPriceCents;
 
-        targetingMetadata = {
-          zctas: input.targeting.zctas,
-          filters: input.targeting.filters,
-          estimate: {
-            reach,
-            households: stats.households,
-            population: stats.population,
-            avgMedianIncome: stats.avgMedianIncome,
-            avgMoverPercent: stats.avgMoverPercent,
-            zctaCount: stats.zctaCount,
-          },
-          pricing,
-        };
+          targetingMetadata = {
+            zctas: input.targeting.zctas,
+            filters: input.targeting.filters,
+            estimate: {
+              reach,
+              households: stats.households,
+              population: stats.population,
+              avgMedianIncome: stats.avgMedianIncome,
+              avgMoverPercent: stats.avgMoverPercent,
+              zctaCount: stats.zctaCount,
+            },
+            pricing,
+          };
+        }
 
         const geoJson = input.targeting.geoJson ?? {
           type: "FeatureCollection",
@@ -174,30 +292,50 @@ export const campaignRouter = router({
       if (input.notes !== undefined) data.notes = input.notes;
 
       if (input.targeting?.zctas?.length) {
-        const stats = await loadTargetingStats(input.targeting.zctas);
-        const reach = stats.households > 0 ? stats.households : stats.population;
-        const pricing = calculateCampaignPricing({
-          size: (input.size ?? existing.size) as string,
-          estimatedReach: reach,
-          quantityOverride: input.targeting.quantityOverride,
-        });
+        const isMelissaDoor = Boolean(
+          input.targeting.previewOnly ||
+            input.targeting.melissa ||
+            isPreviewOnlyTargeting(existing.targetingMetadata)
+        );
+        let targetingMeta: Prisma.InputJsonValue;
 
-        data.quantity = pricing.quantity;
-        data.unitPriceCents = pricing.unitPriceCents;
-        data.totalPriceCents = pricing.totalPriceCents;
-        const targetingMeta: Prisma.InputJsonValue = {
-          zctas: input.targeting.zctas,
-          filters: input.targeting.filters,
-          estimate: {
-            reach,
-            households: stats.households,
-            population: stats.population,
-            avgMedianIncome: stats.avgMedianIncome,
-            avgMoverPercent: stats.avgMoverPercent,
-            zctaCount: stats.zctaCount,
-          },
-          pricing,
-        };
+        if (isMelissaDoor) {
+          assertMelissaBuyerDoorAllowed(ctx);
+          const melissaDraft = buildMelissaDraftMetadata(
+            input.targeting,
+            (input.size ?? existing.size) as string,
+            input.productType ?? (existing.productType as "EDDM" | "TARGETED" | undefined)
+          );
+          data.quantity = melissaDraft.quantity;
+          data.unitPriceCents = melissaDraft.unitPriceCents;
+          data.totalPriceCents = melissaDraft.totalPriceCents;
+          targetingMeta = melissaDraft.targetingMetadata;
+        } else {
+          const stats = await loadTargetingStats(input.targeting.zctas);
+          const reach = stats.households > 0 ? stats.households : stats.population;
+          const pricing = calculateCampaignPricing({
+            size: (input.size ?? existing.size) as string,
+            estimatedReach: reach,
+            quantityOverride: input.targeting.quantityOverride,
+          });
+
+          data.quantity = pricing.quantity;
+          data.unitPriceCents = pricing.unitPriceCents;
+          data.totalPriceCents = pricing.totalPriceCents;
+          targetingMeta = {
+            zctas: input.targeting.zctas,
+            filters: input.targeting.filters,
+            estimate: {
+              reach,
+              households: stats.households,
+              population: stats.population,
+              avgMedianIncome: stats.avgMedianIncome,
+              avgMoverPercent: stats.avgMoverPercent,
+              zctaCount: stats.zctaCount,
+            },
+            pricing,
+          };
+        }
         data.targetingMetadata = targetingMeta;
 
         const geoJson = (input.targeting.geoJson ?? {
@@ -508,6 +646,12 @@ export const campaignRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Campaign not found" });
       }
       assertCampaignAccess(campaign, ctx);
+      if (isPreviewOnlyTargeting(campaign.targetingMetadata)) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: PREVIEW_ONLY_BLOCK_MESSAGE,
+        });
+      }
       if (!campaign.artwork || campaign.artwork.status !== "APPROVED") {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -571,6 +715,12 @@ export const campaignRouter = router({
       });
       if (!campaign || campaign.organizationId !== ctx.user.organizationId) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Campaign not found" });
+      }
+      if (isPreviewOnlyTargeting(campaign.targetingMetadata)) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: PREVIEW_ONLY_BLOCK_MESSAGE,
+        });
       }
 
       // In production the Stripe webhook does: mark PAID + create ProductionJob + auto-assign

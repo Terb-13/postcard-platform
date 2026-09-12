@@ -5,6 +5,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc/client";
 import { formatCurrency, formatNumber } from "@/lib/utils";
+import { PREVIEW_ONLY_BLOCK_MESSAGE, isPreviewOnlyTargeting } from "@/lib/melissa-buyer-door";
 
 /** Post-checkout: resolve EDDM routes / list counts and show final cost (keeps existing wizard + map unchanged). */
 export default function CampaignFinalizePage() {
@@ -12,6 +13,10 @@ export default function CampaignFinalizePage() {
   const router = useRouter();
   const campaignId = String(params.id ?? "");
 
+  const campaignQuery = trpc.campaign.getById.useQuery(
+    { id: campaignId },
+    { enabled: !!campaignId }
+  );
   const jobQuery = trpc.mailing.getByCampaignId.useQuery(
     { campaignId },
     { enabled: !!campaignId }
@@ -25,6 +30,7 @@ export default function CampaignFinalizePage() {
   const [error, setError] = useState<string | null>(null);
 
   const job = jobQuery.data;
+  const previewOnly = isPreviewOnlyTargeting(campaignQuery.data?.targetingMetadata);
   const breakdown = job?.costBreakdown as {
     printCents?: number;
     postageCents?: number;
@@ -50,6 +56,13 @@ export default function CampaignFinalizePage() {
         Your payment is complete. Confirm carrier routes and final piece count before we send
         files to print.
       </p>
+
+      {previewOnly && (
+        <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950">
+          <p className="font-semibold">Preview-only draft</p>
+          <p className="mt-2">{PREVIEW_ONLY_BLOCK_MESSAGE}</p>
+        </div>
+      )}
 
       {jobQuery.isLoading && <p className="mt-6 text-sm text-gray-500">Loading…</p>}
 
@@ -89,7 +102,7 @@ export default function CampaignFinalizePage() {
 
       {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
 
-      {job?.status === "PENDING" && (
+      {job?.status === "PENDING" && !previewOnly && (
         <button
           type="button"
           onClick={onFinalize}

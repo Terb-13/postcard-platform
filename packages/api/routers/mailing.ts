@@ -9,6 +9,10 @@ import { calculatePricing } from "../services/pricing.service";
 import { fetchEddmRoutes } from "../services/eddm.service";
 import { countTargetedList } from "../services/targeted.service";
 import { EddmRoutesNotConfiguredError } from "../services/usps-eddm.provider";
+import {
+  PREVIEW_ONLY_BLOCK_MESSAGE,
+  isPreviewOnlyTargeting,
+} from "../lib/melissa-buyer-door";
 
 export const mailingRouter = router({
   getByCampaignId: protectedProcedure
@@ -37,6 +41,13 @@ export const mailingRouter = router({
       });
       if (!campaign || campaign.organizationId !== ctx.user.organizationId) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Campaign not found" });
+      }
+      // Hard-block this door only. Buy / doLookup / handoff path is unchanged.
+      if (isPreviewOnlyTargeting(campaign.targetingMetadata)) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: PREVIEW_ONLY_BLOCK_MESSAGE,
+        });
       }
       return finalizeMailingJob(input.campaignId, {
         runHandoff: input.runHandoff,

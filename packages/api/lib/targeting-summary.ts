@@ -2,6 +2,8 @@
  * Compact targeting summary from Campaign.targetingMetadata or SavedMap.metadata.
  */
 
+import type { MelissaTargetingMeta } from "./melissa-buyer-door";
+
 export type TargetingMetadata = {
   zctas?: string[];
   filters?: Record<string, unknown>;
@@ -12,12 +14,17 @@ export type TargetingMetadata = {
     avgMedianIncome?: number | null;
     avgMoverPercent?: number | null;
     zctaCount?: number;
+    source?: string;
   };
   pricing?: {
     quantity?: number;
     totalPriceCents?: number;
     unitPriceCents?: number;
+    source?: "estimate" | "final";
   };
+  /** Melissa buyer-door drafts — finalize/checkout must refuse. */
+  previewOnly?: boolean;
+  melissa?: MelissaTargetingMeta;
 };
 
 export type TargetingSummary = {
