@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { CampaignWizard } from "@/components/campaign-wizard/CampaignWizard";
+import { isBuyerSignedIn } from "@/lib/buyer-session";
 import { isMelissaBuyerDoorEnabled } from "@/lib/melissa-buyer-door";
 import {
   MAP_QUOTE_HREF,
@@ -19,49 +20,38 @@ function firstParam(value: string | string[] | undefined): string | null {
   return value ?? null;
 }
 
-async function isBuyerSignedIn(): Promise<boolean> {
-  if (
-    !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.trim() ||
-    !process.env.CLERK_SECRET_KEY?.trim()
-  ) {
-    return false;
-  }
-  try {
-    const { auth } = await import("@clerk/nextjs/server");
-    const session = await auth();
-    return Boolean(session.userId);
-  } catch {
-    return false;
-  }
-}
-
 export default async function NewCampaignPage({ searchParams }: PageProps) {
   const raw = await searchParams;
   const campaignId = firstParam(raw.campaignId);
   const signedIn = await isBuyerSignedIn();
+  const buyerDoorEnabled = isMelissaBuyerDoorEnabled();
 
   // Signed-out cannot mail. Do not 200 a campaign/checkout wizard.
   if (!signedIn) {
     redirect(MAP_QUOTE_HREF);
   }
 
-  if (!campaignId) {
-    const params = new URLSearchParams();
-    const product = firstParam(raw.product);
-    const size = firstParam(raw.size);
-    const door = firstParam(raw.door);
-    const zips = firstParam(raw.zips);
-    if (product) params.set("product", product);
-    if (size) params.set("size", size);
-    if (door) params.set("door", door);
-    if (zips) params.set("zips", zips);
+  const params = new URLSearchParams();
+  const product = firstParam(raw.product);
+  const size = firstParam(raw.size);
+  const door = firstParam(raw.door);
+  const zips = firstParam(raw.zips);
+  if (product) params.set("product", product);
+  if (size) params.set("size", size);
+  if (door) params.set("door", door);
+  if (zips) params.set("zips", zips);
 
-    const parsed = parseCampaignWizardParams(params);
-    const buyerDoorEnabled = isMelissaBuyerDoorEnabled();
-    const melissaDoor = parsed.door === "melissa" && buyerDoorEnabled;
-    if (parsed.door === "melissa" && !buyerDoorEnabled) {
+  const parsed = parseCampaignWizardParams(params);
+  const melissaDoor = parsed.door === "melissa" && buyerDoorEnabled;
+
+  // Flag off: no Melissa door, including draft resume (?campaignId=).
+  if (parsed.door === "melissa" && !buyerDoorEnabled) {
+    if (!campaignId) {
       redirect(MAP_QUOTE_HREF);
     }
+  }
+
+  if (!campaignId) {
     const entryRedirect = unpersistedWizardEntryRedirect(parsed.product, signedIn, {
       melissaDoor,
       buyerDoorEnabled,
@@ -79,7 +69,7 @@ export default async function NewCampaignPage({ searchParams }: PageProps) {
         </div>
       }
     >
-      <CampaignWizard />
+      <CampaignWizard buyerDoorEnabled={buyerDoorEnabled} />
     </Suspense>
   );
 }

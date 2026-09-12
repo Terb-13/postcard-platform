@@ -2,6 +2,7 @@ export {
   PREVIEW_ONLY_BLOCK_MESSAGE,
   hasStubCarrierRoutes,
   isMelissaBuyerDoorEnabled,
+  isMelissaBuyerDoorEnabledOnClient,
   isPreviewOnlyTargeting,
   melissaQuoteQuantity,
   normalizeMelissaMeta,

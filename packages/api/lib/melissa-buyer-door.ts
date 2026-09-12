@@ -64,24 +64,56 @@ export function parseEnvFlag(raw: string | undefined | null): boolean | null {
 }
 
 export function vercelDeployEnv(env: MelissaBuyerDoorEnv = process.env): string | undefined {
-  return env.VERCEL_ENV ?? env.NEXT_PUBLIC_VERCEL_ENV;
+  const raw = env.VERCEL_ENV ?? env.NEXT_PUBLIC_VERCEL_ENV;
+  const trimmed = raw?.trim();
+  return trimmed || undefined;
 }
 
 /**
- * Feature flag for the signed-in Melissa buyer door.
- * Production is always off. Preview is on unless explicitly disabled.
+ * Server-side flag. Uses VERCEL_ENV (available in Node / RSC).
+ * Production is always off. Preview defaults on. Unknown deploy env is off
+ * unless this is a local Node `development` process.
  */
 export function isMelissaBuyerDoorEnabled(env: MelissaBuyerDoorEnv = process.env): boolean {
-  if (vercelDeployEnv(env) === "production") return false;
+  return resolveMelissaBuyerDoor(env, "server");
+}
 
-  const explicit = parseEnvFlag(env.MELISSA_BUYER_DOOR ?? env.NEXT_PUBLIC_MELISSA_BUYER_DOOR);
+/**
+ * Client-shaped env: only NEXT_PUBLIC_* is visible. Next does not inline VERCEL_ENV.
+ * Missing/empty NEXT_PUBLIC_VERCEL_ENV → OFF. Production → OFF.
+ * Do not call this with raw `process.env` from a Client Component — pass a
+ * server-computed boolean instead.
+ */
+export function isMelissaBuyerDoorEnabledOnClient(env: MelissaBuyerDoorEnv): boolean {
+  return resolveMelissaBuyerDoor(env, "client");
+}
+
+function resolveMelissaBuyerDoor(
+  env: MelissaBuyerDoorEnv,
+  surface: "server" | "client"
+): boolean {
+  const deploy =
+    surface === "client"
+      ? env.NEXT_PUBLIC_VERCEL_ENV?.trim() || undefined
+      : vercelDeployEnv(env);
+
+  if (deploy === "production") return false;
+
+  const explicit = parseEnvFlag(
+    surface === "client"
+      ? env.NEXT_PUBLIC_MELISSA_BUYER_DOOR
+      : env.MELISSA_BUYER_DOOR ?? env.NEXT_PUBLIC_MELISSA_BUYER_DOOR
+  );
   if (explicit === false) return false;
-  if (explicit === true) return true;
 
-  const deploy = vercelDeployEnv(env);
   if (deploy === "preview" || deploy === "development") return true;
-  // Local / unset Vercel env: on so the door can be exercised in next dev.
-  return !deploy;
+
+  // Client: missing/empty deploy env must never enable the door.
+  if (surface === "client") return false;
+
+  // Server local (`next dev`) has no VERCEL_ENV.
+  if (env.NODE_ENV === "development") return true;
+  return false;
 }
 
 export function isPreviewOnlyTargeting(raw: unknown): boolean {

@@ -6,6 +6,7 @@ import {
   assertNotPreviewOnly,
   hasStubCarrierRoutes,
   isMelissaBuyerDoorEnabled,
+  isMelissaBuyerDoorEnabledOnClient,
   isPreviewOnlyTargeting,
   melissaQuoteQuantity,
   normalizeMelissaMeta,
@@ -36,9 +37,45 @@ describe("MELISSA_BUYER_DOOR flag", () => {
     );
   });
 
-  it("honors explicit on outside production", () => {
-    assert.equal(isMelissaBuyerDoorEnabled({ MELISSA_BUYER_DOOR: "true" }), true);
-    assert.equal(isMelissaBuyerDoorEnabled({ NEXT_PUBLIC_MELISSA_BUYER_DOOR: "on" }), true);
+  it("honors explicit on outside production when deploy env is preview", () => {
+    assert.equal(
+      isMelissaBuyerDoorEnabled({ VERCEL_ENV: "preview", MELISSA_BUYER_DOOR: "true" }),
+      true
+    );
+    assert.equal(
+      isMelissaBuyerDoorEnabled({
+        NEXT_PUBLIC_VERCEL_ENV: "preview",
+        NEXT_PUBLIC_MELISSA_BUYER_DOOR: "on",
+      }),
+      true
+    );
+  });
+
+  it("client-shaped env with missing/empty deploy env does not enable the door", () => {
+    const emptyClient: Record<string, string | undefined> = {};
+    assert.equal(isMelissaBuyerDoorEnabledOnClient(emptyClient), false);
+    assert.equal(isMelissaBuyerDoorEnabledOnClient({ NEXT_PUBLIC_VERCEL_ENV: "" }), false);
+    assert.equal(isMelissaBuyerDoorEnabledOnClient({ NEXT_PUBLIC_VERCEL_ENV: "   " }), false);
+    assert.equal(
+      isMelissaBuyerDoorEnabledOnClient({ NEXT_PUBLIC_MELISSA_BUYER_DOOR: "1" }),
+      false
+    );
+    assert.equal(
+      isMelissaBuyerDoorEnabledOnClient({
+        NEXT_PUBLIC_VERCEL_ENV: "production",
+        NEXT_PUBLIC_MELISSA_BUYER_DOOR: "1",
+      }),
+      false
+    );
+    assert.equal(isMelissaBuyerDoorEnabledOnClient({ NEXT_PUBLIC_VERCEL_ENV: "preview" }), true);
+  });
+
+  it("server missing/empty deploy env is off unless local NODE_ENV=development", () => {
+    assert.equal(isMelissaBuyerDoorEnabled({}), false);
+    assert.equal(isMelissaBuyerDoorEnabled({ VERCEL_ENV: "" }), false);
+    assert.equal(isMelissaBuyerDoorEnabled({ VERCEL_ENV: "   " }), false);
+    assert.equal(isMelissaBuyerDoorEnabled({ MELISSA_BUYER_DOOR: "1" }), false);
+    assert.equal(isMelissaBuyerDoorEnabled({ NODE_ENV: "development" }), true);
   });
 });
 

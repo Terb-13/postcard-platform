@@ -42,7 +42,6 @@ import {
   type Product,
 } from "@/lib/products";
 import {
-  isMelissaBuyerDoorEnabled,
   isPreviewOnlyTargeting,
   melissaQuoteQuantity,
   readMelissaTargeting,
@@ -61,9 +60,17 @@ type StepError = { step: WizardStepId; message: string } | null;
 type CampaignWizardProps = {
   /** Dedicated /campaigns/plan entry — always Melissa door when the flag is on. */
   melissaDoorForced?: boolean;
+  /**
+   * Server-computed MELISSA_BUYER_DOOR. Required from RSC — never derived
+   * from raw `process.env` in the browser (VERCEL_ENV is not inlined).
+   */
+  buyerDoorEnabled?: boolean;
 };
 
-export function CampaignWizard({ melissaDoorForced = false }: CampaignWizardProps) {
+export function CampaignWizard({
+  melissaDoorForced = false,
+  buyerDoorEnabled = false,
+}: CampaignWizardProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialStep = Math.min(
@@ -75,7 +82,6 @@ export function CampaignWizard({ melissaDoorForced = false }: CampaignWizardProp
     () => parseCampaignWizardParams(searchParams),
     [searchParams]
   );
-  const buyerDoorEnabled = isMelissaBuyerDoorEnabled();
   const urlMelissaDoor = wizardProductParams.door === "melissa" && buyerDoorEnabled;
 
   const [stepIndex, setStepIndex] = useState(initialStep);
