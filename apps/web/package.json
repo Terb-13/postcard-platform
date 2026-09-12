@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "test:clerk-proxy": "npx tsx --test lib/clerk-fapi-proxy.test.ts",
+    "test:products": "npx tsx --test lib/products-melissa.test.ts lib/clerk-fapi-proxy.test.ts",
     "postinstall": "prisma generate --schema=../../packages/db/prisma/schema.prisma"
   },
   "dependencies": {

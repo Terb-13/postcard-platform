@@ -1,6 +1,7 @@
 import type { Campaign, MailingJob, MailingJobType, Prisma } from "@prisma/client";
 import { prisma } from "@postcard-platform/db/client";
 import { parseTargetingMetadata } from "../lib/targeting-summary";
+import { assertNotPreviewOnly } from "../lib/melissa-buyer-door";
 import { fetchEddmRoutes } from "./eddm.service";
 import { handoffToDrummond } from "./drummond-handoff.service";
 import { calculatePricing } from "./pricing.service";
@@ -69,6 +70,9 @@ export async function finalizeMailingJob(
   if (!campaign) {
     throw new Error("Campaign not found");
   }
+
+  // Hard-block Melissa buyer-door drafts before routes, Consumer buy, or NewMovers doLookup.
+  assertNotPreviewOnly(campaign.targetingMetadata);
 
   if (campaign.status !== "PAID" && campaign.status !== "IN_PRODUCTION") {
     throw new Error(`Campaign must be paid before finalize (status: ${campaign.status})`);
