@@ -2,6 +2,7 @@
  * Melissa buyer-door M-slice — flag, preview-only persist, finalize/checkout refuse.
  *
  * MELISSA_BUYER_DOOR is hard-off in Vercel Production even if someone sets the env.
+ * Do not write Production Melissa secrets or provider values from this slice.
  * Preview defaults ON so acceptance can be exercised without a Production merge.
  * Explicit 0/false/off still disables the door on preview.
  */
